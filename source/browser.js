@@ -61,7 +61,7 @@ host.BrowserHost = class {
                     const link = this._element('logo-github').href;
                     this.openURL(link);
                 });
-                return new Promise(() => {});
+                return new Promise(() => { });
             }
             return Promise.resolve();
         };
@@ -141,13 +141,13 @@ host.BrowserHost = class {
             });
             if (required.length > available.length) {
                 this.window.terminate('Your browser is not supported.');
-                return new Promise(() => {});
+                return new Promise(() => { });
             }
             return Promise.resolve();
         };
         await age();
         await consent();
-        await telemetry();
+        // await telemetry();
         await capabilities();
     }
 
@@ -446,6 +446,8 @@ host.BrowserHost = class {
         }
         try {
             await this._view.open(context);
+            let model = await this._view.open(context);
+            await this._showWebnnOpsMap(model);
             return identifier || context.identifier;
         } catch (err) {
             if (err) {
@@ -455,13 +457,180 @@ host.BrowserHost = class {
         }
     }
 
+    _qs(element) {
+        return document.querySelector(element);
+    }
+
+    async _getWebnnOps() {
+        const response = await fetch("https://webmachinelearning.github.io/assets/json/webnn_status.json");
+        const data = await response.json();
+        let status = data.impl_status;
+        let webnn = [];
+        for (let s of status) {
+            let item = {
+                "spec": "",
+                "alias": [],
+                "xnnpack_cpu": 0,
+                "xnnpack_chromium_version_added": '',
+                "dml_gpu": 0,
+                "dml_chromium_version_added": '',
+                "dml_npu": 0
+            };
+            let op = s.op;
+            op = op.replace(/element-wise binary \/|element-wise unary \/|pooling \/|reduction \/ /g, '')
+                .trim();
+            item.spec = op;
+            let alias = [];
+            for (let o of s.xnnpack_op) {
+                if (o) alias.push(o);
+            }
+            item.xnnpack_chromium_version_added = s.xnnpack_chromium_version_added;
+            for (let o of s.dml_op) {
+                if (typeof (o) === 'object') {
+                    o = o[0];
+                }
+                o = o.toLowerCase()
+                    .replace(/map to other op|supported by tensor strides|element_wise_|activation_|reduce_function_/g, '')
+                    .trim();
+                if (o) alias.push(o);
+            }
+            item.dml_chromium_version_added = s.dml_chromium_version_added;
+            for (let o of s.tflite_op) {
+                if (o) alias.push(o);
+            }
+            for (let o of s.ort_op) {
+                if (o) alias.push(o);
+            }
+            // let filter = new Set(alias);
+            // alias = [...filter];
+            alias = new Map(alias.map(s => [s.toLowerCase(), s]));
+            alias = [...alias.values()];
+            alias = alias.filter((x) => x.toLowerCase() !== op.toLowerCase());
+            item.alias = alias;
+            if (s.xnnpack_progress === 4) {
+                item.xnnpack_cpu = 4;
+            } else if (s.xnnpack_progress === 3) {
+                item.xnnpack_cpu = 3;
+            }
+            if (s.dml_progress === 4) {
+                item.dml_gpu = 4;
+            } else if (s.dml_progress === 3) {
+                item.dml_gpu = 3;
+            }
+            webnn.push(item);
+        }
+        return webnn;
+    }
+
+    async _showWebnnOpsMap(model) {
+        const nodes = model._graphs[0]._nodes;
+        let ops = [];
+        nodes.map(x => {
+            ops.push(x._type.name)
+        }
+        );
+        let filter = new Set(ops);
+        ops = [...filter].sort();
+        const webnn = this._qs('#webnn');
+        const map = this._qs('#map');
+        let webnnops = await this._getWebnnOps();
+
+        if (ops?.length) {
+            webnn.removeAttribute("class")
+            webnn.setAttribute("class", "showGrid");
+            let tr = '', trs = '', index = 1;
+            for (let i of ops) {
+                let o = i.toLowerCase();
+                let spec = '';
+                let alias = '';
+                let xnnpack_cpu = 'No';
+                let dml_gpu = 'No';
+                let dml_vpu = 'No';
+                webnnops.map((v) => {
+                    if (v.spec.toLowerCase() === o) {
+                        spec = v.spec;
+                        alias = v.alias.toString().replaceAll(/,/g, ', ');
+                        if (v.xnnpack_cpu === 4) {
+                            xnnpack_cpu = `Yes, ${v.xnnpack_chromium_version_added}`;
+                        } else if (v.xnnpack_cpu === 3) {
+                            xnnpack_cpu = 'WIP';
+                        }
+                        if (v.dml_gpu === 4) {
+                            dml_gpu = `Yes, ${v.dml_chromium_version_added}`;
+                        } else if (v.dml_gpu === 3) {
+                            dml_gpu = 'WIP';
+                        }
+                        if (v.dml_vpu === 4) {
+                            dml_vpu = 'Yes';
+                        } else if (v.dml_vpu === 3) {
+                            dml_vpu = 'WIP';
+                        }
+                    } else {
+                        for (let a of v.alias) {
+                            if (a.toLowerCase() === o) {
+                                spec = v.spec;
+                                alias = v.alias.toString().replaceAll(/,/g, ', ');
+                                if (v.xnnpack_cpu === 4) {
+                                    xnnpack_cpu = `Yes, ${v.xnnpack_chromium_version_added}`;
+                                } else if (v.xnnpack_cpu === 3) {
+                                    xnnpack_cpu = 'WIP';
+                                }
+                                if (v.dml_gpu === 4) {
+                                    dml_gpu = `Yes, ${v.dml_chromium_version_added}`;
+                                } else if (v.dml_gpu === 3) {
+                                    dml_gpu = 'WIP';
+                                }
+                                if (v.dml_vpu === 4) {
+                                    dml_vpu = 'Yes';
+                                } else if (v.dml_vpu === 3) {
+                                    dml_vpu = 'WIP';
+                                }
+                            }
+                        }
+                    }
+                })
+
+                tr = `<tr><td>${index}</td><td>${i}</td><td>${spec}</td><td>${xnnpack_cpu}</td><td>${dml_gpu}</td><td>${dml_vpu}</td><td>${alias}</td></tr>`;
+                trs += tr;
+                index += 1;
+            }
+
+            let table = `
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="2">Index</th>
+                        <th rowspan="2">Model Operations</th>
+                        <th colspan="5">WebNN API Support Status in Chromium</th>
+                    </tr>
+                    <tr>
+                        <th>WebNN Spec</th>
+                        <th>CPU / XNNPack</th>
+                        <th>GPU / DML</th>
+                        <th>NPU / DML</th>
+                        <th>Alias</th>
+                    </tr>
+                </thead>
+                <tbody id="support">${trs}</tbody>
+            </table>
+        `;
+
+            map.innerHTML = table;
+        } else {
+            webnn.removeAttribute("class")
+            webnn.setAttribute("class", "showNone");
+        }
+    }
+
     async _open(file, files) {
         this._view.show('welcome spinner');
         const context = new host.BrowserHost.BrowserFileContext(this, file, files);
         try {
             await context.open();
             this._telemetry.set('session_engaged', 1);
-            await this._view.open(context);
+            // await this._view.open(context);
+            let model = await this._view.open(context);
+            await this._showWebnnOpsMap(model);
             this._view.show(null);
             this.document.title = files[0].name;
         } catch (error) {
@@ -816,14 +985,14 @@ host.BrowserHost.Context = class {
 
 if (!('scrollBehavior' in window.document.documentElement.style)) {
     const __scrollTo__ = Element.prototype.scrollTo;
-    Element.prototype.scrollTo = function(options) {
+    Element.prototype.scrollTo = function (options) {
         if (options !== undefined) {
             if (options === null || typeof options !== 'object' || options.behavior === undefined || arguments[0].behavior === 'auto' || options.behavior === 'instant') {
                 if (__scrollTo__) {
                     __scrollTo__.apply(this, arguments);
                 }
             } else {
-                const now = () =>  window.performance && window.performance.now ? window.performance.now() : Date.now();
+                const now = () => window.performance && window.performance.now ? window.performance.now() : Date.now();
                 const ease = (k) => 0.5 * (1 - Math.cos(Math.PI * k));
                 const step = (context) => {
                     const value = ease(Math.min((now() - context.startTime) / 468, 1));

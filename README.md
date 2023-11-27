@@ -1,3 +1,15 @@
+# WebNN API Support Status in Chromium for AI Models
+ 
+This tool is based on [Netron](https://github.com/lutzroeder/netron). [Netron](https://github.com/lutzroeder/netron) is a viewer for neural network, deep learning and machine learning models developed by [Lutz Roeder](https://github.com/lutzroeder).
+ 
+## Getting Started
+
+Visit [https://ibelem.github.io/netron/](https://ibelem.github.io/netron) page, load a model.
+
+Visit [https://ibelem.github.io/netron/?url=https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite](https://ibelem.github.io/netron/?url=https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite).
+ 
+# Netron
+
 <div align="center">
 <img width="400px" height="100px" src="https://github.com/lutzroeder/netron/raw/main/.github/logo-light.svg#gh-light-mode-only">
 <img width="400px" height="100px" src="https://github.com/lutzroeder/netron/raw/main/.github/logo-dark.svg#gh-dark-mode-only">

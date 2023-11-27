@@ -1,11 +1,11 @@
 
 /* eslint-env es2015 */
 
-if (window.location.hostname.endsWith('.github.io')) {
-    window.location.replace('https://netron.app');
-}
+// if (window.location.hostname.endsWith('.github.io')) {
+//     window.location.replace('https://netron.app');
+// }
 
-window.require = function(id, callback, preload) {
+window.require = function (id, callback, preload) {
     var name = id.startsWith('./') ? id.substring(2) : id;
     var key = name === 'browser' ? 'host' : name;
     var value = window[key];
@@ -19,7 +19,7 @@ window.require = function(id, callback, preload) {
         script.setAttribute('id', 'script-' + id);
         script.setAttribute('type', 'text/javascript');
         /* eslint-disable no-use-before-define */
-        var loadHandler = function() {
+        var loadHandler = function () {
             script.removeEventListener('load', loadHandler);
             script.removeEventListener('error', errorHandler);
             var module = window[key];
@@ -34,7 +34,7 @@ window.require = function(id, callback, preload) {
             delete window.module;
             callback(module);
         };
-        var errorHandler = function(e) {
+        var errorHandler = function (e) {
             script.removeEventListener('load', loadHandler);
             script.removeEventListener('error', errorHandler);
             document.head.removeChild(script);
@@ -54,13 +54,13 @@ window.require = function(id, callback, preload) {
     return value;
 };
 
-window.preload = function(callback) {
+window.preload = function (callback) {
     var modules = [
-        [ './view' ],
-        [ './json', './xml', './protobuf', './hdf5', './grapher', './browser' ],
-        [ './base', './text', './flatbuffers', './flexbuffers', './zip',  './tar', './python', './dagre' ]
+        ['./view'],
+        ['./json', './xml', './protobuf', './hdf5', './grapher', './browser'],
+        ['./base', './text', './flatbuffers', './flexbuffers', './zip', './tar', './python', './dagre']
     ];
-    var next = function() {
+    var next = function () {
         if (modules.length === 0) {
             callback();
             return;
@@ -68,7 +68,7 @@ window.preload = function(callback) {
         var ids = modules.pop();
         var resolved = ids.length;
         for (var i = 0; i < ids.length; i++) {
-            window.require(ids[i], function(module, error) {
+            window.require(ids[i], function (module, error) {
                 if (error) {
                     callback(null, error);
                     return;
@@ -83,13 +83,13 @@ window.preload = function(callback) {
     next();
 };
 
-window.terminate = function(message, action, callback) {
+window.terminate = function (message, action, callback) {
     document.getElementById('message-text').innerText = message;
     var button = document.getElementById('message-button');
     if (action) {
         button.style.removeProperty('display');
         button.innerText = action;
-        button.onclick = function() {
+        button.onclick = function () {
             callback();
         };
         button.focus();
@@ -112,11 +112,11 @@ window.addEventListener('error', (event) => {
     window.terminate(error.message);
 });
 
-window.addEventListener('load', function() {
+window.addEventListener('load', function () {
     if (!Symbol || !Symbol.asyncIterator) {
         throw new Error('Your browser is not supported.');
     }
-    window.preload(function(value, error) {
+    window.preload(function (value, error) {
         if (error) {
             window.terminate(error.message);
         } else {
