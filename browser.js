@@ -522,9 +522,9 @@ host.BrowserHost = class {
                 item.dml_gpu = 3;
             }
             if (s.mlservice_progress === 4) {
-                item.mlservice_gpu = 4;
+                item.mlservice_cpu = 4;
             } else if (s.mlservice_progress === 3) {
-                item.mlservice_gpu = 3;
+                item.mlservice_cpu = 3;
             }
             webnn.push(item);
         }
@@ -576,10 +576,10 @@ host.BrowserHost = class {
                         } else if (v.dml_npu === 3) {
                             dml_npu = 'WIP';
                         }
-                        if (v.mlservice_gpu === 4) {
-                            mlservice_gpu = `Yes, ${v.mlservice_chromium_version_added}`;
-                        } else if (v.mlservice_gpu === 3) {
-                            mlservice_gpu = 'WIP';
+                        if (v.mlservice_cpu === 4) {
+                            mlservice_cpu = `Yes, ${v.mlservice_chromium_version_added}`;
+                        } else if (v.mlservice_cpu === 3) {
+                            mlservice_cpu = 'WIP';
                         }
                         if (v.mlservice_npu === 4) {
                             mlservice_npu = 'Yes';
@@ -606,10 +606,10 @@ host.BrowserHost = class {
                                 } else if (v.dml_npu === 3) {
                                     dml_npu = 'WIP';
                                 }
-                                if (v.mlservice_gpu === 4) {
-                                    mlservice_gpu = `Yes, ${v.mlservice_chromium_version_added}`;
-                                } else if (v.mlservice_gpu === 3) {
-                                    mlservice_gpu = 'WIP';
+                                if (v.mlservice_cpu === 4) {
+                                    mlservice_cpu = `Yes, ${v.mlservice_chromium_version_added}`;
+                                } else if (v.mlservice_cpu === 3) {
+                                    mlservice_cpu = 'WIP';
                                 }
                                 if (v.mlservice_npu === 4) {
                                     mlservice_npu = 'Yes';
@@ -621,7 +621,7 @@ host.BrowserHost = class {
                     }
                 })
 
-                tr = `<tr><td>${index}</td><td>${i}</td><td>${spec}</td><td>${xnnpack_cpu}</td><td>${dml_gpu}</td><td>${dml_npu}</td><td>${mlservice_gpu}</td><td>${mlservice_npu}</td><td>${alias}</td></tr>`;
+                tr = `<tr><td>${index}</td><td>${i}</td><td>${spec}</td><td>${xnnpack_cpu}</td><td>${dml_gpu}</td><td>${dml_npu}</td><td>${mlservice_cpu}</td><td>${mlservice_npu}</td><td>${alias}</td></tr>`;
                 trs += tr;
                 index += 1;
             }
