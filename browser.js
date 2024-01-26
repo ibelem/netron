@@ -498,6 +498,11 @@ host.BrowserHost = class {
                 if (o) alias.push(o);
             }
             item.dml_chromium_version_added = s.dml_chromium_version_added;
+
+            for (let o of s.mlservice_op) {
+                if (o) alias.push(o);
+            }
+
             item.mlservice_chromium_version_added = s.mlservice_chromium_version_added;
             for (let o of s.tflite_op) {
                 if (o) alias.push(o);
@@ -632,7 +637,7 @@ host.BrowserHost = class {
                     <tr>
                         <th rowspan="2">Index</th>
                         <th rowspan="2">Model Operations</th>
-                        <th colspan="5">WebNN API Support Status in Chromium</th>
+                        <th colspan="7">WebNN API Support Status in Chromium</th>
                     </tr>
                     <tr>
                         <th>WebNN Spec</th>
