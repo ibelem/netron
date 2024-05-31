@@ -87,6 +87,7 @@
   {
     "name": "Attention",
     "module": "keras.layers",
+    "category": "Attention",
     "description": "Dot-product attention layer, a.k.a. Luong-style attention.\n\nInputs are a list with 2 or 3 elements:\n1. A `query` tensor of shape `(batch_size, Tq, dim)`.\n2. A `value` tensor of shape `(batch_size, Tv, dim)`.\n3. A optional `key` tensor of shape `(batch_size, Tv, dim)`. If none\n    supplied, `value` will be used as a `key`.\n\nThe calculation follows the steps:\n1. Calculate attention scores using `query` and `key` with shape\n    `(batch_size, Tq, Tv)`.\n2. Use scores to calculate a softmax distribution with shape\n    `(batch_size, Tq, Tv)`.\n3. Use the softmax distribution to create a linear combination of `value`\n    with shape `(batch_size, Tq, dim)`.",
     "attributes": [
       {
@@ -772,7 +773,7 @@
       },
       {
         "default": "channels_last",
-        "description": "string, either `\"channels_last\"` or `\"channels_first\"`.\n        The ordering of the dimensions in the inputs. `\"channels_last\"`\n        corresponds to inputs with shape\n        `(batch_size, channels, height, width)`\n        while `\"channels_first\"` corresponds to inputs with shape\n        `(batch_size, channels, height, width)`. It defaults to the\n        `image_data_format` value found in your Keras config file at\n        `~/.keras/keras.json`. If you never set it, then it will be\n        `\"channels_last\"`.",
+        "description": "string, either `\"channels_last\"` or `\"channels_first\"`.\n        The ordering of the dimensions in the inputs. `\"channels_last\"`\n        corresponds to inputs with shape\n        `(batch_size, height, width, channels)`\n        while `\"channels_first\"` corresponds to inputs with shape\n        `(batch_size, channels, height, width)`. It defaults to the\n        `image_data_format` value found in your Keras config file at\n        `~/.keras/keras.json`. If you never set it, then it will be\n        `\"channels_last\"`.",
         "name": "data_format"
       },
       {
@@ -900,7 +901,7 @@
       },
       {
         "default": "channels_last",
-        "description": "string, either `\"channels_last\"` or `\"channels_first\"`.\n        The ordering of the dimensions in the inputs. `\"channels_last\"`\n        corresponds to inputs with shape\n        `(batch_size, channels, height, width)`\n        while `\"channels_first\"` corresponds to inputs with shape\n        `(batch_size, channels, height, width)`. It defaults to the\n        `image_data_format` value found in your Keras config file at\n        `~/.keras/keras.json`. If you never set it, then it will be\n        `\"channels_last\"`.",
+        "description": "string, either `\"channels_last\"` or `\"channels_first\"`.\n        The ordering of the dimensions in the inputs. `\"channels_last\"`\n        corresponds to inputs with shape\n        `(batch_size, height, width, channels)`\n        while `\"channels_first\"` corresponds to inputs with shape\n        `(batch_size, channels, height, width)`. It defaults to the\n        `image_data_format` value found in your Keras config file at\n        `~/.keras/keras.json`. If you never set it, then it will be\n        `\"channels_last\"`.",
         "name": "data_format"
       },
       {
@@ -1023,7 +1024,7 @@
         "name": "padding"
       },
       {
-        "description": "string, either `\"channels_last\"` or `\"channels_first\"`.\n        The ordering of the dimensions in the inputs. `\"channels_last\"`\n        corresponds to inputs with shape\n        `(batch_size, spatial_dim1, spatial_dim2, spatial_dim3, channels)`\n        while `\"channels_first\"` corresponds to inputs with shape\n        `(batch_size, spatial_dim1, spatial_dim2, spatial_dim3, channels)`.\n        It defaults to the `image_data_format` value found in your Keras\n        config file at `~/.keras/keras.json`. If you never set it, then it\n        will be `\"channels_last\"`.",
+        "description": "string, either `\"channels_last\"` or `\"channels_first\"`.\n        The ordering of the dimensions in the inputs. `\"channels_last\"`\n        corresponds to inputs with shape\n        `(batch_size, spatial_dim1, spatial_dim2, spatial_dim3, channels)`\n        while `\"channels_first\"` corresponds to inputs with shape\n        `(batch_size, channels, spatial_dim1, spatial_dim2, spatial_dim3)`.\n        It defaults to the `image_data_format` value found in your Keras\n        config file at `~/.keras/keras.json`. If you never set it, then it\n        will be `\"channels_last\"`.",
         "name": "data_format"
       },
       {
@@ -1278,7 +1279,7 @@
       },
       {
         "default": "channels_last",
-        "description": "string, either `\"channels_last\"` or `\"channels_first\"`.\n        The ordering of the dimensions in the inputs. `\"channels_last\"`\n        corresponds to inputs with shape\n        `(batch_size, channels, height, width)`\n        while `\"channels_first\"` corresponds to inputs with shape\n        `(batch_size, channels, height, width)`. It defaults to the\n        `image_data_format` value found in your Keras config file at\n        `~/.keras/keras.json`. If you never set it, then it will be\n        `\"channels_last\"`.",
+        "description": "string, either `\"channels_last\"` or `\"channels_first\"`.\n        The ordering of the dimensions in the inputs. `\"channels_last\"`\n        corresponds to inputs with shape\n        `(batch_size, height, width, channels)`\n        while `\"channels_first\"` corresponds to inputs with shape\n        `(batch_size, channels, height, width)`. It defaults to the\n        `image_data_format` value found in your Keras config file at\n        `~/.keras/keras.json`. If you never set it, then it will be\n        `\"channels_last\"`.",
         "name": "data_format"
       },
       {
@@ -1680,6 +1681,10 @@
       {
         "description": "Constraint function applied to the bias vector.",
         "name": "bias_constraint"
+      },
+      {
+        "name": "lora_rank",
+        "description": "Optional integer. If set, the layer's forward pass\n        will implement LoRA (Low-Rank Adaptation)\n        with the provided rank. LoRA sets the layer's kernel\n        to non-trainable and replaces it with a delta over the\n        original kernel, obtained via multiplying two lower-rank\n        trainable matrices. This can be useful to reduce the\n        computation cost of fine-tuning large dense layers.\n        You can also enable LoRA on an existing\n        `Dense` layer by calling `layer.enable_lora(rank)`."
       }
     ],
     "inputs": [
@@ -1906,7 +1911,7 @@
     "attributes": [
       {
         "default": false,
-        "description": "Boolean, whether or not the input value 0 is a special\n        \"padding\" value that should be masked out.\n        This is useful when using recurrent layers which\n        may take variable length input. If this is `True`,\n        then all subsequent layers in the model need\n        to support masking or an exception will be raised.\n        If mask_zero is set to True, as a consequence,\n        index 0 cannot be used in the vocabulary (input_dim should\n        equal size of vocabulary + 1).",
+        "description": "Boolean, whether or not the input value 0 is a special\n        \"padding\" value that should be masked out.\n        This is useful when using recurrent layers which\n        may take variable length input. If this is `True`,\n        then all subsequent layers in the model need\n        to support masking or an exception will be raised.\n        If `mask_zero` is set to `True`, as a consequence,\n        index 0 cannot be used in the vocabulary (`input_dim` should\n        equal size of vocabulary + 1).",
         "name": "mask_zero"
       },
       {
@@ -1950,6 +1955,14 @@
       {
         "name": "sparse",
         "description": "If True, calling this layer returns a `tf.SparseTensor`. If False,\n    the layer returns a dense `tf.Tensor`. For an entry with no features in\n    a sparse tensor (entry with value 0), the embedding vector of index 0 is\n    returned by default."
+      },
+      {
+        "name": "lora_rank",
+        "description": "Optional integer. If set, the layer's forward pass\n        will implement LoRA (Low-Rank Adaptation)\n        with the provided rank. LoRA sets the layer's embeddings\n        matrix to non-trainable and replaces it with a delta over the\n        original matrix, obtained via multiplying two lower-rank\n        trainable matrices. This can be useful to reduce the\n        computation cost of fine-tuning large embedding layers.\n        You can also enable LoRA on an existing\n        `Embedding` layer by calling `layer.enable_lora(rank)`."
+      },
+      {
+        "name": "weights",
+        "description": "Optional floating-point matrix of size\n        `(input_dim, output_dim)`. The initial embeddings values\n        to use."
       }
     ],
     "inputs": [
@@ -1974,7 +1987,7 @@
     ],
     "examples": [
       {
-        "code": ">>> model = keras.Sequential()\n>>> model.add(keras.layers.Embedding(1000, 64, input_length=10))\n>>> # The model will take as input an integer matrix of size (batch,\n>>> # input_length), and the largest integer (i.e. word index) in the input\n>>> # should be no larger than 999 (vocabulary size).\n>>> # Now model.output_shape is (None, 10, 64), where `None` is the batch\n>>> # dimension.\n>>> input_array = np.random.randint(1000, size=(32, 10))\n>>> model.compile('rmsprop', 'mse')\n>>> output_array = model.predict(input_array)\n>>> print(output_array.shape)\n(32, 10, 64)"
+        "code": ">>> model = keras.Sequential()\n>>> model.add(keras.layers.Embedding(1000, 64))\n>>> # The model will take as input an integer matrix of size (batch,\n>>> # input_length), and the largest integer (i.e. word index) in the input\n>>> # should be no larger than 999 (vocabulary size).\n>>> # Now model.output_shape is (None, 10, 64), where `None` is the batch\n>>> # dimension.\n>>> input_array = np.random.randint(1000, size=(32, 10))\n>>> model.compile('rmsprop', 'mse')\n>>> output_array = model.predict(input_array)\n>>> print(output_array.shape)\n(32, 10, 64)"
       }
     ]
   },
@@ -2287,6 +2300,10 @@
       {
         "name": "seed",
         "description": "Random seed for dropout."
+      },
+      {
+        "name": "use_cudnn",
+        "description": "Whether to use a cuDNN-backed implementation. `\"auto\"` will\n        attempt to use cuDNN when feasible, and will fallback to the\n        default implementation if not."
       }
     ],
     "inputs": [
@@ -2477,11 +2494,11 @@
     "description": "Specifies the rank, dtype and shape of every input to a layer.\n\nLayers can expose (if appropriate) an `input_spec` attribute:\nan instance of `InputSpec`, or a nested structure of `InputSpec` instances\n(one per input tensor). These objects enable the layer to run input\ncompatibility checks for input structure, input rank, input shape, and\ninput dtype for the first argument of `Layer.__call__`.\n\nA `None` entry in a shape is compatible with any dimension.",
     "attributes": [
       {
-        "description": "Expected DataType of the input.",
+        "description": "Expected dtype of the input.",
         "name": "dtype"
       },
       {
-        "description": "Shape tuple, expected shape of the input\n        (may include None for unchecked axes). Includes the batch size.",
+        "description": "Shape tuple, expected shape of the input\n        (may include `None` for dynamic axes).\n        Includes the batch size.",
         "name": "shape"
       },
       {
@@ -2501,17 +2518,21 @@
         "name": "axes"
       },
       {
-        "description": "If True, then allow inputs of rank N+1 as long\n        as the last axis of the input is 1, as well as inputs of rank N-1\n        as long as the last axis of the spec is 1.",
+        "description": "If `True`, allow inputs of rank N+1 as long\n        as the last axis of the input is 1, as well as inputs of rank N-1\n        as long as the last axis of the spec is 1.",
         "name": "allow_last_axis_squeeze"
       },
       {
         "description": "Expected key corresponding to this input when passing data as\n        a dictionary.",
         "name": "name"
+      },
+      {
+        "name": "optional",
+        "description": "Boolean, whether the input is optional or not.\n        An optional input can accept `None` values."
       }
     ],
     "examples": [
       {
-        "code": "class MyLayer(Layer):\n    def __init__(self):\n        super(MyLayer, self).__init__()\n        # The layer will accept inputs with\n        # shape (*, 28, 28) & (*, 28, 28, 1)\n        # and raise an appropriate error message otherwise.\n        self.input_spec = InputSpec(\n            shape=(None, 28, 28, 1),\n            allow_last_axis_squeeze=True)"
+        "code": "class MyLayer(Layer):\n    def __init__(self):\n        super().__init__()\n        # The layer will accept inputs with\n        # shape (*, 28, 28) & (*, 28, 28, 1)\n        # and raise an appropriate error message otherwise.\n        self.input_spec = InputSpec(\n            shape=(None, 28, 28, 1),\n            allow_last_axis_squeeze=True)"
       }
     ]
   },
@@ -2911,6 +2932,10 @@
       {
         "name": "seed",
         "description": "Random seed for dropout."
+      },
+      {
+        "name": "use_cudnn",
+        "description": "Whether to use a cuDNN-backed implementation. `\"auto\"` will\n        attempt to use cuDNN when feasible, and will fallback to the\n        default implementation if not."
       }
     ],
     "inputs": [
@@ -3246,6 +3271,7 @@
   {
     "name": "MultiHeadAttention",
     "module": "keras.layers",
+    "category": "Attention",
     "description": "MultiHeadAttention layer.\n\nThis is an implementation of multi-headed attention as described in the\npaper \"Attention is all you Need\"\n[Vaswani et al., 2017](https://arxiv.org/abs/1706.03762).\nIf `query`, `key,` `value` are the same, then\nthis is self-attention. Each timestep in `query` attends to the\ncorresponding sequence in `key`, and returns a fixed-width vector.\n\nThis layer first projects `query`, `key` and `value`. These are\n(effectively) a list of tensors of length `num_attention_heads`, where the\ncorresponding shapes are `(batch_size, <query dimensions>, key_dim)`,\n`(batch_size, <key/value dimensions>, key_dim)`,\n`(batch_size, <key/value dimensions>, value_dim)`.\n\nThen, the query and key tensors are dot-producted and scaled. These are\nsoftmaxed to obtain attention probabilities. The value tensors are then\ninterpolated by these probabilities, then concatenated back to a single\ntensor.\n\nFinally, the result tensor with the last dimension as `value_dim` can take\na linear projection and return.",
     "attributes": [
       {
@@ -3303,6 +3329,10 @@
       {
         "description": "Constraint for dense layer kernels.",
         "name": "bias_constraint"
+      },
+      {
+        "name": "seed",
+        "description": "Optional integer to seed the dropout layer."
       }
     ],
     "examples": [
@@ -3587,7 +3617,7 @@
     ],
     "examples": [
       {
-        "code": "from keras.layers import RNN\nfrom keras import ops\n\n# First, let's define a RNN Cell, as a layer subclass.\nclass MinimalRNNCell(keras.layers.Layer):\n\n    def __init__(self, units, **kwargs):\n        super().__init__(**kwargs)\n        self.units = units\n        self.state_size = units\n\n    def build(self, input_shape):\n        self.kernel = self.add_weight(shape=(input_shape[-1], self.units),\n                                      initializer='uniform',\n                                      name='kernel')\n        self.recurrent_kernel = self.add_weight(\n            shape=(self.units, self.units),\n            initializer='uniform',\n            name='recurrent_kernel')\n        self.built = True\n\n    def call(self, inputs, states):\n        prev_output = states[0]\n        h = ops.matmul(inputs, self.kernel)\n        output = h + ops.matmul(prev_output, self.recurrent_kernel)\n        return output, [output]\n\n# Let's use this cell in a RNN layer:\n\ncell = MinimalRNNCell(32)\nx = keras.Input((None, 5))\nlayer = RNN(cell)\ny = layer(x)\n\n# Here's how to use the cell to build a stacked RNN:\n\ncells = [MinimalRNNCell(32), MinimalRNNCell(64)]\nx = keras.Input((None, 5))\nlayer = RNN(cells)\ny = layer(x)"
+        "code": "from keras.src.layers import RNN\nfrom keras.src import ops\n\n# First, let's define a RNN Cell, as a layer subclass.\nclass MinimalRNNCell(keras.layers.Layer):\n\n    def __init__(self, units, **kwargs):\n        super().__init__(**kwargs)\n        self.units = units\n        self.state_size = units\n\n    def build(self, input_shape):\n        self.kernel = self.add_weight(shape=(input_shape[-1], self.units),\n                                      initializer='uniform',\n                                      name='kernel')\n        self.recurrent_kernel = self.add_weight(\n            shape=(self.units, self.units),\n            initializer='uniform',\n            name='recurrent_kernel')\n        self.built = True\n\n    def call(self, inputs, states):\n        prev_output = states[0]\n        h = ops.matmul(inputs, self.kernel)\n        output = h + ops.matmul(prev_output, self.recurrent_kernel)\n        return output, [output]\n\n# Let's use this cell in a RNN layer:\n\ncell = MinimalRNNCell(32)\nx = keras.Input((None, 5))\nlayer = RNN(cell)\ny = layer(x)\n\n# Here's how to use the cell to build a stacked RNN:\n\ncells = [MinimalRNNCell(32), MinimalRNNCell(64)]\nx = keras.Input((None, 5))\nlayer = RNN(cells)\ny = layer(x)"
       }
     ]
   },
@@ -3720,7 +3750,7 @@
       },
       {
         "default": "channels_last",
-        "description": "string, either `\"channels_last\"` or `\"channels_first\"`.\n        The ordering of the dimensions in the inputs. `\"channels_last\"`\n        corresponds to inputs with shape `(batch, steps, features)`\n        while `\"channels_first\"` corresponds to inputs with shape\n        `(batch, features, steps)`. It defaults to the `image_data_format`\n        value found in your Keras config file at `~/.keras/keras.json`.\n        If you never set it, then it will be `\"channels_last\"`.",
+        "description": "string, either `\"channels_last\"` or `\"channels_first\"`.\n        The ordering of the dimensions in the inputs. `\"channels_last\"`\n        corresponds to inputs with shape `(batch, height, width, channels)`\n        while `\"channels_first\"` corresponds to inputs with shape\n        `(batch, channels, height, width)`. It defaults to the\n        `image_data_format` value found in your Keras config file\n        at `~/.keras/keras.json`.\n        If you never set it, then it will be `\"channels_last\"`.",
         "name": "data_format"
       },
       {
@@ -4538,6 +4568,7 @@
   },
   {
     "name": "Attention",
+    "category": "Attention",
     "module": "keras.layers",
     "inputs": [
       {

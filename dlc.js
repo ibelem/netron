@@ -1,20 +1,25 @@
 
-var dlc = {};
-var text = require('./text');
-var flatbuffers = require('./flatbuffers');
+import * as text from './text.js';
+import * as flatbuffers from './flatbuffers.js';
+
+const dlc = {};
 
 dlc.ModelFactory = class {
 
     match(context) {
-        return dlc.Container.open(context);
+        const container = dlc.Container.open(context);
+        if (container) {
+            context.type = 'dlc';
+            context.target = container;
+        }
     }
 
-    async open(context, target) {
-        await context.require('./dlc-schema');
-        dlc.schema = flatbuffers.get('dlc').dlc;
-        await target.read(context);
+    async open(context) {
+        dlc.schema = await context.require('./dlc-schema');
+        dlc.schema = dlc.schema.dlc;
+        await context.target.read();
         const metadata = await context.metadata('dlc-metadata.json');
-        return new dlc.Model(metadata, target);
+        return new dlc.Model(metadata, context.target);
     }
 };
 
@@ -33,15 +38,12 @@ dlc.Model = class {
                 const source = converter.split(' ').shift().trim();
                 if (source.length > 0) {
                     const version = target.metadata.get('converter-version');
-                    this.metadata.push({
-                        name: 'source',
-                        value: version ? source + ' v' + version : source
-                    });
+                    this.source = version ? `${source} v${version}` : source;
                 }
             }
         }
         for (const graph of target.graphs) {
-            this.graphs = [ new dlc.Graph(metadata, target.version, graph) ];
+            this.graphs = [new dlc.Graph(metadata, target.version, graph)];
         }
     }
 };
@@ -94,9 +96,7 @@ dlc.Graph = class {
                 break;
             }
         }
-        for (const entry of values) {
-            const name = entry[0];
-            const tensor = entry[1];
+        for (const [name, tensor] of values) {
             const type = tensor.shape ? new dlc.TensorType(tensor.dtype, tensor.shape) : null;
             const initializer = tensor.data && tensor.data ? new dlc.Tensor(type, tensor.data) : null;
             const value = new dlc.Value(name, type, initializer);
@@ -121,9 +121,10 @@ dlc.Graph = class {
 
 dlc.Argument = class {
 
-    constructor(name, value) {
+    constructor(name, value, type) {
         this.name = name;
         this.value = value;
+        this.type = type || null;
     }
 };
 
@@ -131,7 +132,7 @@ dlc.Value = class {
 
     constructor(name, type, initializer) {
         if (typeof name !== 'string') {
-            throw new dlc.Error("Invalid value identifier '" + JSON.stringify(name) + "'.");
+            throw new dlc.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
         }
         this.name = name;
         this.type = type;
@@ -142,8 +143,8 @@ dlc.Value = class {
 dlc.Node = class {
 
     constructor(metadata, version, node, value) {
-        const type = node.type + ':v' + version.toString();
-        this.type = Object.assign({}, metadata.type(type));
+        const type = `${node.type}:v${version}`;
+        this.type = { ...metadata.type(type) };
         this.type.name = node.type;
         this.name = node.name;
         this.inputs = [];
@@ -152,7 +153,7 @@ dlc.Node = class {
         const inputs = Array.isArray(node.inputs) ? Array.from(node.inputs).map((input) => value(input)) : [];
         if (Array.isArray(this.type.inputs) && inputs.length === this.type.inputs.length) {
             for (let i = 0; i < inputs.length; i++) {
-                const argument = new dlc.Argument(this.type.inputs[i].name, [ inputs[i] ]);
+                const argument = new dlc.Argument(this.type.inputs[i].name, [inputs[i]]);
                 this.inputs.push(argument);
             }
         } else if (inputs.length > 0) {
@@ -162,7 +163,7 @@ dlc.Node = class {
         const outputs = Array.isArray(node.outputs) ? Array.from(node.outputs).map((output) => value(output)) : [];
         if (Array.isArray(this.type.outputs) && outputs.length === this.type.outputs.length) {
             for (let i = 0; i < outputs.length; i++) {
-                const argument = new dlc.Argument(this.type.outputs[i].name, [ outputs[i] ]);
+                const argument = new dlc.Argument(this.type.outputs[i].name, [outputs[i]]);
                 this.outputs.push(argument);
             }
         } else if (outputs.length > 0) {
@@ -174,7 +175,23 @@ dlc.Node = class {
                 if (attr.name === 'OutputDims') {
                     continue;
                 }
-                const attribute = new dlc.Attribute(metadata.attribute(type, attr.name), version, attr);
+                const schema = metadata.attribute(node.type, attr.name);
+                let type = attr.type;
+                switch (type) {
+                    case 'tensor': {
+                        const type = new dlc.TensorType(attr.data.dtype, attr.data.shape);
+                        value = new dlc.Tensor(type, attr.data.data);
+                        break;
+                    }
+                    default: {
+                        value = attr.data;
+                    }
+                }
+                if (schema && schema.type) {
+                    type = schema.type;
+                    value = dlc.Utility.enum(version, type, value);
+                }
+                const attribute = new dlc.Argument(attr.name, value, type);
                 this.attributes.push(attribute);
             }
         }
@@ -182,32 +199,8 @@ dlc.Node = class {
             for (const tensor of node.weights) {
                 const type = new dlc.TensorType(tensor.data.dtype, tensor.shape);
                 const value = new dlc.Value('', type, new dlc.Tensor(type, tensor.data));
-                this.inputs.push(new dlc.Argument(tensor.name, [ value ]));
+                this.inputs.push(new dlc.Argument(tensor.name, [value]));
             }
-        }
-    }
-};
-
-dlc.Attribute = class {
-
-    constructor(metadata, version, attribute) {
-        this.name = attribute.name;
-        this.type = attribute.type;
-        switch (this.type) {
-            case 'tensor': {
-                const tensor = attribute.data;
-                const type = new dlc.TensorType(tensor.dtype, tensor.shape);
-                const data = tensor.data;
-                this.value = new dlc.Tensor(type, data);
-                break;
-            }
-            default: {
-                this.value = attribute.data;
-            }
-        }
-        if (metadata && metadata.type) {
-            this.type = metadata.type;
-            this.value = dlc.Utility.enum(version, this.type, this.value);
         }
     }
 };
@@ -232,7 +225,7 @@ dlc.TensorShape = class {
 
     toString() {
         if (Array.isArray(this.dimensions) && this.dimensions.length > 0) {
-            return '[' + this.dimensions.map((dimension) => dimension.toString()).join(',') + ']';
+            return `[${this.dimensions.map((dimension) => dimension.toString()).join(',')}]`;
         }
         return '';
     }
@@ -250,7 +243,7 @@ dlc.Tensor = class {
             switch (type.dataType) {
                 case 'uint8': this.values = data.bytes; break;
                 case 'float32': this.values = data.floats; break;
-                default: throw new dlc.Error("Unsupported tensor data type '" + type.dataType + "'.");
+                default: throw new dlc.Error(`Unsupported tensor data type '${type.dataType}'.`);
             }
         }
     }
@@ -260,48 +253,40 @@ dlc.Container = class {
 
     static open(context) {
         const entries = context.peek('zip');
-        if (entries instanceof Map) {
-            if (entries.has('model') || entries.has('model.params')) {
-                return new dlc.Container(entries.get('model'), entries.get('model.params'), entries.get('dlc.metadata'));
-            }
+        if (entries instanceof Map && (entries.has('model') || entries.has('model.params'))) {
+            return new dlc.Container(context, entries.get('model'), entries.get('model.params'), entries.get('dlc.metadata'));
         }
         const stream = context.stream;
         switch (dlc.Container._signature(stream).split('.').pop()) {
             case 'NETD':
-                return new dlc.Container(stream, undefined, undefined);
+                return new dlc.Container(context, stream, undefined, undefined);
             case 'NETP':
-                return new dlc.Container(undefined, stream, undefined);
+                return new dlc.Container(context, undefined, stream, undefined);
             case 'NR64':
-                return new dlc.Container(undefined, stream, undefined);
+                return new dlc.Container(context, undefined, stream, undefined);
             default:
                 return null;
         }
     }
 
-    constructor(model, params, metadata) {
+    constructor(context, model, params, metadata) {
+        this.context = context;
         this._model = model;
         this._params = params;
         this._metadata = metadata;
     }
 
-    async read(context) {
-        const request = async (context, name) => {
-            try {
-                context = await context.fetch(name);
-                return context.stream;
-            } catch (error) {
-                return null;
-            }
-        };
+    async read() {
         if (this._model === undefined) {
-            this._model = await request(context, 'model');
+            this._model = await this._fetch('model');
         }
         if (this._params === undefined) {
-            this._params = await request(context, 'model.params');
+            this._params = await this._fetch('model.params');
         }
         if (this._metadata === undefined) {
-            this._metadata = await request(context, 'dlc.metadata');
+            this._metadata = await this._fetch('dlc.metadata');
         }
+        delete this.context;
         this.graphs = [];
         this.metadata = new Map();
         if (this._model) {
@@ -316,7 +301,8 @@ dlc.Container = class {
                 case '3.NETD':
                 case 'NETD': {
                     this.version = 3;
-                    this.graphs = dlc.Container._model3(stream, signature);
+                    this.graph = dlc.Container._model3(stream, signature);
+                    this.graphs = [this.graph];
                     break;
                 }
                 case '4.NETD': {
@@ -327,7 +313,7 @@ dlc.Container = class {
                 default: {
                     const buffer = stream.peek(Math.min(stream.length, 16));
                     const content = Array.from(buffer).map((c) => (c < 16 ? '0' : '') + c.toString(16)).join('');
-                    throw new dlc.Error("File contains undocumented '" + content + "' data.");
+                    throw new dlc.Error(`File contains undocumented '${content}' data.`);
                 }
             }
         }
@@ -343,7 +329,8 @@ dlc.Container = class {
                 case '3.NETP':
                 case 'NETP': {
                     this.version = this.graphs.length > 0 ? this.version : 3;
-                    this.graphs = dlc.Container._params3(stream, signature, this.graphs);
+                    this.graph = dlc.Container._params3(stream, signature, this.graph);
+                    this.graphs = [this.graph];
                     break;
                 }
                 case '4.NETP':
@@ -354,7 +341,7 @@ dlc.Container = class {
                 default: {
                     const buffer = stream.peek(Math.min(stream.length, 16));
                     const content = Array.from(buffer).map((c) => (c < 16 ? '0' : '') + c.toString(16)).join('');
-                    throw new dlc.Error("File contains undocumented '" + content + "' data.");
+                    throw new dlc.Error(`File contains undocumented '${content}' data.`);
                 }
             }
         }
@@ -386,44 +373,44 @@ dlc.Container = class {
             model = dlc.schema.v3.Model.decode(reader, reader.root);
         } catch (error) {
             const message = error && error.message ? error.message : error.toString();
-            throw new dlc.Error('File format is not dlc.v3.NETD (' + message.replace(/\.$/, '') + ').');
+            throw new dlc.Error(`File format is not dlc.v3.NETD (${message.replace(/\.$/, '')}).`);
         }
         model.tensors = [];
         const updateAttribute = (attr) => {
             switch (attr.type) {
-                case 1: return [ 'boolean',   attr.bool_value               ];
-                case 2: return [ 'int32',     attr.int32_value              ];
-                case 3: return [ 'uint32',    attr.uint32_value             ];
-                case 4: return [ 'float32',   attr.float32_value            ];
-                case 5: return [ 'string',    attr.string_value             ];
-                case 7: return [ 'byte[]',    Array.from(attr.byte_list)    ];
-                case 8: return [ 'int32[]',   Array.from(attr.int32_list)   ];
-                case 9: return [ 'float32[]', Array.from(attr.float32_list) ];
+                case 1: return ['boolean',   attr.bool_value];
+                case 2: return ['int32',     attr.int32_value];
+                case 3: return ['uint32',    attr.uint32_value];
+                case 4: return ['float32',   attr.float32_value];
+                case 5: return ['string',    attr.string_value];
+                case 7: return ['byte[]',    Array.from(attr.byte_list)];
+                case 8: return ['int32[]',   Array.from(attr.int32_list)];
+                case 9: return ['float32[]', Array.from(attr.float32_list)];
                 case 11: {
                     const obj = {};
                     let index = 0;
                     let list = true;
                     for (const attribute of attr.attributes) {
                         const name = attribute.name;
-                        const entry = updateAttribute(attribute);
-                        obj[name] = entry[1];
+                        const [, data] = updateAttribute(attribute);
+                        obj[name] = data;
                         list = list && index.toString() === attribute.name;
                         index++;
                     }
-                    return list ? [ '', Object.values(obj) ] : [ '', obj ];
+                    return list ? ['', Object.values(obj)] : ['', obj];
                 }
                 default:
-                    throw new dlc.Error("Unsupported attribute type '" + attr.type + "'.");
+                    throw new dlc.Error(`Unsupported attribute type '${attr.type}'.`);
             }
         };
         for (const node of model.nodes) {
             for (const attribute of node.attributes) {
-                const entry = updateAttribute(attribute);
-                attribute.type = entry[0];
-                attribute.data = entry[1];
+                const [type, data] = updateAttribute(attribute);
+                attribute.type = type;
+                attribute.data = data;
             }
         }
-        return [ model ];
+        return model;
     }
 
     static _model4(stream) {
@@ -434,20 +421,25 @@ dlc.Container = class {
             model = dlc.schema.v4.Model.decode(reader, reader.root);
         } catch (error) {
             const message = error && error.message ? error.message : error.toString();
-            throw new dlc.Error('File format is not dlc.v4.NETD (' + message.replace(/\.$/, '') + ').');
+            throw new dlc.Error(`File format is not dlc.v4.NETD (${message.replace(/\.$/, '')}).`);
         }
         const dataType = (value) => {
             switch (value) {
+                case 0x0008: return 'int8';
+                case 0x0016: return 'int16';
                 case 0x0032: return 'int32';
                 case 0x0108: return 'int8';
                 case 0x0132: return 'int32';
+                case 0x0216: return 'float16';
                 case 0x0232: return 'float32';
                 case 0x0308: return 'qint8';
+                case 0x0316: return 'qint16';
                 case 0x0332: return 'qint32';
                 case 0x0408: return 'uint8';
                 case 0x0416: return 'uint16';
+                case 0x0432: return 'uint32';
                 case 0x0508: return 'boolean';
-                default: throw new dlc.Error("Unsupported data type '" + JSON.stringify(value) + "'.");
+                default: throw new dlc.Error(`Unsupported data type '${JSON.stringify(value)}'.`);
             }
         };
         const updateTensor = (tensor) => {
@@ -485,7 +477,7 @@ dlc.Container = class {
                                     attribute.type = 'boolean';
                                     break;
                                 default:
-                                    throw new dlc.Error("Unknown attribute value kind '" + value.kind + "'.");
+                                    throw new dlc.Error(`Unknown attribute value kind '${value.kind}'.`);
                             }
                             break;
                         }
@@ -497,7 +489,7 @@ dlc.Container = class {
                             break;
                         }
                         default: {
-                            throw new dlc.Error("Unknown attribute kind '" + attribute.kind + "'.");
+                            throw new dlc.Error(`Unknown attribute kind '${attribute.kind}'.`);
                         }
                     }
                 }
@@ -509,7 +501,7 @@ dlc.Container = class {
         return model.graphs;
     }
 
-    static _params3(stream, signature, graphs) {
+    static _params3(stream, signature, graph) {
         let params = null;
         try {
             const buffer = new Uint8Array(signature === 'NETP' ? stream.peek() : stream.peek().subarray(8));
@@ -517,10 +509,10 @@ dlc.Container = class {
             params = dlc.schema.v3.ModelParameters.decode(reader, reader.root);
         } catch (error) {
             const message = error && error.message ? error.message : error.toString();
-            throw new dlc.Error('File format is not dlc.v3.NETP (' + message.replace(/\.$/, '') + ').');
+            throw new dlc.Error(`File format is not dlc.v3.NETP (${message.replace(/\.$/, '')}).`);
         }
-        if (graphs.length === 0) {
-            const graph = new dlc.schema.v3.ModelParameters();
+        if (!graph) {
+            graph = new dlc.schema.v3.ModelParameters();
             graph.nodes = new Array(params.nodes.length);
             graph.tensors = [];
             for (let i = 0; i < graph.nodes.length; i++) {
@@ -532,19 +524,17 @@ dlc.Container = class {
                 node.attributes = [];
                 graph.nodes[i] = node;
             }
-            graphs.push(graph);
         }
-        const graph = graphs[0];
         const dataType = (value) => {
             switch (value) {
                 case null: return '?';
                 case 6: return 'uint8';
                 case 9: return 'float32';
                 default:
-                    throw new dlc.Error("Unsupported data type '" + JSON.stringify(value) + "'.");
+                    throw new dlc.Error(`Unsupported data type '${JSON.stringify(value)}'.`);
             }
         };
-        const weights = new Map(params.nodes.map((node) => [ node.name, node.weights ]));
+        const weights = new Map(params.nodes.map((node) => [node.name, node.weights]));
         for (const node of graph.nodes) {
             if (weights.has(node.name)) {
                 const tensors = weights.get(node.name);
@@ -554,7 +544,7 @@ dlc.Container = class {
                 node.weights = tensors;
             }
         }
-        return graphs;
+        return graph;
     }
 
     static _params4(stream, graphs, signature) {
@@ -568,7 +558,7 @@ dlc.Container = class {
                 buffer = nr64.params;
             } catch (error) {
                 const message = error && error.message ? error.message : error.toString();
-                throw new dlc.Error('File format is not dlc.v4.NR64 (' + message.replace(/\.$/, '') + ').');
+                throw new dlc.Error(`File format is not dlc.v4.NR64 (${message.replace(/\.$/, '')}).`);
             }
         }
         let params = null;
@@ -577,15 +567,15 @@ dlc.Container = class {
             params = dlc.schema.v4.ModelParameters.decode(reader, reader.root);
         } catch (error) {
             const message = error && error.message ? error.message : error.toString();
-            throw new dlc.Error('File format is not dlc.v4.NETP (' + message.replace(/\.$/, '') + ').');
+            throw new dlc.Error(`File format is not dlc.v4.NETP (${message.replace(/\.$/, '')}).`);
         }
         if (graphs.length === 0) {
             throw new dlc.Error('Model definition not available.');
         }
-        const weights = new Map(params.graphs.map((graph) => [ graph.name, graph ]));
+        const weights = new Map(params.graphs.map((graph) => [graph.name, graph]));
         for (const graph of graphs) {
             const params = weights.get(graph.name);
-            const tensors = new Map(params.tensors.map((tensor) => [ tensor.name, tensor ]));
+            const tensors = new Map(params.tensors.map((tensor) => [tensor.name, tensor]));
             let index = 0;
             graph.tensors.sort((a, b) => a.name.localeCompare(b.name));
             for (const tensor of graph.tensors) {
@@ -595,7 +585,7 @@ dlc.Container = class {
             }
             for (let i = 0; i < graph.nodes.length; i++) {
                 const node = graph.nodes[i];
-                const tensors = new Map(params.nodes[i].tensors.map((tensor) => [ tensor.name, tensor ]));
+                const tensors = new Map(params.nodes[i].tensors.map((tensor) => [tensor.name, tensor]));
                 for (const attribute of node.attributes) {
                     const tensor = attribute.tensor;
                     if (tensor) {
@@ -606,24 +596,36 @@ dlc.Container = class {
         }
     }
 
+    async _fetch(name) {
+        try {
+            const context = await this.context.fetch(name);
+            return context.stream;
+        } catch {
+            return null;
+        }
+    }
 
     static _signature(stream) {
         if (stream) {
             const buffer = stream.peek(Math.min(stream.length, 16));
             const match = (signature) => buffer.length >= signature.length && signature.every((value, index) => value === buffer[index]);
-            if (match([ 0xD5, 0x0A, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00 ]) && buffer.length >= 16) {
-                const reader = flatbuffers.BinaryReader.open(buffer.slice(8));
-                return '4.' + reader.identifier;
+            if (match([0xD5, 0x0A, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00]) && buffer.length >= 16) {
+                const reader = flatbuffers.BinaryReader.open(stream, 8);
+                if (reader) {
+                    return `4.${reader.identifier}`;
+                }
             }
-            if (match([ 0xD5, 0x0A, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00 ]) && buffer.length >= 16) {
-                const reader = flatbuffers.BinaryReader.open(buffer.slice(8));
-                return '3.' + reader.identifier;
+            if (match([0xD5, 0x0A, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00]) && buffer.length >= 16) {
+                const reader = flatbuffers.BinaryReader.open(stream, 8);
+                if (reader) {
+                    return `3.${reader.identifier}`;
+                }
             }
-            if (match([ 0xD5, 0x0A, 0x02, 0x00 ])) {
+            if (match([0xD5, 0x0A, 0x02, 0x00])) {
                 return '2';
             }
-            if (buffer.length >= 8) {
-                const reader = flatbuffers.BinaryReader.open(buffer);
+            const reader = flatbuffers.BinaryReader.open(stream);
+            if (reader) {
                 return reader.identifier;
             }
         }
@@ -646,8 +648,8 @@ dlc.Utility = class {
                 dlc.Utility[version] = dlc.Utility[version] || new Map();
                 const enums = dlc.Utility[version];
                 if (!enums.has(name)) {
-                    const map = new Map(Object.keys(type).map((key) => [ type[key], key ]));
-                    enums.set(name, map);
+                    const entries = new Map(Object.entries(type).map(([key, value]) => [value, key]));
+                    enums.set(name, entries);
                 }
                 const values = enums.get(name);
                 if (values.has(value)) {
@@ -667,6 +669,5 @@ dlc.Error = class extends Error {
     }
 };
 
-if (typeof module !== 'undefined' && typeof module.exports === 'object') {
-    module.exports.ModelFactory = dlc.ModelFactory;
-}
+export const ModelFactory = dlc.ModelFactory;
+

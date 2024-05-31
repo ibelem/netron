@@ -1,29 +1,28 @@
-var $root = protobuf.get('tf');
 
-$root.third_party = {};
+export const third_party = {};
 
-$root.third_party.tensorflow = {};
+third_party.tensorflow = {};
 
-$root.third_party.tensorflow.python = {};
+third_party.tensorflow.python = {};
 
-$root.third_party.tensorflow.python.keras = {};
+third_party.tensorflow.python.keras = {};
 
-$root.third_party.tensorflow.python.keras.protobuf = {};
+third_party.tensorflow.python.keras.protobuf = {};
 
-$root.third_party.tensorflow.python.keras.protobuf.SavedMetadata = class SavedMetadata {
+third_party.tensorflow.python.keras.protobuf.SavedMetadata = class SavedMetadata {
 
     constructor() {
         this.nodes = [];
     }
 
     static decode(reader, length) {
-        const message = new $root.third_party.tensorflow.python.keras.protobuf.SavedMetadata();
-        const end = length !== undefined ? reader.position + length : reader.length;
+        const message = new third_party.tensorflow.python.keras.protobuf.SavedMetadata();
+        const end = length === undefined ? reader.length : reader.position + length;
         while (reader.position < end) {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    message.nodes.push($root.third_party.tensorflow.python.keras.protobuf.SavedObject.decode(reader, reader.uint32()));
+                    message.nodes.push(third_party.tensorflow.python.keras.protobuf.SavedObject.decode(reader, reader.uint32()));
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -34,13 +33,13 @@ $root.third_party.tensorflow.python.keras.protobuf.SavedMetadata = class SavedMe
     }
 
     static decodeText(reader) {
-        const message = new $root.third_party.tensorflow.python.keras.protobuf.SavedMetadata();
+        const message = new third_party.tensorflow.python.keras.protobuf.SavedMetadata();
         reader.start();
         while (!reader.end()) {
             const tag = reader.tag();
             switch (tag) {
                 case "nodes":
-                    message.nodes.push($root.third_party.tensorflow.python.keras.protobuf.SavedObject.decodeText(reader));
+                    message.nodes.push(third_party.tensorflow.python.keras.protobuf.SavedObject.decodeText(reader));
                     break;
                 default:
                     reader.field(tag, message);
@@ -51,14 +50,11 @@ $root.third_party.tensorflow.python.keras.protobuf.SavedMetadata = class SavedMe
     }
 };
 
-$root.third_party.tensorflow.python.keras.protobuf.SavedObject = class SavedObject {
-
-    constructor() {
-    }
+third_party.tensorflow.python.keras.protobuf.SavedObject = class SavedObject {
 
     static decode(reader, length) {
-        const message = new $root.third_party.tensorflow.python.keras.protobuf.SavedObject();
-        const end = length !== undefined ? reader.position + length : reader.length;
+        const message = new third_party.tensorflow.python.keras.protobuf.SavedObject();
+        const end = length === undefined ? reader.length : reader.position + length;
         while (reader.position < end) {
             const tag = reader.uint32();
             switch (tag >>> 3) {
@@ -75,7 +71,7 @@ $root.third_party.tensorflow.python.keras.protobuf.SavedObject = class SavedObje
                     message.metadata = reader.string();
                     break;
                 case 6:
-                    message.version = $root.third_party.tensorflow.python.keras.protobuf.VersionDef.decode(reader, reader.uint32());
+                    message.version = third_party.tensorflow.python.keras.protobuf.VersionDef.decode(reader, reader.uint32());
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -86,7 +82,7 @@ $root.third_party.tensorflow.python.keras.protobuf.SavedObject = class SavedObje
     }
 
     static decodeText(reader) {
-        const message = new $root.third_party.tensorflow.python.keras.protobuf.SavedObject();
+        const message = new third_party.tensorflow.python.keras.protobuf.SavedObject();
         reader.start();
         while (!reader.end()) {
             const tag = reader.tag();
@@ -104,7 +100,7 @@ $root.third_party.tensorflow.python.keras.protobuf.SavedObject = class SavedObje
                     message.metadata = reader.string();
                     break;
                 case "version":
-                    message.version = $root.third_party.tensorflow.python.keras.protobuf.VersionDef.decodeText(reader);
+                    message.version = third_party.tensorflow.python.keras.protobuf.VersionDef.decodeText(reader);
                     break;
                 default:
                     reader.field(tag, message);
@@ -115,21 +111,21 @@ $root.third_party.tensorflow.python.keras.protobuf.SavedObject = class SavedObje
     }
 };
 
-$root.third_party.tensorflow.python.keras.protobuf.SavedObject.prototype.node_id = 0;
-$root.third_party.tensorflow.python.keras.protobuf.SavedObject.prototype.node_path = "";
-$root.third_party.tensorflow.python.keras.protobuf.SavedObject.prototype.identifier = "";
-$root.third_party.tensorflow.python.keras.protobuf.SavedObject.prototype.metadata = "";
-$root.third_party.tensorflow.python.keras.protobuf.SavedObject.prototype.version = null;
+third_party.tensorflow.python.keras.protobuf.SavedObject.prototype.node_id = 0;
+third_party.tensorflow.python.keras.protobuf.SavedObject.prototype.node_path = "";
+third_party.tensorflow.python.keras.protobuf.SavedObject.prototype.identifier = "";
+third_party.tensorflow.python.keras.protobuf.SavedObject.prototype.metadata = "";
+third_party.tensorflow.python.keras.protobuf.SavedObject.prototype.version = null;
 
-$root.third_party.tensorflow.python.keras.protobuf.VersionDef = class VersionDef {
+third_party.tensorflow.python.keras.protobuf.VersionDef = class VersionDef {
 
     constructor() {
         this.bad_consumers = [];
     }
 
     static decode(reader, length) {
-        const message = new $root.third_party.tensorflow.python.keras.protobuf.VersionDef();
-        const end = length !== undefined ? reader.position + length : reader.length;
+        const message = new third_party.tensorflow.python.keras.protobuf.VersionDef();
+        const end = length === undefined ? reader.length : reader.position + length;
         while (reader.position < end) {
             const tag = reader.uint32();
             switch (tag >>> 3) {
@@ -151,7 +147,7 @@ $root.third_party.tensorflow.python.keras.protobuf.VersionDef = class VersionDef
     }
 
     static decodeText(reader) {
-        const message = new $root.third_party.tensorflow.python.keras.protobuf.VersionDef();
+        const message = new third_party.tensorflow.python.keras.protobuf.VersionDef();
         reader.start();
         while (!reader.end()) {
             const tag = reader.tag();
@@ -174,5 +170,5 @@ $root.third_party.tensorflow.python.keras.protobuf.VersionDef = class VersionDef
     }
 };
 
-$root.third_party.tensorflow.python.keras.protobuf.VersionDef.prototype.producer = 0;
-$root.third_party.tensorflow.python.keras.protobuf.VersionDef.prototype.min_consumer = 0;
+third_party.tensorflow.python.keras.protobuf.VersionDef.prototype.producer = 0;
+third_party.tensorflow.python.keras.protobuf.VersionDef.prototype.min_consumer = 0;

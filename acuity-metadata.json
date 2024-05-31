@@ -1,45 +1,36 @@
 [
   {
     "name": "a_times_b_plus_c",
-    "attributes": [],
     "inputs": [
       { "name": "A" },
       { "name": "B" },
       { "name": "C" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "abs",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "add",
-    "attributes": [],
     "inputs": [
       { "name": "A" },
       { "name": "B" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "C" }
     ]
   },
   {
     "name": "addn",
-    "attributes": [],
-    "inputs": [],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -52,18 +43,15 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "base_input_layer",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -77,7 +65,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -123,11 +110,9 @@
   {
     "name": "capsule_norm",
     "category": "Normalization",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -141,7 +126,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -155,7 +139,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -166,8 +149,6 @@
     "attributes": [
       { "name": "dim", "default": 1 }
     ],
-    "inputs": [],
-    "constants": [],
     "outputs": [
       { "name": "out" }
     ]
@@ -179,8 +160,6 @@
       { "name": "dim", "default": 1 },
       { "name": "keep_size", "default": 1 }
     ],
-    "inputs": [],
-    "constants": [],
     "outputs": [
       { "name": "data" },
       { "name": "shifted_data" }
@@ -195,7 +174,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -244,7 +222,6 @@
       { "name": "input" },
       { "name": "weight" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -319,7 +296,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -352,16 +328,12 @@
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "customlayer",
-    "attributes": [],
-    "inputs": [],
-    "constants": [],
     "outputs": []
   },
   {
@@ -407,7 +379,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -459,7 +430,6 @@
       { "name": "input" },
       { "name": "weight" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -498,24 +468,20 @@
   },
   {
     "name": "dequantize",
-    "category": "Layer",
-    "attributes": [],
+    "category": "Quantization",
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "detectionevaluate",
-    "attributes": [],
     "inputs": [
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "out0" },
       { "name": "out1" },
@@ -526,13 +492,11 @@
   },
   {
     "name": "detectionoutput",
-    "attributes": [],
     "inputs": [
       { "name": "in0" },
       { "name": "in1" },
       { "name": "in2" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -556,12 +520,10 @@
   },
   {
     "name": "divide",
-    "attributes": [],
     "inputs": [
       { "name": "dividend" },
       { "name": "divisor" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -576,18 +538,15 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "dtype_converter",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -598,8 +557,6 @@
       { "name": "operation", "default": "SUM" },
       { "name": "coeff", "default": "" }
     ],
-    "inputs": [],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -613,14 +570,13 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "embedding_lookup",
-    "category": "Embedding",
+    "category": "Transform",
     "attributes": [
       { "name": "partition_strategy", "default": "mod" }
     ],
@@ -636,23 +592,19 @@
   },
   {
     "name": "equal",
-    "attributes": [],
     "inputs": [
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "exp",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -665,7 +617,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -678,7 +629,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -691,30 +641,25 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "floor",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "floor_div",
-    "attributes": [],
     "inputs": [
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -768,7 +713,6 @@
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -776,12 +720,10 @@
   {
     "name": "gathernd",
     "category": "Layer",
-    "attributes": [],
     "inputs": [
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -795,30 +737,24 @@
       { "name": "sparse_tensors", "default": [] },
       { "name": "data_types", "default": [] }
     ],
-    "inputs": [],
-    "constants": [],
     "outputs": []
   },
   {
     "name": "greater",
-    "attributes": [],
     "inputs": [
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "greater_equal",
-    "attributes": [],
     "inputs": [
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -935,18 +871,14 @@
       { "name": "sparse_tensors", "default": [] },
       { "name": "data_types", "default": [] }
     ],
-    "inputs": [],
-    "constants": [],
     "outputs": []
   },
   {
     "name": "hard_swish",
     "category": "Activation",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -964,7 +896,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -972,11 +903,9 @@
   {
     "name": "image_transform",
     "category": "Layer",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -992,7 +921,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1046,7 +974,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1090,7 +1017,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1121,31 +1047,26 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "less",
-    "attributes": [],
     "inputs": [
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "less_equal",
-    "attributes": [],
     "inputs": [
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1158,8 +1079,6 @@
       { "name": "sparse_tensors", "default": [] },
       { "name": "data_types", "default": [] }
     ],
-    "inputs": [],
-    "constants": [],
     "outputs": [
       { "name": "out0" },
       { "name": "out1" }
@@ -1178,7 +1097,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1196,18 +1114,15 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "log",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1221,31 +1136,26 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "logical_and",
-    "attributes": [],
     "inputs": [
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "logical_or",
-    "attributes": [],
     "inputs": [
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1360,7 +1270,6 @@
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1373,7 +1282,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1388,19 +1296,16 @@
       { "name": "A" },
       { "name": "B" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "minimum",
-    "attributes": [],
     "inputs": [
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1413,7 +1318,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1421,11 +1325,9 @@
   {
     "name": "mish",
     "category": "Activation",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1439,7 +1341,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "mean" },
       { "name": "variance" }
@@ -1451,7 +1352,6 @@
       { "name": "axis", "default": 1 },
       { "name": "bias", "default": true }
     ],
-    "inputs": [],
     "constants": [
       { "name": "scale" },
       { "name": "bias" }
@@ -1480,33 +1380,27 @@
   },
   {
     "name": "neg",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "noop",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "noop_multi_out",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": []
   },
   {
@@ -1518,7 +1412,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1533,7 +1426,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1547,19 +1439,16 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "not_equal",
-    "attributes": [],
     "inputs": [
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1572,18 +1461,14 @@
       { "name": "sparse_tensors", "default": [] },
       { "name": "data_types", "default": [] }
     ],
-    "inputs": [],
-    "constants": [],
     "outputs": []
   },
   {
     "name": "output",
     "category": "Data",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1599,7 +1484,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1613,7 +1497,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1637,7 +1520,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1664,7 +1546,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1691,7 +1572,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "out0" },
       { "name": "out1" }
@@ -1706,19 +1586,16 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "pow",
-    "attributes": [],
     "inputs": [
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1726,7 +1603,6 @@
   {
     "name": "prelu",
     "category": "Activation",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
@@ -1756,7 +1632,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1801,7 +1676,6 @@
       { "name": "data" },
       { "name": "shape" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1825,7 +1699,6 @@
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "out0" },
       { "name": "out1" }
@@ -1833,23 +1706,20 @@
   },
   {
     "name": "quantize",
-    "attributes": [],
+    "category": "Quantization",
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "real_div",
-    "attributes": [],
     "inputs": [
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1863,7 +1733,6 @@
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1871,11 +1740,9 @@
   {
     "name": "recurrent",
     "category": "Layer",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1889,7 +1756,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1903,7 +1769,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1917,7 +1782,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1931,18 +1795,15 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "region",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1950,11 +1811,9 @@
   {
     "name": "relu",
     "category": "Activation",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1970,7 +1829,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1985,7 +1843,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -1998,7 +1855,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2012,7 +1868,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2026,7 +1881,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2040,7 +1894,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2053,7 +1906,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2068,7 +1920,6 @@
       { "name": "input" },
       { "name": "seq_lengths" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2086,27 +1937,21 @@
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "route_train",
-    "attributes": [],
-    "inputs": [],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "rsqrt",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2120,7 +1965,6 @@
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2133,7 +1977,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2141,11 +1984,9 @@
   {
     "name": "sigmoid",
     "category": "Activation",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2162,7 +2003,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2191,11 +2031,9 @@
   },
   {
     "name": "sin",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2210,7 +2048,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2225,7 +2062,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2233,12 +2069,10 @@
   {
     "name": "softmax_with_logits_loss_layer",
     "category": "Activation",
-    "attributes": [],
     "inputs": [
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2246,11 +2080,9 @@
   {
     "name": "softrelu",
     "category": "Activation",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2264,7 +2096,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2277,7 +2108,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2294,7 +2124,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": []
   },
   {
@@ -2305,8 +2134,6 @@
       { "name": "sparse_tensors", "default": [] },
       { "name": "data_types", "default": [] }
     ],
-    "inputs": [],
-    "constants": [],
     "outputs": [
       { "name": "out0" },
       { "name": "out1" },
@@ -2315,33 +2142,27 @@
   },
   {
     "name": "sqrt",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "square",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "squashing",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2355,7 +2176,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2365,8 +2185,6 @@
     "attributes": [
       { "name": "axis", "default": 0 }
     ],
-    "inputs": [],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2382,7 +2200,6 @@
       { "name": "in1" },
       { "name": "in2" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2403,7 +2220,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2418,18 +2234,14 @@
       { "name": "sg_input_nodes", "default": "" },
       { "name": "sg_output_nodes", "default": "" }
     ],
-    "inputs": [],
-    "constants": [],
     "outputs": []
   },
   {
     "name": "subtract",
-    "attributes": [],
     "inputs": [
       { "name": "minuend" },
       { "name": "subtrahend" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2457,11 +2269,9 @@
   {
     "name": "swish",
     "category": "Activation",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2476,7 +2286,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2489,8 +2298,6 @@
       { "name": "sparse_tensors", "default": [] },
       { "name": "data_types", "default": [] }
     ],
-    "inputs": [],
-    "constants": [],
     "outputs": []
   },
   {
@@ -2501,7 +2308,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2515,7 +2321,6 @@
       { "name": "in0" },
       { "name": "in1" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2528,7 +2333,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "out0" },
       { "name": "out1" }
@@ -2542,7 +2346,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": []
   },
   {
@@ -2554,7 +2357,6 @@
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2577,13 +2379,11 @@
   },
   {
     "name": "where",
-    "attributes": [],
     "inputs": [
       { "name": "in0" },
       { "name": "in1" },
       { "name": "in2" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
@@ -2600,8 +2400,6 @@
       { "name": "num_skips", "default": 2 },
       { "name": "skip_window", "default": 1 }
     ],
-    "inputs": [],
-    "constants": [],
     "outputs": [
       { "name": "out0" },
       { "name": "out1" }
@@ -2609,20 +2407,15 @@
   },
   {
     "name": "yolo",
-    "attributes": [],
     "inputs": [
       { "name": "input" }
     ],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]
   },
   {
     "name": "yoloprocess",
-    "attributes": [],
-    "inputs": [],
-    "constants": [],
     "outputs": [
       { "name": "output" }
     ]

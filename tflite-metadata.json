@@ -198,6 +198,7 @@
   },
   {
     "name": "Dequantize",
+    "category": "Quantization",
     "inputs": [
       { "name": "input" }
     ],
@@ -359,6 +360,7 @@
   },
   {
     "name": "LeakyRelu",
+    "category": "Activation",
     "attributes": [
       { "name": "alpha", "type": "float32", "default": 0 }
     ]
@@ -574,6 +576,18 @@
     ]
   },
   {
+    "name": "Padv2",
+    "category": "Tensor",
+    "inputs": [
+      { "name": "input" },
+      { "name": "paddings" },
+      { "name": "constant_values" }
+    ],
+    "outputs": [
+      { "name": "output" }
+    ]
+  },
+  {
     "name": "Predict",
     "inputs": [
       { "name": "hashes" },
@@ -599,6 +613,7 @@
   },
   {
     "name": "Quantize",
+    "category": "Quantization",
     "inputs": [
       { "name": "input" }
     ],
