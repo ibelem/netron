@@ -449,7 +449,8 @@ host.BrowserHost = class {
     }
 
     async _getWebnnOps() {
-        const response = await fetch("https://webmachinelearning.github.io/assets/json/webnn_status.json");
+        // const response = await fetch("https://webmachinelearning.github.io/assets/json/webnn_status.json");
+        const response = await fetch("https://ibelem.github.io/webnn_status.json");
         const data = await response.json();
         const status = data.impl_status;
         const webnn = [];
@@ -457,24 +458,22 @@ host.BrowserHost = class {
             const item = {
                 "spec": "",
                 "alias": [],
-                "xnnpack_cpu": 0,
-                "xnnpack_chromium_version_added": '',
-                "dml_gpu": 0,
+                "tflite": 0,
+                "tflite_chromium_version_added": '',
+                "dml": 0,
                 "dml_chromium_version_added": '',
-                "dml_npu": 0,
-                "mlservice_cpu": 0,
-                "mlservice_chromium_version_added": "",
-                "mlservice_npu": 0,
+                "coreml": 0,
+                "coreml_chromium_version_added": ""
             };
             let op = s.op;
             op = op.replace(/element-wise binary \/|element-wise unary \/|pooling \/|reduction \/ /g, '')
                 .trim();
             item.spec = op;
             let alias = [];
-            for (const o of s.xnnpack_op) {
+            for (const o of s.tflite_op) {
                 if (o) alias.push(o);
             }
-            item.xnnpack_chromium_version_added = s.xnnpack_chromium_version_added;
+            item.tflite_chromium_version_added = s.tflite_chromium_version_added;
             for (let o of s.dml_op) {
                 if (typeof (o) === 'object') {
                     o = o[0];
@@ -486,15 +485,15 @@ host.BrowserHost = class {
             }
             item.dml_chromium_version_added = s.dml_chromium_version_added;
 
-            for (const o of s.mlservice_op) {
+            for (const o of s.coreml_op) {
                 if (o) alias.push(o);
             }
 
-            item.mlservice_chromium_version_added = s.mlservice_chromium_version_added;
-            for (const o of s.tflite_op) {
+            item.coreml_chromium_version_added = s.coreml_chromium_version_added;
+            for (const o of s.fw_tflite_op) {
                 if (o) alias.push(o);
             }
-            for (const o of s.ort_op) {
+            for (const o of s.fw_ort_op) {
                 if (o) alias.push(o);
             }
             // let filter = new Set(alias);
@@ -503,20 +502,20 @@ host.BrowserHost = class {
             alias = [...alias.values()];
             alias = alias.filter((x) => x.toLowerCase() !== op.toLowerCase());
             item.alias = alias;
-            if (s.xnnpack_progress === 4) {
-                item.xnnpack_cpu = 4;
-            } else if (s.xnnpack_progress === 3) {
-                item.xnnpack_cpu = 3;
+            if (s.tflite_progress === 4) {
+                item.tflite = 4;
+            } else if (s.tflite_progress === 3) {
+                item.tflite = 3;
             }
             if (s.dml_progress === 4) {
-                item.dml_gpu = 4;
+                item.dml = 4;
             } else if (s.dml_progress === 3) {
-                item.dml_gpu = 3;
+                item.dml = 3;
             }
-            if (s.mlservice_progress === 4) {
-                item.mlservice_cpu = 4;
-            } else if (s.mlservice_progress === 3) {
-                item.mlservice_cpu = 3;
+            if (s.coreml_progress === 4) {
+                item.coreml = 4;
+            } else if (s.coreml_progress === 3) {
+                item.coreml = 3;
             }
             webnn.push(item);
         }
@@ -544,76 +543,54 @@ host.BrowserHost = class {
                 const o = i.toLowerCase();
                 let spec = '';
                 let alias = '';
-                let xnnpack_cpu = 'No';
-                let dml_gpu = 'No';
-                let dml_npu = 'No';
-                let mlservice_cpu = 'No';
-                let mlservice_npu = 'No';
+                let tflite = 'No';
+                let dml = 'No';
+                let coreml = 'No';
                 webnnops.map((v) => {
                     if (v.spec.toLowerCase() === o) {
                         spec = v.spec;
                         alias = v.alias.toString().replaceAll(/,/g, ', ');
-                        if (v.xnnpack_cpu === 4) {
-                            xnnpack_cpu = `Yes, ${v.xnnpack_chromium_version_added}`;
-                        } else if (v.xnnpack_cpu === 3) {
-                            xnnpack_cpu = 'WIP';
+                        if (v.tflite === 4) {
+                            tflite = `Yes, ${v.tflite_chromium_version_added}`;
+                        } else if (v.tflite === 3) {
+                            tflite = 'WIP';
                         }
-                        if (v.dml_gpu === 4) {
-                            dml_gpu = `Yes, ${v.dml_chromium_version_added}`;
-                        } else if (v.dml_gpu === 3) {
-                            dml_gpu = 'WIP';
+                        if (v.dml === 4) {
+                            dml = `Yes, ${v.dml_chromium_version_added}`;
+                        } else if (v.dml === 3) {
+                            dml = 'WIP';
                         }
-                        if (v.dml_npu === 4) {
-                            dml_npu = 'Yes';
-                        } else if (v.dml_npu === 3) {
-                            dml_npu = 'WIP';
-                        }
-                        if (v.mlservice_cpu === 4) {
-                            mlservice_cpu = `Yes, ${v.mlservice_chromium_version_added}`;
-                        } else if (v.mlservice_cpu === 3) {
-                            mlservice_cpu = 'WIP';
-                        }
-                        if (v.mlservice_npu === 4) {
-                            mlservice_npu = 'Yes';
-                        } else if (v.mlservice_npu === 3) {
-                            mlservice_npu = 'WIP';
+                        if (v.coreml === 4) {
+                            coreml = `Yes, ${v.coreml_chromium_version_added}`;
+                        } else if (v.coreml === 3) {
+                            coreml = 'WIP';
                         }
                     } else {
                         for (const a of v.alias) {
                             if (a.toLowerCase() === o) {
                                 spec = v.spec;
                                 alias = v.alias.toString().replaceAll(/,/g, ', ');
-                                if (v.xnnpack_cpu === 4) {
-                                    xnnpack_cpu = `Yes, ${v.xnnpack_chromium_version_added}`;
-                                } else if (v.xnnpack_cpu === 3) {
-                                    xnnpack_cpu = 'WIP';
+                                if (v.tflite === 4) {
+                                    tflite = `Yes, ${v.tflite_chromium_version_added}`;
+                                } else if (v.tflite === 3) {
+                                    tflite = 'WIP';
                                 }
-                                if (v.dml_gpu === 4) {
-                                    dml_gpu = `Yes, ${v.dml_chromium_version_added}`;
-                                } else if (v.dml_gpu === 3) {
-                                    dml_gpu = 'WIP';
+                                if (v.dml === 4) {
+                                    dml = `Yes, ${v.dml_chromium_version_added}`;
+                                } else if (v.dml === 3) {
+                                    dml = 'WIP';
                                 }
-                                if (v.dml_npu === 4) {
-                                    dml_npu = 'Yes';
-                                } else if (v.dml_npu === 3) {
-                                    dml_npu = 'WIP';
-                                }
-                                if (v.mlservice_cpu === 4) {
-                                    mlservice_cpu = `Yes, ${v.mlservice_chromium_version_added}`;
-                                } else if (v.mlservice_cpu === 3) {
-                                    mlservice_cpu = 'WIP';
-                                }
-                                if (v.mlservice_npu === 4) {
-                                    mlservice_npu = 'Yes';
-                                } else if (v.mlservice_npu === 3) {
-                                    mlservice_npu = 'WIP';
+                                if (v.coreml === 4) {
+                                    coreml = `Yes, ${v.coreml_chromium_version_added}`;
+                                } else if (v.coreml === 3) {
+                                    coreml = 'WIP';
                                 }
                             }
                         }
                     }
                 });
 
-                tr = `<tr><td>${index}</td><td>${i}</td><td>${spec}</td><td>${xnnpack_cpu}</td><td>${dml_gpu}</td><td>${dml_npu}</td><td>${mlservice_cpu}</td><td>${mlservice_npu}</td><td>${alias}</td></tr>`;
+                tr = `<tr><td>${index}</td><td>${i}</td><td>${spec}</td><td>${tflite}</td><td>${dml}</td><td>${coreml}</td><td>${alias}</td></tr>`;
                 trs += tr;
                 index += 1;
             }
@@ -624,15 +601,13 @@ host.BrowserHost = class {
                     <tr>
                         <th rowspan="2">Index</th>
                         <th rowspan="2">Model Operations</th>
-                        <th colspan="7">WebNN API Support Status in Chromium</th>
+                        <th colspan="5">WebNN API Support Status in Chromium</th>
                     </tr>
                     <tr>
                         <th>WebNN Spec</th>
-                        <th>CPU / XNNPack</th>
-                        <th>GPU / DML</th>
-                        <th>NPU / DML</th>
-                        <th>CPU / MLService</th>
-                        <th>NPU / MLService</th>
+                        <th>TensorFlow Lite</th>
+                        <th>DirectML</th>
+                        <th>Core ML</th>
                         <th>Alias</th>
                     </tr>
                 </thead>
