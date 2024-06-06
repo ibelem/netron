@@ -449,8 +449,8 @@ host.BrowserHost = class {
     }
 
     async _getWebnnOps() {
-        // const response = await fetch("https://webmachinelearning.github.io/assets/json/webnn_status.json");
-        const response = await fetch("https://ibelem.github.io/webnn_status.json");
+        const response = await fetch("https://webmachinelearning.github.io/assets/json/webnn_status.json");
+        // const response = await fetch("https://ibelem.github.io/webnn_status.json");
         const data = await response.json();
         const status = data.impl_status;
         const webnn = [];

@@ -3,6 +3,7 @@ import * as base from './base.js';
 import * as zip from './zip.js';
 import * as tar from './tar.js';
 import * as json from './json.js';
+import * as text from './text.js';
 import * as xml from './xml.js';
 import * as protobuf from './protobuf.js';
 import * as flatbuffers from './flatbuffers.js';
@@ -5398,7 +5399,7 @@ view.Context = class {
         return this._content.get(type);
     }
 
-    read(type) {
+    read(type, ...args) {
         if (!this._content.has(type)) {
             switch (type) {
                 case 'json': {
@@ -5435,11 +5436,22 @@ view.Context = class {
                 case 'protobuf.text': {
                     return protobuf.TextReader.open(this._stream);
                 }
+                case 'binary.big-endian': {
+                    return base.BinaryReader.open(this._stream, false);
+                }
                 case 'binary': {
                     return base.BinaryReader.open(this._stream);
                 }
-                case 'binary.big-endian': {
-                    return base.BinaryReader.open(this._stream, false);
+                case 'text': {
+                    if (typeof args[0] === 'number') {
+                        const length = Math.min(this._stream.length, args[0]);
+                        const buffer = this._stream.peek(length);
+                        text.Reader.open(buffer);
+                    }
+                    return text.Reader.open(this._stream);
+                }
+                case 'text.decoder': {
+                    return text.Decoder.open(this._stream);
                 }
                 default: {
                     break;
@@ -5570,7 +5582,7 @@ view.ModelFactoryService = class {
         this.register('./onnx', ['.onnx', '.onnx.data', '.onn', '.pb', '.onnxtxt', '.pbtxt', '.prototxt', '.txt', '.model', '.pt', '.pth', '.pkl', '.ort', '.ort.onnx', '.ngf', '.json', '.bin', 'onnxmodel']);
         this.register('./tflite', ['.tflite', '.lite', '.tfl', '.bin', '.pb', '.tmfile', '.h5', '.model', '.json', '.txt', '.dat', '.nb', '.ckpt']);
         this.register('./mxnet', ['.json', '.params'], ['.mar']);
-        this.register('./coreml', ['.mlmodel', '.bin', 'manifest.json', 'metadata.json', 'featuredescriptions.json', '.pb', '.pbtxt', '.mil'], ['.mlpackage', '.mlmodelc']);
+        this.register('./coreml', ['.mlmodel', '.bin', 'manifest.json', 'metadata.json', 'featuredescriptions.json', '.pb', '.pbtxt', '.mil', '.espresso.net', '.espresso.shape', '.espresso.weights'], ['.mlpackage', '.mlmodelc']);
         this.register('./caffe', ['.caffemodel', '.pbtxt', '.prototxt', '.pt', '.txt']);
         this.register('./caffe2', ['.pb', '.pbtxt', '.prototxt']);
         this.register('./torch', ['.t7', '.net']);
@@ -5615,7 +5627,7 @@ view.ModelFactoryService = class {
         this.register('./hickle', ['.h5', '.hkl']);
         this.register('./nnef', ['.nnef', '.dat']);
         this.register('./onednn', ['.json']);
-        this.register('./mlir', ['.mlir']);
+        this.register('./mlir', ['.mlir', '.mlir.txt']);
         this.register('./sentencepiece', ['.model']);
         this.register('./hailo', ['.hn', '.har', '.metadata.json']);
         this.register('./nnc', ['.nnc']);
@@ -5624,7 +5636,7 @@ view.ModelFactoryService = class {
         this.register('./catboost', ['.cbm']);
         this.register('./cambricon', ['.cambricon']);
         this.register('./weka', ['.model']);
-        this.register('./qnn', ['.json']);
+        this.register('./qnn', ['.json', '.bin']);
     }
 
     register(module, factories, containers) {
@@ -5726,7 +5738,8 @@ view.ModelFactoryService = class {
                     { name: 'Trace Event data', tags: ['[].pid', '[].ph'] },
                     { name: 'Diffusers configuration', tags: ['_class_name', '_diffusers_version'] },
                     { name: 'Transformers configuration', tags: ['architectures', 'model_type'] }, // https://huggingface.co/docs/transformers/en/create_a_model
-                    { name: 'Transformers configuration', tags: ['transformers_version'] },
+                    { name: 'Transformers generation configuration', tags: ['transformers_version'] },
+                    { name: 'Transformers tokenizer configuration', tags: ['tokenizer_class'] },
                     { name: 'Kaggle credentials', tags: ['username','key'] }
                 ];
                 const match = (obj, tag) => {
