@@ -1,0 +1,419 @@
+From 9ec7a5414b6ad218ec72d1c9633d0a743225a91e Mon Sep 17 00:00:00 2001
+From: Belem Zhang <belem.zhang@intel.com>
+Date: Thu, 6 Jun 2024 08:36:03 +0800
+Subject: [PATCH] WebNN Implementation Status v1.05
+
+---
+ README.md         |  10 +++
+ package.js        |   8 +-
+ source/browser.js | 181 +++++++++++++++++++++++++++++++++++++++++++++-
+ source/index.html |  90 +++++++++++++++++++++++
+ source/view.js    |  16 ++++
+ 5 files changed, 300 insertions(+), 5 deletions(-)
+
+diff --git a/README.md b/README.md
+index f480d52a..cd5c6992 100644
+--- a/README.md
++++ b/README.md
+@@ -1,3 +1,13 @@
++# WebNN API Support Status in Chromium for AI Models
++
++This tool is based on [Netron](https://github.com/lutzroeder/netron). [Netron](https://github.com/lutzroeder/netron) is a viewer for neural network, deep learning and machine learning models developed by [Lutz Roeder](https://github.com/lutzroeder).
++
++## Getting Started
++
++Visit [https://ibelem.github.io/netron/](https://ibelem.github.io/netron) page, load a model.
++
++Visit [https://ibelem.github.io/netron/?url=https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite](https://ibelem.github.io/netron/?url=https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite).
++
+ <div align="center">
+ <img width="400px" height="100px" src="https://github.com/lutzroeder/netron/raw/main/.github/logo-light.svg#gh-light-mode-only">
+ <img width="400px" height="100px" src="https://github.com/lutzroeder/netron/raw/main/.github/logo-dark.svg#gh-dark-mode-only">
+diff --git a/package.js b/package.js
+index 937d9917..047674f5 100644
+--- a/package.js
++++ b/package.js
+@@ -245,7 +245,7 @@ const install = async () => {
+ 
+ const start = async () => {
+     await install();
+-    await exec('npx electron .');
++    // await exec('npx electron .');
+ };
+ 
+ const purge = async () => {
+@@ -302,10 +302,10 @@ const build = async (target) => {
+         default: {
+             writeLine('build');
+             await rm('dist');
+-            await install();
++            // await install();
+             await build('web');
+-            await build('electron');
+-            await build('python');
++            // await build('electron');
++            // await build('python');
+             break;
+         }
+     }
+diff --git a/source/browser.js b/source/browser.js
+index 8cbc5f00..61f41e9f 100644
+--- a/source/browser.js
++++ b/source/browser.js
+@@ -139,7 +139,7 @@ host.BrowserHost = class {
+         };
+         await age();
+         await consent();
+-        await telemetry();
++        // await telemetry();
+         await capabilities();
+     }
+ 
+@@ -444,6 +444,184 @@ host.BrowserHost = class {
+         return await this._openContext(context);
+     }
+ 
++    _qs(element) {
++        return document.querySelector(element);
++    }
++
++    async _getWebnnOps() {
++        const response = await fetch("https://webmachinelearning.github.io/assets/json/webnn_status.json");
++        // const response = await fetch("https://ibelem.github.io/webnn_status.json");
++        const data = await response.json();
++        const status = data.impl_status;
++        const webnn = [];
++        for (const s of status) {
++            const item = {
++                "spec": "",
++                "alias": [],
++                "tflite": 0,
++                "tflite_chromium_version_added": '',
++                "dml": 0,
++                "dml_chromium_version_added": '',
++                "coreml": 0,
++                "coreml_chromium_version_added": ""
++            };
++            let op = s.op;
++            op = op.replace(/element-wise binary \/|element-wise unary \/|pooling \/|reduction \/ /g, '')
++                .trim();
++            item.spec = op;
++            let alias = [];
++            for (const o of s.tflite_op) {
++                if (o) alias.push(o);
++            }
++            item.tflite_chromium_version_added = s.tflite_chromium_version_added;
++            for (let o of s.dml_op) {
++                if (typeof (o) === 'object') {
++                    o = o[0];
++                }
++                o = o.toLowerCase()
++                    .replace(/map to other op|supported by tensor strides|element_wise_|activation_|reduce_function_/g, '')
++                    .trim();
++                if (o) alias.push(o);
++            }
++            item.dml_chromium_version_added = s.dml_chromium_version_added;
++
++            for (const o of s.coreml_op) {
++                if (o) alias.push(o);
++            }
++
++            item.coreml_chromium_version_added = s.coreml_chromium_version_added;
++            for (const o of s.fw_tflite_op) {
++                if (o) alias.push(o);
++            }
++            for (const o of s.fw_ort_op) {
++                if (o) alias.push(o);
++            }
++            // let filter = new Set(alias);
++            // alias = [...filter];
++            alias = new Map(alias.map(s => [s.toLowerCase(), s]));
++            alias = [...alias.values()];
++            alias = alias.filter((x) => x.toLowerCase() !== op.toLowerCase());
++            item.alias = alias;
++            if (s.tflite_progress === 4) {
++                item.tflite = 4;
++            } else if (s.tflite_progress === 3) {
++                item.tflite = 3;
++            }
++            if (s.dml_progress === 4) {
++                item.dml = 4;
++            } else if (s.dml_progress === 3) {
++                item.dml = 3;
++            }
++            if (s.coreml_progress === 4) {
++                item.coreml = 4;
++            } else if (s.coreml_progress === 3) {
++                item.coreml = 3;
++            }
++            webnn.push(item);
++        }
++        return webnn;
++    }
++
++    async _showWebnnOpsMap(model) {
++        const nodes = model._graphs[0]._nodes;
++        let ops = [];
++        nodes.map((x) => {
++            ops.push(x.type.name);
++        }
++        );
++        const filter = new Set(ops);
++        ops = [...filter].sort();
++        const webnn = this._qs('#webnn');
++        const map = this._qs('#map');
++        const webnnops = await this._getWebnnOps();
++
++        if (ops?.length) {
++            webnn.removeAttribute("class")
++            webnn.setAttribute("class", "showGrid");
++            let tr = '', trs = '', index = 1;
++            for (const i of ops) {
++                const o = i.toLowerCase();
++                let spec = '';
++                let alias = '';
++                let tflite = 'No';
++                let dml = 'No';
++                let coreml = 'No';
++                webnnops.map((v) => {
++                    if (v.spec.toLowerCase() === o) {
++                        spec = v.spec;
++                        alias = v.alias.toString().replaceAll(/,/g, ', ');
++                        if (v.tflite === 4) {
++                            tflite = `Yes, ${v.tflite_chromium_version_added}`;
++                        } else if (v.tflite === 3) {
++                            tflite = 'WIP';
++                        }
++                        if (v.dml === 4) {
++                            dml = `Yes, ${v.dml_chromium_version_added}`;
++                        } else if (v.dml === 3) {
++                            dml = 'WIP';
++                        }
++                        if (v.coreml === 4) {
++                            coreml = `Yes, ${v.coreml_chromium_version_added}`;
++                        } else if (v.coreml === 3) {
++                            coreml = 'WIP';
++                        }
++                    } else {
++                        for (const a of v.alias) {
++                            if (a.toLowerCase() === o) {
++                                spec = v.spec;
++                                alias = v.alias.toString().replaceAll(/,/g, ', ');
++                                if (v.tflite === 4) {
++                                    tflite = `Yes, ${v.tflite_chromium_version_added}`;
++                                } else if (v.tflite === 3) {
++                                    tflite = 'WIP';
++                                }
++                                if (v.dml === 4) {
++                                    dml = `Yes, ${v.dml_chromium_version_added}`;
++                                } else if (v.dml === 3) {
++                                    dml = 'WIP';
++                                }
++                                if (v.coreml === 4) {
++                                    coreml = `Yes, ${v.coreml_chromium_version_added}`;
++                                } else if (v.coreml === 3) {
++                                    coreml = 'WIP';
++                                }
++                            }
++                        }
++                    }
++                });
++
++                tr = `<tr><td>${index}</td><td>${i}</td><td>${spec}</td><td>${tflite}</td><td>${dml}</td><td>${coreml}</td><td>${alias}</td></tr>`;
++                trs += tr;
++                index += 1;
++            }
++
++            const table = `
++            <table>
++                <thead>
++                    <tr>
++                        <th rowspan="2">Index</th>
++                        <th rowspan="2">Model Operations</th>
++                        <th colspan="5">WebNN API Support Status in Chromium</th>
++                    </tr>
++                    <tr>
++                        <th>WebNN Spec</th>
++                        <th>TensorFlow Lite</th>
++                        <th>DirectML</th>
++                        <th>Core ML</th>
++                        <th>Alias</th>
++                    </tr>
++                </thead>
++                <tbody id="support">${trs}</tbody>
++            </table>
++        `;
++
++            map.innerHTML = table;
++        } else {
++            webnn.removeAttribute("class");
++            webnn.setAttribute("class", "showNone");
++        }
++    }
++
+     async _open(file, files) {
+         this._view.show('welcome spinner');
+         const context = new host.BrowserHost.BrowserFileContext(this, file, files);
+@@ -492,6 +670,7 @@ host.BrowserHost = class {
+             const model = await this._view.open(context);
+             if (model) {
+                 this.document.title = context.identifier;
++                await this._showWebnnOpsMap(model);
+                 return '';
+             }
+             this.document.title = '';
+diff --git a/source/index.html b/source/index.html
+index c6dd8a7b..b9c0e592 100644
+--- a/source/index.html
++++ b/source/index.html
+@@ -277,9 +277,96 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
+ .menu { transition: none; }
+ .sidebar { transition: none; }
+ }
++#webnn-button {
++    border-top-right-radius: 6px;
++    border-bottom-right-radius: 6px;
++    border: 1px solid #777;
++    color: #777;
++    padding: 0 4px 0 4px;
++    width: auto !important;
++    margin: 0px 0 0px 4px;
++}
++
++#webnn-button:hover {
++    color: #000000;
++    border: 1px solid #000;
++}
++
++#webnn {
++    padding: 32px 1rem 32px 1rem;
++    max-height: 62vh;
++    overflow-y: scroll;
++}
++
++.showGrid {
++    display: grid;
++    transition: 1s;
++    position: absolute;
++    background-color: rgba(236, 236, 236, 0.2);
++    border-right: 1px solid rgba(255, 255, 255, 0.5);
++    margin: 0;
++    overflow: hidden;
++    width: 100%;
++    opacity: 1;
++    top: 0px;
++}
++
++.showGrid:hover {
++    background-color: #ececec;
++}
++
++.showNone {
++    display: none;
++    opacity: 0;
++}
++
++.map {
++    place-self: center;
++    background-color: transparent;
++}
++
++.map table {
++    border-collapse: collapse;
++    background-color: transparent;
++}
++
++.map table td,
++.map table th {
++    border: 1px solid rgba(27, 31, 35, 0.05);
++    background-color: rgba(255, 255, 255, 0.8);
++    text-align: center;
++    padding: 2px 6px;
++    min-width: 90px;
++}
++
++#webnn table tr:hover {
++    background-color: rgba(255, 255, 255, 1);
++}
++
++#webnn-closebutton {
++    place-self: center;
++    height: 32px;
++    text-decoration: none;
++    font-size: 25px;
++    color: #777777;
++    opacity: 1.0;
++    transition: 0.2s;
++    cursor: pointer;
++    position: absolute;
++    top: -3px;
++    margin-left: -82px;
++}
++
++#webnn-closebutton:hover {
++    color: #242424;
++}
+ </style>
+ </head>
+ <body class="welcome spinner">
++<div id="webnn" class="showNone">
++    <div id="map" class="map">...</div>
++    <a id="webnn-closebutton">×</a>
++</div>
+ <div id="graph" class="graph" tabindex="0">
+     <svg id="canvas" class="canvas" preserveaspectratio="xMidYMid meet" width="100%" height="100%"></svg>
+ </div>
+@@ -351,6 +438,9 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
+             <line class="stroke" x1="78" y1="78" x2="82" y2="82" stroke-width="8" stroke-linecap="square"></line>
+         </svg>
+     </button>
++    <button id="webnn-button" class="toolbar-button" title="WebNN">
++        WebNN
++    </button>
+     <div id="toolbar-path" class="toolbar-path">
+         <button id="toolbar-path-back-button" class="toolbar-path-back-button" title="Back">
+             &#x276E;
+diff --git a/source/view.js b/source/view.js
+index 1d3262e5..eb0d6c69 100644
+--- a/source/view.js
++++ b/source/view.js
+@@ -53,6 +53,12 @@ view.View = class {
+             this._element('zoom-out-button').addEventListener('click', () => {
+                 this.zoomOut();
+             });
++            this._element('webnn-button').addEventListener('click', () => {
++                this.toggleWebnn();
++            });
++            this._element('webnn-closebutton').addEventListener('click', () => {
++                this.toggleWebnn();
++            });
+             this._element('toolbar-path-back-button').addEventListener('click', async () => {
+                 await this.popGraph();
+             });
+@@ -380,6 +386,10 @@ view.View = class {
+         this._updateZoom(this._zoom * 0.9);
+     }
+ 
++    toggleWebnn() {
++      this._toggleWebNN();
++    }
++
+     resetZoom() {
+         this._updateZoom(1);
+     }
+@@ -416,6 +426,12 @@ view.View = class {
+         }
+     }
+ 
++    _toggleWebNN() {
++      let webnn = document.querySelector('#webnn');
++      webnn.classList.toggle("showGrid");
++      webnn.classList.toggle("showNone");
++    }
++
+     _updateZoom(zoom, e) {
+         const container = this._element('graph');
+         const canvas = this._element('canvas');
+-- 
+2.25.1
+
