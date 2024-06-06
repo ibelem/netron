@@ -53,6 +53,12 @@ view.View = class {
             this._element('zoom-out-button').addEventListener('click', () => {
                 this.zoomOut();
             });
+            this._element('webnn-button').addEventListener('click', () => {
+                this.toggleWebnn();
+            });
+            this._element('webnn-closebutton').addEventListener('click', () => {
+                this.toggleWebnn();
+            });
             this._element('toolbar-path-back-button').addEventListener('click', async () => {
                 await this.popGraph();
             });
@@ -380,6 +386,10 @@ view.View = class {
         this._updateZoom(this._zoom * 0.9);
     }
 
+    toggleWebnn() {
+      this._toggleWebNN();
+    }
+
     resetZoom() {
         this._updateZoom(1);
     }
@@ -414,6 +424,12 @@ view.View = class {
             graph.removeEventListener('gesturestart', this._events.gesturestart);
             graph.removeEventListener('touchstart', this._events.touchstart);
         }
+    }
+
+    _toggleWebNN() {
+      let webnn = document.querySelector('#webnn');
+      webnn.classList.toggle("showGrid");
+      webnn.classList.toggle("showNone");
     }
 
     _updateZoom(zoom, e) {
