@@ -5,8 +5,8 @@
 <meta name="description" content="Visualizer for neural network, deep learning and machine learning models." />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="script-src 'self'">
-<meta name="version" content="7.7.1">
-<meta name="date" content="2024-06-01 01:27:23">
+<meta name="version" content="7.9.8">
+<meta name="date" content="2024-10-26 02:53:25">
 <title>Netron</title>
 <link rel="stylesheet" type="text/css" href="grapher.css">
 <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
@@ -199,7 +199,7 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
 .sidebar-item-name input { color: #777; font-family: inherit; font-size: inherit; color: inherit; background-color: inherit; width: 100%; text-align: right; margin: 0; padding: 0; border: 0; outline: none; text-overflow: ellipsis; }
 .sidebar-item-value-list { margin: 0; margin-left: 105px; overflow: hidden; display: block; padding: 0; }
 .sidebar-item-value { font-size: 11px; background-color: #fcfcfc; border-radius: 2px; border: 1px solid #fcfcfc; margin-top: 3px; margin-bottom: 3px; overflow: auto; }
-.sidebar-item-value-dark { background-color: #f8f8f8; border: 1px solid #f8f8f8; }
+.sidebar-item-value-content { background-color: #f8f8f8; border: 1px solid #f8f8f8; }
 .sidebar-item-value b { font-weight: bold; }
 .sidebar-item-value code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; overflow: auto; white-space: pre-wrap; word-wrap: break-word; }
 .sidebar-item-value pre { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; margin: 0; overflow: auto; white-space: pre; word-wrap: normal; display: block; }
@@ -208,9 +208,14 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
 .sidebar-item-value-line-link:hover { text-decoration: underline; }
 .sidebar-item-value-line-border { padding: 4px 6px 4px 6px; border-top: 1px solid rgba(27, 31, 35, 0.05); }
 .sidebar-item-value-line-content { white-space: pre; word-wrap: normal; overflow: auto; display: block; }
-.sidebar-item-value-expander { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; float: right; color: #aaa; cursor: pointer; user-select: none; -webkit-user-select: none; -moz-user-select: none; padding: 4px 6px 4px 6px; }
-.sidebar-item-value-expander:hover { color: #000; }
-.sidebar-item-select {
+.sidebar-item-value-expander { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; float: right; color: #aaa; cursor: pointer; user-select: none; -webkit-user-select: none; -moz-user-select: none; padding: 4px 6px 4px 4px; }
+.sidebar-item-value-expander:hover { color: #333; }
+.sidebar-item-value-button { display: flex; justify-content: center; align-items: center; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; width: 22px; height: 22px; cursor: pointer; user-select: none; -webkit-user-select: none; -moz-user-select: none; color: #aaa; }
+.sidebar-item-value-button svg use { fill: #aaa; stroke: #aaa; }
+.sidebar-item-value-button:hover svg use { fill: #333; stroke: #333; }
+.sidebar-item-value-button-tool { float: right; padding-left: 3px; }
+.sidebar-item-value-button-context { float: right; }
+.sidebar-item-selector {
     font-family: inherit; font-size: 12px;
     background-color: #fcfcfc; border: #fcfcfc; color: #333;
     border-radius: 2px; width: 100%; height: 23px; padding: 3px 12px 3px 7px;
@@ -230,11 +235,11 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
 .sidebar-find-toggle input[type="checkbox"]:not(:checked) + svg { fill: #ccc; stroke: #ccc; }
 .sidebar-find-toggle input[type="checkbox"]:checked + svg { fill: #555; stroke: #555; }
 .sidebar-find-toggle-icon { stroke: #555; fill: #555; width: 16px; height: 16px; }
-.sidebar-find-content { flex-grow: 1; padding: 0px 20px 20px 20px; padding-right: 20px; overflow-y: auto; list-style-type: none; overflow-y: auto; margin: 0; }
-.sidebar-find-content li { color: #666; height: 22px; padding: 0 12px 0 12px; outline: 0; white-space: nowrap; border-radius: 3px; user-select: none; -webkit-user-select: none; -moz-user-select: none; }
+.sidebar-find-content { flex-grow: 1; padding: 0px 20px 20px 20px; overflow-y: auto; list-style-type: none; margin: 0; }
+.sidebar-find-content li *:first-child { margin-right: 2px; }
+.sidebar-find-content li { color: #666; font-size: 13px; height: 22px; line-height: 22px; padding: 0 12px 0 12px; outline: 0; white-space: nowrap; border-radius: 3px; user-select: none; -webkit-user-select: none; -moz-user-select: none; }
 .sidebar-find-content li:hover { background: #e5e5e5; color: #000; }
-.sidebar-find-content li>span { font-size: 13px; line-height: 22px; padding-left: 2px; pointer-events: none; }
-.sidebar-find-content-icon { stroke: #555; fill: #555; float: left; width: 16px; height: 16px; margin: 3px; }
+.sidebar-find-content-icon { stroke: #555; fill: #555; float: left; width: 16px; height: 16px; padding: 3px; }
 .sidebar-documentation { flex-grow: 1; padding: 0px 20px 20px 20px; overflow-y: auto; font-size: 13px; line-height: 1.5; margin: 0; }
 .sidebar-documentation h1 { font-weight: bold; font-size: 13px; line-height: 1.25; border-bottom: 1px solid #e8e8e8; padding-bottom: 0.3em; margin-top: 0; margin-bottom: 16px; }
 .sidebar-documentation h2 { font-weight: bold; font-size: 13px; line-height: 1.25; margin-top: 20px; margin-bottom: 16px; text-transform: uppercase; border: 0; }
@@ -255,9 +260,10 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
     .sidebar-closebutton { padding: 8px 8px 8px 32px; text-decoration: none; font-size: 25px; color: #777777; opacity: 1.0; display: block; transition: 0.2s; position: absolute; top: 0; right: 15px; margin-left: 50px; user-select: none; -webkit-user-select: none; -moz-user-select: none; }
     .sidebar-closebutton:hover { color: #ffffff; }
     .sidebar-item-value { background-color: #383838; border-color: #383838; }
-    .sidebar-item-value-dark { background-color: #3e3e3e; border-color: #3e3e3e; }
+    .sidebar-item-value-content { background-color: #3e3e3e; border-color: #3e3e3e; }
     .sidebar-item-value-line-border { border-color: rgba(0, 0, 0, 0.09); }
-    .sidebar-item-select { background-color: #383838; border: #383838; color: #dfdfdf; background-image: linear-gradient(45deg, transparent 50%, #aaa 50%), linear-gradient(135deg, #aaa 50%, transparent 50%); }
+    .sidebar-item-selector { background-color: #383838; border: #383838; color: #dfdfdf; background-image: linear-gradient(45deg, transparent 50%, #aaa 50%), linear-gradient(135deg, #aaa 50%, transparent 50%); }
+    .sidebar-item-disable-select { user-select: none; -webkit-user-select: none; -moz-user-select: none; }
     .sidebar-header { border-bottom-color: #2d2d2d; color: #dfdfdf; }
     .sidebar-documentation h1 { border-bottom: 1px solid #424242; color: #dfdfdf; }
     .sidebar-documentation h2 { color: #dfdfdf; }
@@ -272,6 +278,11 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
     .sidebar-find-content li { color: #aaaaaa; }
     .sidebar-find-content li:hover { background: #383838; color: #dfdfdf; }
     .sidebar-find-content-icon { stroke: #888888; fill: #888888; }
+    .sidebar-item-value-expander { color: #888; }
+    .sidebar-item-value-expander:hover { color: #e5e5e5; }
+    .sidebar-item-value-button { color: #888; }
+    .sidebar-item-value-button svg use { fill: #888; stroke: #888; }
+    .sidebar-item-value-button:hover svg use { fill: #e5e5e5; stroke: #e5e5e5; }
 }
 @media screen and (prefers-reduced-motion: reduce) {
 .menu { transition: none; }
@@ -286,18 +297,15 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
     width: auto !important;
     margin: 0px 0 0px 4px;
 }
-
 #webnn-button:hover {
     color: #000000;
     border: 1px solid #000;
 }
-
 #webnn {
     padding: 32px 1rem 32px 1rem;
     max-height: 62vh;
     overflow-y: scroll;
 }
-
 .showGrid {
     display: grid;
     transition: 1s;
@@ -310,26 +318,21 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
     opacity: 1;
     top: 0px;
 }
-
 .showGrid:hover {
     background-color: #ececec;
 }
-
 .showNone {
     display: none;
     opacity: 0;
 }
-
 .map {
     place-self: center;
     background-color: transparent;
 }
-
 .map table {
     border-collapse: collapse;
     background-color: transparent;
 }
-
 .map table td,
 .map table th {
     border: 1px solid rgba(27, 31, 35, 0.05);
@@ -338,11 +341,9 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
     padding: 2px 6px;
     min-width: 90px;
 }
-
 #webnn table tr:hover {
     background-color: rgba(255, 255, 255, 1);
 }
-
 #webnn-closebutton {
     place-self: center;
     height: 32px;
@@ -356,7 +357,6 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
     top: -3px;
     margin-left: -82px;
 }
-
 #webnn-closebutton:hover {
     color: #242424;
 }
@@ -376,14 +376,14 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
     <div id="sidebar-content" class="sidebar-content"></div>
     <svg width="0" height="0" display="none">
         <defs>
-            <symbol id="sidebar-find-icon-node" viewBox="0 0 20 20">
+            <symbol id="sidebar-icon-node" viewBox="0 0 20 20">
                 <circle cx="10" cy="10" r="6" stroke-width="2" fill="none"/>
             </symbol>
-            <symbol id="sidebar-find-icon-connection" viewBox="0 0 20 20">
+            <symbol id="sidebar-icon-connection" viewBox="0 0 20 20">
                 <line x1="4" y1="10" x2="15" y2="10" stroke-width="2" />
                 <polyline points="11,6 15,10 11,14" stroke-width="2" />
             </symbol>
-            <symbol id="sidebar-find-icon-weight" viewBox="0 0 20 20">
+            <symbol id="sidebar-icon-weight" viewBox="0 0 20 20">
                 <circle cx="5" cy="5" r="1" />
                 <circle cx="10" cy="5" r="1" />
                 <circle cx="15" cy="5" r="1" />

@@ -47,6 +47,11 @@ paddle.ModelFactory = class {
             context.target = naive;
             context.type = context.target.name;
         }
+        const obj = context.peek('json');
+        if (obj && obj.base_code && obj.program) {
+            context.target = obj;
+            context.type = 'paddle.ir';
+        }
     }
 
     filter(context, type) {
@@ -70,6 +75,9 @@ paddle.ModelFactory = class {
                 const target = context.target;
                 target.read();
                 return new paddle.Model(metadata, target.format, target.model, target.weights);
+            }
+            case 'paddle.ir': {
+                throw new paddle.Error('Invalid file content. File contains PaddlePaddle IR data.');
             }
             default: {
                 paddle.proto = await context.require('./paddle-proto');
@@ -107,7 +115,7 @@ paddle.ModelFactory = class {
                     }
                     const formatVersion = (version) => {
                         if (version && version.version !== undefined) {
-                            const number = Number(version.version);
+                            const number = version.version.toNumber();
                             if (number > 0) {
                                 const list = [Math.floor(number / 1000000) % 1000, Math.floor(number / 1000) % 1000, number % 1000];
                                 if (list.slice(-1).pop() === 0) {
@@ -783,10 +791,18 @@ paddle.Utility = class {
         if (!paddle.Utility._dataTypes) {
             const length = Math.max.apply(null, Object.entries(paddle.DataType).map(([, value]) => value));
             paddle.Utility._dataTypes = new Array(length);
-            const map = new Map([['bool', 'boolean'], ['bf16', 'bfloat16'], ['fp16', 'float16'], ['fp32', 'float32'], ['fp64', 'float64']]);
+            const types = new Map([
+                ['bool', 'boolean'],
+                ['bf16', 'bfloat16'],
+                ['fp16', 'float16'],
+                ['fp32', 'float32'],
+                ['fp64', 'float64'],
+                ['fp8_e4m3fn', 'float8e4m3fn'],
+                ['fp8_e5m2', 'float8e5m2']
+            ]);
             for (const [name, index] of Object.entries(paddle.DataType)) {
                 const key = name.toLowerCase();
-                paddle.Utility._dataTypes[index] = map.has(key) ? map.get(key) : key;
+                paddle.Utility._dataTypes[index] = types.has(key) ? types.get(key) : key;
             }
         }
         const dataType = data_type < paddle.Utility._dataTypes.length ? paddle.Utility._dataTypes[data_type] : '?';
@@ -802,7 +818,8 @@ paddle.Utility = class {
         const buffer = stream.read(length);
         const reader = protobuf.BinaryReader.open(buffer);
         const tensorDesc = paddle.proto.VarType.TensorDesc.decode(reader);
-        const size = tensorDesc.dims.reduce((a, b) => a * Number(b), 1);
+        const dims = tensorDesc.dims.map((dim) => dim.toNumber());
+        const size = dims.reduce((a, b) => a * b, 1);
         let itemsize = 0;
         switch (tensorDesc.data_type) {
             case paddle.DataType.FP16: itemsize = 2; break;
@@ -846,6 +863,10 @@ paddle.DataType = {
     BF16: 22,
     COMPLEX64: 23,
     COMPLEX128: 24,
+    STRING: 25,
+    STRINGS: 26,
+    FP8_E4M3FN: 32,
+    FP8_E5M2: 33,
 };
 
 paddle.AttributeType = {

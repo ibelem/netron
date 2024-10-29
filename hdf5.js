@@ -27,15 +27,7 @@ hdf5.File = class {
             // https://support.hdfgroup.org/HDF5/doc/H5.format.html
             const data = this.data;
             delete this.data;
-            let reader = null;
-            if (data instanceof Uint8Array) {
-                reader = new hdf5.BinaryReader(data);
-            } else if (data.length < 0x10000000) {
-                const buffer = data.peek();
-                reader = new hdf5.BinaryReader(buffer);
-            } else {
-                reader = new hdf5.StreamReader(data);
-            }
+            const reader = hdf5.Reader.open(data);
             reader.skip(8);
             this._globalHeap = new hdf5.GlobalHeap(reader);
             const version = reader.byte();
@@ -216,7 +208,7 @@ hdf5.Variable = class {
     get value() {
         const data = this.data;
         if (data) {
-            const reader = data instanceof hdf5.BinaryReader ? data : new hdf5.BinaryReader(data);
+            const reader = hdf5.Reader.open(data);
             const array = this._dataspace.read(this._datatype, reader);
             return this._dataspace.decode(this._datatype, array, array, this._globalHeap);
         }
@@ -240,11 +232,11 @@ hdf5.Variable = class {
                 const data_size = data_shape.reduce((a, b) => a * b, 1);
                 const max_dim = data_shape.length - 1;
                 let data_stride = 1;
-                const data_strides = data_shape.slice().reverse().map((d2) => {
-                    const s = data_stride;
-                    data_stride *= d2;
-                    return s;
-                }).reverse();
+                const data_strides = new Array(data_shape.length);
+                for (let i = data_shape.length - 1; i >= 0; i--) {
+                    data_strides[i] = data_stride;
+                    data_stride *= data_shape[i];
+                }
                 const data = new Uint8Array(data_size * item_size);
                 for (const node of tree.nodes) {
                     if (node.filterMask !== 0) {
@@ -256,9 +248,10 @@ hdf5.Variable = class {
                             chunk = filter.decode(chunk);
                         }
                     }
-                    const chunk_offset = node.fields;
+                    const chunk_offset = node.fields.map((x) => x.toNumber());
                     const data_pos = chunk_offset.slice();
-                    const chunk_pos = data_pos.map(() => 0);
+                    const chunk_pos = new Array(data_pos.length).fill(0);
+                    const length = data_pos.length - 1;
                     for (let chunk_index = 0; chunk_index < chunk_size; chunk_index++) {
                         for (let i = max_dim; i >= 0; i--) {
                             if (chunk_pos[i] >= chunk_shape[i]) {
@@ -274,11 +267,13 @@ hdf5.Variable = class {
                         }
                         let index = 0;
                         let inbounds = true;
-                        const length = data_pos.length - 1;
                         for (let i = 0; i < length; i++) {
-                            const pos = data_pos[i];
-                            inbounds = inbounds && pos < data_shape[i];
-                            index += Number(pos) * data_strides[i];
+                            const position = data_pos[i];
+                            if (position >= data_shape[i]) {
+                                inbounds = false;
+                                break;
+                            }
+                            index += position * data_strides[i];
                         }
                         if (inbounds) {
                             let chunk_offset = chunk_index * item_size;
@@ -303,6 +298,18 @@ hdf5.Variable = class {
 };
 
 hdf5.Reader = class {
+
+    static open(data) {
+        if (data instanceof hdf5.BinaryReader || data instanceof hdf5.StreamReader) {
+            return data;
+        } else if (data instanceof Uint8Array) {
+            return new hdf5.BinaryReader(data);
+        } else if (data.length < 0x10000000) {
+            const buffer = data.peek();
+            return new hdf5.BinaryReader(buffer);
+        }
+        return new hdf5.StreamReader(data);
+    }
 
     initialize() {
         this._offsetSize = this.byte();
@@ -354,7 +361,7 @@ hdf5.Reader = class {
             case 0: return this.byte();
             case 1: return this.uint16();
             case 2: return this.uint32();
-            case 3: return Number(this.uint64());
+            case 3: return this.uint64();
             default: throw new hdf5.Error(`Unsupported uint size '${size}'.`);
         }
     }
@@ -392,10 +399,10 @@ hdf5.Reader = class {
                 if (value === 0xffffffffffffffffn) {
                     return -1;
                 }
-                if (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER) {
-                    throw new hdf5.Error('Unsigned 64-bit value exceeds safe integer.');
+                if (value >= Number.MAX_SAFE_INTEGER) {
+                    throw new Error(`64-bit value '${value.toString(16)}' exceeds safe integer.`);
                 }
-                return Number(value);
+                return value.toNumber();
             }
             case 4: {
                 const value = this.uint32();
@@ -418,10 +425,10 @@ hdf5.Reader = class {
                 if (value === 0xffffffffffffffffn) {
                     return -1;
                 }
-                if (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER) {
-                    throw new hdf5.Error('Unsigned 64-bit value exceeds safe integer.');
+                if (value >= Number.MAX_SAFE_INTEGER) {
+                    throw new Error(`64-bit value '${value.toString(16)}' exceeds safe integer.`);
                 }
-                return Number(value);
+                return value.toNumber();
             }
             case 4: {
                 const value = this.uint32();
@@ -755,7 +762,7 @@ hdf5.DataObjectHeader = class {
                 const order = (flags & 0x04) !== 0;
                 const size = reader.uint(flags & 0x03);
                 let next = true;
-                let end = reader.position + size;
+                let end = reader.position + (typeof size === 'bigint' ? size.toNumber() : size);
                 while (next && reader.position < end) {
                     const type = reader.byte();
                     const size = reader.uint16();
@@ -953,7 +960,7 @@ hdf5.LinkInfo = class {
             case 0: {
                 const flags = reader.byte();
                 if ((flags & 1) !== 0) {
-                    this.maxCreationIndex = reader.uint64().toNumber();
+                    this.maxCreationIndex = reader.uint64();
                 }
                 this.fractalHeapAddress = reader.offset();
                 this.nameIndexTreeAddress = reader.offset();
@@ -1089,7 +1096,7 @@ hdf5.Datatype = class {
                 } else if (this._size === 4) {
                     return this._flags & 0x8 ? reader.int32() : reader.uint32();
                 } else if (this._size === 8) {
-                    return this._flags & 0x8 ? reader.int64().toNumber() : reader.uint64().toNumber();
+                    return this._flags & 0x8 ? reader.int64() : reader.uint64();
                 }
                 throw new hdf5.Error('Unsupported fixed-point datatype.');
             case 1: // floating-point
@@ -1214,7 +1221,8 @@ hdf5.Link = class {
                     this.creationOrder = reader.uint32();
                 }
                 const encoding = ((flags & 0x10) !== 0 && reader.byte() === 1) ? 'utf-8' : 'ascii';
-                this.name = reader.string(reader.uint(flags & 0x03), encoding);
+                const size = reader.uint(flags & 0x03);
+                this.name = reader.string(typeof size === 'bigint' ? size.toNumber() : size, encoding);
                 switch (this.type) {
                     case 0: // hard link
                         this.objectHeaderAddress = reader.offset();
@@ -1473,7 +1481,7 @@ hdf5.AttributeInfo = class {
             case 0: {
                 const flags = reader.byte();
                 if ((flags & 1) !== 0) {
-                    this.maxCreationIndex = reader.uint64().toNumber();
+                    this.maxCreationIndex = reader.uint64();
                 }
                 this.fractalHeapAddress = reader.offset();
                 this.attributeNameTreeAddress = reader.offset();

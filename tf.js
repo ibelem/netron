@@ -143,16 +143,20 @@ tf.ModelFactory = class {
                         return;
                     }
                     const decode = (buffer, value) => {
-                        const reader = protobuf.BinaryReader.open(buffer);
-                        const length = reader.length;
-                        while (reader.position < length) {
-                            const tag = reader.uint32();
-                            const number = tag >>> 3;
-                            const type = tag & 7;
-                            if (value === number) {
-                                return type === 2 ? reader.bytes() : null;
+                        try {
+                            const reader = protobuf.BinaryReader.open(buffer);
+                            const length = reader.length;
+                            while (reader.position < length) {
+                                const tag = reader.uint32();
+                                const number = tag >>> 3;
+                                const type = tag & 7;
+                                if (value === number) {
+                                    return type === 2 ? reader.bytes() : null;
+                                }
+                                reader.skipType(type);
                             }
-                            reader.skipType(type);
+                        } catch {
+                            // continue regardless of error
                         }
                         return null;
                     };
@@ -369,28 +373,25 @@ tf.ModelFactory = class {
                 producer = 'PyTorch';
                 const openPyTorchMetadata = async (context, saved_model) => {
                     try {
-                        const data = await context.request('pytorch-metadata.json');
-                        const metadata = new Map();
-                        for (const item of JSON.parse(data)) {
-                            const name = item.name;
-                            if (name.indexOf('::') !== -1) {
-                                const index = name.indexOf('.');
-                                const key = index === -1 ? name : name.substring(0, index);
-                                if (!metadata.has(key)) {
-                                    metadata.set(key, []);
-                                }
-                                metadata.get(key).push(item);
-                            }
-                        }
+                        const pytorch = await context.require('./pytorch');
+                        const python = await context.require('./python');
+                        const metadata = await pytorch.Metadata.open(context);
+                        const execution = new python.Execution();
+                        metadata.register(execution);
+                        const torch = execution.register('torch');
                         for (const graph of saved_model.meta_graphs) {
                             for (const node of graph.graph_def.node) {
-                                node.__metadata__ = Array.from(metadata.get(node.op) || []);
+                                const schemas = torch._C._jit_get_schemas_for_operator(node.op);
+                                if (Array.isArray(schemas) && schemas.length > 0) {
+                                    node.__metadata__ = schemas;
+                                    node.__torch__ = torch;
+                                }
                             }
                         }
-                        return saved_model;
                     } catch {
-                        return saved_model;
+                        // continue regardless of error
                     }
+                    return saved_model;
                 };
                 const updated_saved_model = await openPyTorchMetadata(context, saved_model);
                 return openModel(updated_saved_model, format, producer, null);
@@ -1243,7 +1244,10 @@ tf.TensorShape = class {
                 } else if (shape.dim.length === 1 && !shape.dim[0].size) {
                     this.dimensions = [0];
                 } else {
-                    this.dimensions = shape.dim.map((dim) => (dim.size && dim.size !== -1) ? dim.size : '?');
+                    this.dimensions = shape.dim.map((dim) => {
+                        const size = dim.size && dim.size.toNumber ? dim.size.toNumber() : dim.size;
+                        return size && size !== -1 ? size : '?';
+                    });
                 }
             }
         }
@@ -1942,8 +1946,9 @@ tf.Context = class {
                     }
                 }
                 if (node.__metadata__) {
+                    const torch = node.__torch__;
                     const match = (node, schema) => {
-                        const args = schema.inputs || [];
+                        const args = schema.arguments || [];
                         const inputs = node.input || [];
                         if (inputs.length > args.length) {
                             return false;
@@ -1951,14 +1956,16 @@ tf.Context = class {
                         for (let i = 0; i < inputs.length; i++) {
                             const input = inputs[i];
                             const arg = args[i];
-                            switch (arg.type) {
+                            let type = arg.real_type;
+                            type = type instanceof torch.OptionalType ? type.getElementType() : type;
+                            switch (type.str()) {
                                 case 'Tensor': {
                                     if ((input.constant === undefined && input.list === undefined) || input.constant === null) {
                                         continue;
                                     }
                                     break;
                                 }
-                                case 'int64':
+                                case 'int':
                                 case 'SymInt': {
                                     if (input.constant !== undefined &&
                                         Number.isInteger(parseInt(input.constant, 10))) {
@@ -1966,14 +1973,14 @@ tf.Context = class {
                                     }
                                     break;
                                 }
-                                case 'float32': {
+                                case 'float': {
                                     if (input.constant !== undefined && !isNaN(parseFloat(input.constant))) {
                                         continue;
                                     }
                                     break;
                                 }
-                                case 'int64[]':
-                                case 'int64[2]':
+                                case 'int[]':
+                                case 'int[2]':
                                 case 'SymInt[]':
                                 case 'SymInt[2]': {
                                     if (Array.isArray(input.list)) {
@@ -1984,7 +1991,7 @@ tf.Context = class {
                                     }
                                     break;
                                 }
-                                case 'boolean': {
+                                case 'bool': {
                                     if (input.constant === 'false' ||
                                         input.constant === 'true' ||
                                         input.constant === '0' ||
@@ -2010,18 +2017,20 @@ tf.Context = class {
                     };
                     const schema = node.__metadata__.find((schema) => match(node, schema));
                     if (schema) {
-                        const args = schema.inputs || [];
+                        const args = schema.arguments;
                         const inputs = node.input || [];
                         for (let i = 0; i < inputs.length; i++) {
                             const input = inputs[i];
                             delete input.metadata;
                             const arg = args[i];
-                            switch (arg.type) {
+                            let type = arg.real_type;
+                            type = type instanceof torch.OptionalType ? type.getElementType() : type;
+                            switch (type.str()) {
                                 case 'Tensor': {
                                     input.metadata = arg;
                                     break;
                                 }
-                                case 'int64':
+                                case 'int':
                                 case 'SymInt': {
                                     const value = parseInt(input.constant, 10);
                                     input.attr = new tf.proto.tensorflow.AttrValue();
@@ -2029,15 +2038,15 @@ tf.Context = class {
                                     input.attr.metadata = arg;
                                     break;
                                 }
-                                case 'float32': {
+                                case 'float': {
                                     const value = parseFloat(input.constant, 10);
                                     input.attr = new tf.proto.tensorflow.AttrValue();
                                     input.attr.f = value;
                                     input.attr.metadata = arg;
                                     break;
                                 }
-                                case 'int64[]':
-                                case 'int64[2]':
+                                case 'int[]':
+                                case 'int[2]':
                                 case 'SymInt[]':
                                 case 'SymInt[2]': {
                                     const list = input.list.map((item) => parseInt(item, 10));
@@ -2047,7 +2056,7 @@ tf.Context = class {
                                     input.attr.metadata = arg;
                                     break;
                                 }
-                                case 'boolean': {
+                                case 'bool': {
                                     input.attr = new tf.proto.tensorflow.AttrValue();
                                     input.attr.b = input.constant === 'true' || input.constant === '1';
                                     input.attr.metadata = arg;

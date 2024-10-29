@@ -59,7 +59,7 @@ host.BrowserHost = class {
             if (days > 180) {
                 const link = this._element('logo-github').href;
                 this.document.body.classList.remove('spinner');
-                for (;;) {
+                for (; ;) {
                     /* eslint-disable no-await-in-loop */
                     await this.message('Please update to the newest version.', null, 'Update');
                     /* eslint-enable no-await-in-loop */
@@ -139,7 +139,7 @@ host.BrowserHost = class {
         };
         await age();
         await consent();
-        // await telemetry();
+        await telemetry();
         await capabilities();
     }
 
@@ -148,7 +148,8 @@ host.BrowserHost = class {
             const [url] = this._meta.file;
             if (this._view.accept(url)) {
                 const identifier = Array.isArray(this._meta.identifier) && this._meta.identifier.length === 1 ? this._meta.identifier[0] : null;
-                const status = await this._openModel(this._url(url), identifier || null);
+                const name = this._meta.name || null;
+                const status = await this._openModel(this._url(url), identifier || null, name);
                 if (status === '') {
                     return;
                 }
@@ -164,7 +165,7 @@ host.BrowserHost = class {
                 .replace(/^https:\/\/github\.com\/([\w-]*\/[\w-]*)\/blob\/([\w/\-_.]*)(\?raw=true)?$/, 'https://raw.githubusercontent.com/$1/$2')
                 .replace(/^https:\/\/github\.com\/([\w-]*\/[\w-]*)\/raw\/([\w/\-_.]*)$/, 'https://raw.githubusercontent.com/$1/$2')
                 .replace(/^https:\/\/huggingface.co\/(.*)\/blob\/(.*)$/, 'https://huggingface.co/$1/resolve/$2');
-            if (this._view.accept(identifier || location)) {
+            if (this._view.accept(identifier || location) && location.indexOf('*') === -1) {
                 const status = await this._openModel(location, identifier);
                 if (status === '') {
                     return;
@@ -241,7 +242,7 @@ host.BrowserHost = class {
         this.document.body.removeChild(element);
     }
 
-    execute(name /*, value */) {
+    async execute(name /*, value */) {
         switch (name) {
             case 'open': {
                 const openFileDialog = this._element('open-file-dialog');
@@ -350,12 +351,6 @@ host.BrowserHost = class {
             if (timeout) {
                 request.timeout = timeout;
             }
-            const error = (status) => {
-                const err = new Error(`The web request failed with status code ${status} at '${url}'.`);
-                err.type = 'error';
-                err.url = url;
-                return err;
-            };
             const progress = (value) => {
                 if (callback) {
                     callback(value);
@@ -364,30 +359,32 @@ host.BrowserHost = class {
             request.onload = () => {
                 progress(0);
                 if (request.status === 200) {
+                    let value = null;
                     if (request.responseType === 'arraybuffer') {
                         const buffer = new Uint8Array(request.response);
-                        const stream = new base.BinaryStream(buffer);
-                        resolve(stream);
+                        value = new base.BinaryStream(buffer);
                     } else {
-                        resolve(request.responseText);
+                        value = request.responseText;
                     }
+                    resolve(value);
                 } else {
-                    reject(error(request.status));
+                    const error = new Error(`The web request failed with status code '${request.status}'.`);
+                    error.context = url;
+                    reject(error);
                 }
             };
-            request.onerror = (e) => {
+            request.onerror = () => {
                 progress(0);
-                const err = error(request.status);
-                err.type = e.type;
-                reject(err);
+                const error = new Error(`The web request failed.`);
+                error.context = url;
+                reject(error);
             };
             request.ontimeout = () => {
                 progress(0);
                 request.abort();
-                const err = new Error(`The web request timed out in '${url}'.`);
-                err.type = 'timeout';
-                err.url = url;
-                reject(err);
+                const error = new Error('The web request timed out.', 'timeout', url);
+                error.context = url;
+                reject(error);
             };
             request.onprogress = (e) => {
                 if (e && e.lengthComputable) {
@@ -417,7 +414,7 @@ host.BrowserHost = class {
         return `${location.protocol}//${location.host}${pathname}${file}`;
     }
 
-    async _openModel(url, identifier) {
+    async _openModel(url, identifier, name) {
         url = url.startsWith('data:') ? url : `${url + ((/\?/).test(url) ? '&' : '?')}cb=${(new Date()).getTime()}`;
         this._view.show('welcome spinner');
         let context = null;
@@ -434,7 +431,7 @@ host.BrowserHost = class {
                     stream = await this._request(url, null, null, progress);
                 }
             }
-            context = new host.BrowserHost.Context(this, url, identifier, stream);
+            context = new host.BrowserHost.Context(this, url, identifier, name, stream);
             this._telemetry.set('session_engaged', 1);
         } catch (error) {
             await this._view.error(error, 'Model load request failed.');
@@ -447,7 +444,6 @@ host.BrowserHost = class {
     _qs(element) {
         return document.querySelector(element);
     }
-
     async _getWebnnOps() {
         const response = await fetch("https://webmachinelearning.github.io/assets/json/webnn_status.json");
         // const response = await fetch("https://ibelem.github.io/webnn_status.json");
@@ -484,11 +480,9 @@ host.BrowserHost = class {
                 if (o) alias.push(o);
             }
             item.dml_chromium_version_added = s.dml_chromium_version_added;
-
             for (const o of s.coreml_op) {
                 if (o) alias.push(o);
             }
-
             item.coreml_chromium_version_added = s.coreml_chromium_version_added;
             for (const o of s.fw_tflite_op) {
                 if (o) alias.push(o);
@@ -522,8 +516,29 @@ host.BrowserHost = class {
         return webnn;
     }
 
+    _isOnnx(model) {
+        if(model.identifier.toLowerCase().indexOf('onnx') !== -1) {
+            return true;
+        } else {
+            return false;
+        }
+    } 
+
     async _showWebnnOpsMap(model) {
-        const nodes = model._graphs[0]._nodes;
+        // _graphs[0] - ONNX
+        // graphs[0] - TFLite
+        let graphs;
+        if(this._isOnnx(model)) {
+            graphs = model._graphs[0];
+        } else {
+            graphs = model.graphs[0];
+        }
+        let nodes;
+        if(this._isOnnx(model)) {
+            nodes = graphs._nodes;
+        } else {
+            nodes = graphs.nodes
+        }
         let ops = [];
         nodes.map((x) => {
             ops.push(x.type.name);
@@ -534,11 +549,10 @@ host.BrowserHost = class {
         const webnn = this._qs('#webnn');
         const map = this._qs('#map');
         const webnnops = await this._getWebnnOps();
-
         if (ops?.length) {
-            webnn.removeAttribute("class")
+            webnn.removeAttribute("class");
             webnn.setAttribute("class", "showGrid");
-            let tr = '', trs = '', index = 1;
+            let index = 1, tr = '', trs = '';
             for (const i of ops) {
                 const o = i.toLowerCase();
                 let spec = '';
@@ -589,12 +603,10 @@ host.BrowserHost = class {
                         }
                     }
                 });
-
                 tr = `<tr><td>${index}</td><td>${i}</td><td>${spec}</td><td>${tflite}</td><td>${dml}</td><td>${coreml}</td><td>${alias}</td></tr>`;
                 trs += tr;
                 index += 1;
             }
-
             const table = `
             <table>
                 <thead>
@@ -614,7 +626,6 @@ host.BrowserHost = class {
                 <tbody id="support">${trs}</tbody>
             </table>
         `;
-
             map.innerHTML = table;
         } else {
             webnn.removeAttribute("class");
@@ -656,7 +667,7 @@ host.BrowserHost = class {
             const encoder = new TextEncoder();
             const buffer = encoder.encode(file.content);
             const stream = new base.BinaryStream(buffer);
-            const context = new host.BrowserHost.Context(this, '', identifier, stream);
+            const context = new host.BrowserHost.Context(this, '', identifier, null, stream);
             await this._openContext(context);
         } catch (error) {
             await this._view.error(error, 'Error while loading Gist.');
@@ -669,7 +680,7 @@ host.BrowserHost = class {
         try {
             const model = await this._view.open(context);
             if (model) {
-                this.document.title = context.identifier;
+                this.document.title = context.name || context.identifier;
                 await this._showWebnnOpsMap(model);
                 return '';
             }
@@ -945,7 +956,10 @@ host.BrowserHost.FileStream = class {
         }
         if (!this._buffer || this._position < this._offset || this._position + length > this._offset + this._buffer.length) {
             this._offset = this._start + this._position;
-            this._buffer = new Uint8Array(Math.min(0x10000000, this._start + this._length - this._offset));
+            const length = Math.min(0x10000000, this._start + this._length - this._offset);
+            if (!this._buffer || length !== this._buffer.length) {
+                this._buffer = new Uint8Array(length);
+            }
             this._read(this._buffer, this._offset);
         }
         const position = this._start + this._position - this._offset;
@@ -970,8 +984,9 @@ host.BrowserHost.FileStream = class {
 
 host.BrowserHost.Context = class {
 
-    constructor(host, url, identifier, stream) {
+    constructor(host, url, identifier, name, stream) {
         this._host = host;
+        this._name = name;
         this._stream = stream;
         if (identifier) {
             this._identifier = identifier;
@@ -988,6 +1003,10 @@ host.BrowserHost.Context = class {
 
     get identifier() {
         return this._identifier;
+    }
+
+    get name() {
+        return this._name;
     }
 
     get stream() {
@@ -1010,7 +1029,7 @@ host.BrowserHost.Context = class {
 
 if (!('scrollBehavior' in window.document.documentElement.style)) {
     const __scrollTo__ = Element.prototype.scrollTo;
-    Element.prototype.scrollTo = function(...args) {
+    Element.prototype.scrollTo = function (...args) {
         const [options] = args;
         if (options !== undefined) {
             if (options === null || typeof options !== 'object' || options.behavior === undefined || options.behavior === 'auto' || options.behavior === 'instant') {
@@ -1018,7 +1037,7 @@ if (!('scrollBehavior' in window.document.documentElement.style)) {
                     __scrollTo__.apply(this, args);
                 }
             } else {
-                const now = () =>  window.performance && window.performance.now ? window.performance.now() : Date.now();
+                const now = () => window.performance && window.performance.now ? window.performance.now() : Date.now();
                 const ease = (k) => 0.5 * (1 - Math.cos(Math.PI * k));
                 const step = (context) => {
                     const value = ease(Math.min((now() - context.startTime) / 468, 1));

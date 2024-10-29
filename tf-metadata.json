@@ -3845,6 +3845,12 @@
         "default": "low_priority_padding_with_max_batch_size"
       },
       {
+        "name": "batch_padding_policy",
+        "type": "string",
+        "description": "Must be one of the following: `PAD_UP`, `BATCH_DOWN`, `MINIMIZE_TPU_COST_PER_REQUEST`.",
+        "default": "PAD_UP"
+      },
+      {
         "name": "Tin",
         "type": "type[]",
         "description": "the types of tensors to be batched.",
@@ -4198,6 +4204,7 @@
   },
   {
     "name": "BatchMatrixInverse",
+    "description": "DEPRECATED: This operation is deprecated and will be removed in a future version.\nUse tf.linalg.inv instead.\n\nComputes the inverse of one or more square invertible matrices or their\nadjoints (conjugate transposes).",
     "attributes": [
       {
         "name": "adjoint",
@@ -7898,6 +7905,29 @@
     ]
   },
   {
+    "name": "CheckPinned",
+    "summary": "Checks whether a tensor is located in host memory pinned for GPU.",
+    "description": "When run:\n- Reports an `InvalidArgument` error if `tensor` is not in pinned memory.\n- Reports a `FailedPrecondition` error if not built with CUDA.",
+    "attributes": [
+      {
+        "name": "T",
+        "type": "type"
+      }
+    ],
+    "inputs": [
+      {
+        "name": "tensor",
+        "typeAttr": "T"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "output",
+        "typeAttr": "T"
+      }
+    ]
+  },
+  {
     "name": "Cholesky",
     "summary": "Computes the Cholesky decomposition of one or more square matrices.",
     "description": "The input is a tensor of shape `[..., M, M]` whose inner-most 2 dimensions\nform square matrices.\n\nThe input has to be symmetric and positive definite. Only the lower-triangular\npart of the input will be used for this operation. The upper-triangular part\nwill not be read.\n\nThe output is a tensor of the same shape as the input\ncontaining the Cholesky decompositions for all input submatrices `[..., :, :]`.\n\n**Note**: The gradient computation on GPU is faster for large matrices but\nnot for large batch dimensions when the submatrices are small. In this\ncase it might be faster to use the CPU.",
@@ -9325,7 +9355,7 @@
   {
     "name": "ConcatOffset",
     "summary": "Computes offsets of concat inputs within its output.",
-    "description": "For example:\n\n>>> x = [2, 2, 7]\n>>> y = [2, 3, 7]\n>>> z = [2, 9, 7]\n>>> offsets = concat_offset(1, [x, y, z])\n>>> [list(off.numpy()) for off in offsets]\n[[0, 0, 0], [0, 2, 0], [0, 5, 0]]\n\nThis is typically used by gradient computations for a concat operation.",
+    "description": "For example:\n\n>>> x = [2, 2, 7]\n>>> y = [2, 3, 7]\n>>> z = [2, 9, 7]\n>>> offsets = concat_offset(1, [x, y, z])\n>>> [[a.item() for a in list(off.numpy())] for off in offsets]\n[[0, 0, 0], [0, 2, 0], [0, 5, 0]]\n\nThis is typically used by gradient computations for a concat operation.",
     "attributes": [
       {
         "name": "N",
@@ -17428,6 +17458,11 @@
         "name": "preserve_cardinality",
         "type": "boolean",
         "default": false
+      },
+      {
+        "name": "force_synchronous",
+        "type": "boolean",
+        "default": false
       }
     ],
     "inputs": [
@@ -18790,7 +18825,7 @@
     "outputs": [
       {
         "name": "backprops",
-        "description": "Backpropagated gradients below the FakeQuantWithMinMaxArgs operation:\n`gradients * (inputs >= min && inputs <= max)`.",
+        "description": "Backpropagated gradients below the FakeQuantWithMinMaxArgs operation:\n`gradients * (inputs >= min && inputs <= max)`.\n\n```\nimport tensorflow as tf\n\n# Define some sample data\ngradients = tf.random.uniform((2, 3), minval=-5.0, maxval=5.0, dtype=tf.float32)\ninputs = tf.random.uniform((2, 3), minval=-10.0, maxval=10.0, dtype=tf.float32)\n\n# Define quantization parameters (adjust as needed)\nmin_val = -2.0\nmax_val = 8.0\nnum_bits = 4  # Number of bits for quantization\n\n# Calculate gradients for fake quantization with specified parameters\noutput_gradients = tf.quantization.fake_quant_with_min_max_args_gradient(\n    gradients=gradients, inputs=inputs, min=min_val, max=max_val, num_bits=num_bits, narrow_range = False, name=None\n)\n\n# Print the original gradients and the gradients after the fake-quant operation\nprint(\"Original Gradients:\")\nprint(gradients)\nprint(\"\\nGradients after Fake-Quantization:\")\nprint(output_gradients)\n\n```\n#Original Gradients:\n#tf.Tensor(\n#[[ 1.242547    3.217492    3.568469  ]\n#[-0.55371046  0.23130894  2.608243  ]], shape=(2, 3), dtype=float32)\n\n#Gradients after Fake-Quantization:\n#tf.Tensor(\n#[[ 0.          3.217492    3.568469  ]\n# [-0.55371046  0.23130894  2.608243  ]], shape=(2, 3), dtype=float32)\n",
         "type": 1
       }
     ]
@@ -18798,7 +18833,7 @@
   {
     "name": "FakeQuantWithMinMaxVars",
     "summary": "Fake-quantize the 'inputs' tensor of type float via global float scalars",
-    "description": "Fake-quantize the `inputs` tensor of type float via global float scalars\n`min` and `max` to `outputs` tensor of same shape as `inputs`.\n\nAttributes\n\n*   `[min; max]` define the clamping range for the `inputs` data.\n*   `inputs` values are quantized into the quantization range (\n`[0; 2^num_bits - 1]` when `narrow_range` is false and `[1; 2^num_bits - 1]`\nwhen it is true) and then de-quantized and output as floats in `[min; max]`\ninterval.\n*   `num_bits` is the bitwidth of the quantization; between 2 and 16, inclusive.\n\nBefore quantization, `min` and `max` values are adjusted with the following\nlogic.\nIt is suggested to have `min <= 0 <= max`. If `0` is not in the range of values,\nthe behavior can be unexpected:\n\n*   If `0 < min < max`: `min_adj = 0` and `max_adj = max - min`.\n*   If `min < max < 0`: `min_adj = min - max` and `max_adj = 0`.\n*   If `min <= 0 <= max`: `scale = (max - min) / (2^num_bits - 1) `,\n`min_adj = scale * round(min / scale)` and `max_adj = max + min_adj - min`.\n\nThis operation has a gradient and thus allows for training `min` and `max`\nvalues.",
+    "description": "Fake-quantize the `inputs` tensor of type float via global float scalars\n`min` and `max` to `outputs` tensor of same shape as `inputs`.\n\nAttributes\n\n*   `[min; max]` define the clamping range for the `inputs` data.\n*   `inputs` values are quantized into the quantization range (\n`[0; 2^num_bits - 1]` when `narrow_range` is false and `[1; 2^num_bits - 1]`\nwhen it is true) and then de-quantized and output as floats in `[min; max]`\ninterval.\n*   `num_bits` is the bitwidth of the quantization; between 2 and 16, inclusive.\n\nBefore quantization, `min` and `max` values are adjusted with the following\nlogic.\nIt is suggested to have `min <= 0 <= max`. If `0` is not in the range of values,\nthe behavior can be unexpected:\n\n*   If `0 < min < max`: `min_adj = 0` and `max_adj = max - min`.\n*   If `min < max < 0`: `min_adj = min - max` and `max_adj = 0`.\n*   If `min <= 0 <= max`: `scale = (max - min) / (2^num_bits - 1) `,\n`min_adj = scale * round(min / scale)` and `max_adj = max + min_adj - min`.\n\nThis operation has a gradient and thus allows for training `min` and `max`\nvalues.\n\n>>> constant_input = tf.constant([[1.2, -0.3, 0.7], [2.1, 0.5, -1.0]], dtype=tf.float32)\n>>>\n>>> min_val = -0.5\n>>> max_val = 0.8\n>>> num_bits = 8\n>>> narrow_range = False #False:for the quantization range [0; 2^num_bits - 1]\n>>>\n>>> quantized_data = tf.quantization.fake_quant_with_min_max_vars(\n...   inputs=constant_input, min=min_val, max=max_val, num_bits=num_bits, narrow_range=narrow_range\n... )\n>>>\n>>> print(\"Input:\\n\", constant_input.numpy())\nInput:\n[[ 1.2 -0.3  0.7]\n[ 2.1  0.5 -1. ]]\n>>> print(\"Output:\\n\", quantized_data.numpy())\nOutput:\n[[ 0.8003921 -0.3007843  0.6984313]\n[ 0.8003921  0.4996078 -0.4996078]]\n",
     "attributes": [
       {
         "name": "num_bits",
@@ -26615,6 +26650,11 @@
         "default": false
       },
       {
+        "name": "force_synchronous",
+        "type": "boolean",
+        "default": false
+      },
+      {
         "name": "metadata",
         "type": "string",
         "default": ""
@@ -32112,6 +32152,11 @@
       },
       {
         "name": "preserve_cardinality",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "name": "use_unbounded_threadpool",
         "type": "boolean",
         "default": false
       },
@@ -42969,6 +43014,11 @@
         "type": "boolean",
         "description": "An optional bool. Defaults to True. If True, the assignment will\nbe protected by a lock; otherwise the behavior is undefined,\nbut may exhibit less contention.",
         "default": true
+      },
+      {
+        "name": "bad_indices_policy",
+        "type": "string",
+        "default": ""
       }
     ],
     "inputs": [
@@ -43006,6 +43056,11 @@
         "type": "boolean",
         "description": "An optional bool. Defaults to True. If True, the assignment will\nbe protected by a lock; otherwise the behavior is undefined,\nbut may exhibit less contention.",
         "default": true
+      },
+      {
+        "name": "bad_indices_policy",
+        "type": "string",
+        "default": ""
       }
     ],
     "inputs": [
@@ -43043,6 +43098,11 @@
         "type": "boolean",
         "description": "An optional bool. Defaults to True. If True, the assignment will\nbe protected by a lock; otherwise the behavior is undefined,\nbut may exhibit less contention.",
         "default": true
+      },
+      {
+        "name": "bad_indices_policy",
+        "type": "string",
+        "default": ""
       }
     ],
     "inputs": [
@@ -43082,6 +43142,11 @@
         "type": "boolean",
         "description": "An optional bool. Defaults to True. If True, the assignment will\nbe protected by a lock; otherwise the behavior is undefined,\nbut may exhibit less contention.",
         "default": true
+      },
+      {
+        "name": "bad_indices_policy",
+        "type": "string",
+        "default": ""
       }
     ],
     "inputs": [
@@ -43121,6 +43186,11 @@
         "type": "boolean",
         "description": "An optional bool. Defaults to True. If True, the assignment will\nbe protected by a lock; otherwise the behavior is undefined,\nbut may exhibit less contention.",
         "default": true
+      },
+      {
+        "name": "bad_indices_policy",
+        "type": "string",
+        "default": ""
       }
     ],
     "inputs": [
@@ -47571,6 +47641,11 @@
         "type": "boolean",
         "description": "An optional bool. Defaults to True. If True, the assignment will\nbe protected by a lock; otherwise the behavior is undefined,\nbut may exhibit less contention.",
         "default": false
+      },
+      {
+        "name": "bad_indices_policy",
+        "type": "string",
+        "default": ""
       }
     ],
     "inputs": [
@@ -47619,6 +47694,11 @@
         "type": "boolean",
         "description": "An optional bool. Defaults to True. If True, the assignment will\nbe protected by a lock; otherwise the behavior is undefined,\nbut may exhibit less contention.",
         "default": false
+      },
+      {
+        "name": "bad_indices_policy",
+        "type": "string",
+        "default": ""
       }
     ],
     "inputs": [
@@ -47667,6 +47747,11 @@
         "type": "boolean",
         "description": "An optional bool. Defaults to True. If True, the assignment will\nbe protected by a lock; otherwise the behavior is undefined,\nbut may exhibit less contention.",
         "default": false
+      },
+      {
+        "name": "bad_indices_policy",
+        "type": "string",
+        "default": ""
       }
     ],
     "inputs": [
@@ -47710,6 +47795,11 @@
         "name": "Tindices",
         "type": "type",
         "description": "Must be one of the following: `int32`, `int64`."
+      },
+      {
+        "name": "bad_indices_policy",
+        "type": "string",
+        "default": ""
       }
     ],
     "inputs": [
@@ -47757,6 +47847,11 @@
         "type": "boolean",
         "description": "An optional bool. Defaults to True. If True, the assignment will\nbe protected by a lock; otherwise the behavior is undefined,\nbut may exhibit less contention.",
         "default": false
+      },
+      {
+        "name": "bad_indices_policy",
+        "type": "string",
+        "default": ""
       }
     ],
     "inputs": [
@@ -47805,6 +47900,11 @@
         "type": "boolean",
         "description": "An optional bool. Defaults to True. If True, the assignment will\nbe protected by a lock; otherwise the behavior is undefined,\nbut may exhibit less contention.",
         "default": true
+      },
+      {
+        "name": "bad_indices_policy",
+        "type": "string",
+        "default": ""
       }
     ],
     "inputs": [
@@ -60884,7 +60984,7 @@
   {
     "name": "TensorScatterAdd",
     "summary": "Adds sparse `updates` to an existing tensor according to `indices`.",
-    "description": "This operation creates a new tensor by adding sparse `updates` to the passed\nin `tensor`.\nThis operation is very similar to `tf.compat.v1.scatter_nd_add`, except that the\nupdates are added onto an existing tensor (as opposed to a variable). If the\nmemory for the existing tensor cannot be re-used, a copy is made and updated.\n\n`indices` is an integer tensor containing indices into a new tensor of shape\n`tensor.shape`.  The last dimension of `indices` can be at most the rank of\n`tensor.shape`:\n\n```\nindices.shape[-1] <= tensor.shape.rank\n```\n\nThe last dimension of `indices` corresponds to indices into elements\n(if `indices.shape[-1] = tensor.shape.rank`) or slices\n(if `indices.shape[-1] < tensor.shape.rank`) along dimension\n`indices.shape[-1]` of `tensor.shape`.  `updates` is a tensor with shape\n\n```\nindices.shape[:-1] + tensor.shape[indices.shape[-1]:]\n```\n\nThe simplest form of `tensor_scatter_nd_add` is to add individual elements to a\ntensor by index. For example, say we want to add 4 elements in a rank-1\ntensor with 8 elements.\n\nIn Python, this scatter add operation would look like this:\n\n>>> indices = tf.constant([[4], [3], [1], [7]])\n>>> updates = tf.constant([9, 10, 11, 12])\n>>> tensor = tf.ones([8], dtype=tf.int32)\n>>> updated = tf.tensor_scatter_nd_add(tensor, indices, updates)\n>>> updated\n<tf.Tensor: shape=(8,), dtype=int32,\nnumpy=array([ 1, 12,  1, 11, 10,  1,  1, 13], dtype=int32)>\n\nWe can also, insert entire slices of a higher rank tensor all at once. For\nexample, if we wanted to insert two slices in the first dimension of a\nrank-3 tensor with two matrices of new values.\n\nIn Python, this scatter add operation would look like this:\n\n>>> indices = tf.constant([[0], [2]])\n>>> updates = tf.constant([[[5, 5, 5, 5], [6, 6, 6, 6],\n...                         [7, 7, 7, 7], [8, 8, 8, 8]],\n...                        [[5, 5, 5, 5], [6, 6, 6, 6],\n...                         [7, 7, 7, 7], [8, 8, 8, 8]]])\n>>> tensor = tf.ones([4, 4, 4],dtype=tf.int32)\n>>> updated = tf.tensor_scatter_nd_add(tensor, indices, updates)\n>>> updated\n<tf.Tensor: shape=(4, 4, 4), dtype=int32,\nnumpy=array([[[6, 6, 6, 6], [7, 7, 7, 7], [8, 8, 8, 8], [9, 9, 9, 9]],\n             [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]],\n             [[6, 6, 6, 6], [7, 7, 7, 7], [8, 8, 8, 8], [9, 9, 9, 9]],\n             [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]]], dtype=int32)>\n\nNote: on CPU, if an out of bound index is found, an error is returned.\nOn GPU, if an out of bound index is found, the index is ignored.",
+    "description": "This operation creates a new tensor by adding sparse `updates` to the passed\nin `tensor`.\nThis operation is very similar to `tf.compat.v1.scatter_nd_add`, except that the\nupdates are added onto an existing tensor (as opposed to a variable). If the\nmemory for the existing tensor cannot be re-used, a copy is made and updated.\n\n`indices` is an integer tensor containing indices into a new tensor of shape\n`tensor.shape`.  The last dimension of `indices` can be at most the rank of\n`tensor.shape`:\n\n```\nindices.shape[-1] <= tensor.shape.rank\n```\n\nThe last dimension of `indices` corresponds to indices into elements\n(if `indices.shape[-1] = tensor.shape.rank`) or slices\n(if `indices.shape[-1] < tensor.shape.rank`) along dimension\n`indices.shape[-1]` of `tensor.shape`.  `updates` is a tensor with shape\n\n```\nindices.shape[:-1] + tensor.shape[indices.shape[-1]:]\n```\n\nThe simplest form of `tensor_scatter_nd_add` is to add individual elements to a\ntensor by index. For example, say we want to add 4 elements in a rank-1\ntensor with 8 elements.\n\nIn Python, this scatter add operation would look like this:\n\n>>> indices = tf.constant([[4], [3], [1], [7]])\n>>> updates = tf.constant([9, 10, 11, 12])\n>>> tensor = tf.ones([8], dtype=tf.int32)\n>>> updated = tf.tensor_scatter_nd_add(tensor, indices, updates)\n>>> updated\n<tf.Tensor: shape=(8,), dtype=int32,\nnumpy=array([ 1, 12,  1, 11, 10,  1,  1, 13], dtype=int32)>\n\nWe can also, insert entire slices of a higher rank tensor all at once. For\nexample, if we wanted to insert two slices in the first dimension of a\nrank-3 tensor with two matrices of new values.\n\nIn Python, this scatter add operation would look like this:\n\n>>> indices = tf.constant([[0], [2]])\n>>> updates = tf.constant([[[5, 5, 5, 5], [6, 6, 6, 6],\n...                         [7, 7, 7, 7], [8, 8, 8, 8]],\n...                        [[5, 5, 5, 5], [6, 6, 6, 6],\n...                         [7, 7, 7, 7], [8, 8, 8, 8]]])\n>>> tensor = tf.ones([4, 4, 4],dtype=tf.int32)\n>>> updated = tf.tensor_scatter_nd_add(tensor, indices, updates)\n>>> updated\n<tf.Tensor: shape=(4, 4, 4), dtype=int32,\nnumpy=array([[[6, 6, 6, 6], [7, 7, 7, 7], [8, 8, 8, 8], [9, 9, 9, 9]],\n             [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]],\n             [[6, 6, 6, 6], [7, 7, 7, 7], [8, 8, 8, 8], [9, 9, 9, 9]],\n             [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]]], dtype=int32)>\n\n\nIf `indices` contains any out-of-bound indices, depending on\n`bad_indices_policy`, the op will either return an error or ignore the\nout-of-bound indices. `bad_indices_policy` can be one of the following values:\n1. \"\" or \"DEFAULT\": raises on CPU and ignore on GPU. This is because\n   historically on CPU and GPU we handle errors in different ways, and for\n   backward compatibility we keep the default behavior.\n2. \"ERROR\": raises error; GPU does not support this value.\n3. \"IGNORE\": ignore the bad indices; supported on both CPU and GPU.\n",
     "attributes": [
       {
         "name": "T",
@@ -60894,6 +60994,11 @@
         "name": "Tindices",
         "type": "type",
         "description": "Must be one of the following: `int32`, `int64`."
+      },
+      {
+        "name": "bad_indices_policy",
+        "type": "string",
+        "default": ""
       }
     ],
     "inputs": [
@@ -60934,6 +61039,11 @@
         "name": "Tindices",
         "type": "type",
         "description": "Must be one of the following: `int32`, `int64`."
+      },
+      {
+        "name": "bad_indices_policy",
+        "type": "string",
+        "default": ""
       }
     ],
     "inputs": [
@@ -60972,6 +61082,11 @@
         "name": "Tindices",
         "type": "type",
         "description": "Must be one of the following: `int32`, `int64`."
+      },
+      {
+        "name": "bad_indices_policy",
+        "type": "string",
+        "default": ""
       }
     ],
     "inputs": [
@@ -61012,6 +61127,11 @@
         "name": "Tindices",
         "type": "type",
         "description": "Must be one of the following: `int32`, `int64`."
+      },
+      {
+        "name": "bad_indices_policy",
+        "type": "string",
+        "default": ""
       }
     ],
     "inputs": [
@@ -61042,7 +61162,7 @@
   {
     "name": "TensorScatterUpdate",
     "summary": "Scatter `updates` into an existing tensor according to `indices`.",
-    "description": "This operation creates a new tensor by applying sparse `updates` to the passed\nin `tensor`.\nThis operation is very similar to `tf.scatter_nd`, except that the updates are\nscattered onto an existing tensor (as opposed to a zero-tensor). If the memory\nfor the existing tensor cannot be re-used, a copy is made and updated.\n\nIf `indices` contains duplicates, then we pick the last update for the index.\n\nIf an out of bound index is found on CPU, an error is returned.\n\n**WARNING**: There are some GPU specific semantics for this operation.\n- If an out of bound index is found, the index is ignored.\n- The order in which updates are applied is nondeterministic, so the output\nwill be nondeterministic if `indices` contains duplicates.\n\n`indices` is an integer tensor containing indices into a new tensor of shape\n`shape`.\n\n* `indices` must have at least 2 axes: `(num_updates, index_depth)`.\n* The last axis of `indices` is how deep to index into `tensor` so  this index\n  depth must be less than the rank of `tensor`: `indices.shape[-1] <= tensor.ndim`\n\nif `indices.shape[-1] = tensor.rank` this Op indexes and updates scalar elements.\nif `indices.shape[-1] < tensor.rank` it indexes and updates slices of the input\n`tensor`.\n\nEach `update` has a rank of `tensor.rank - indices.shape[-1]`.\nThe overall shape of `updates` is:\n\n```\nindices.shape[:-1] + tensor.shape[indices.shape[-1]:]\n```\n\nFor usage examples see the python [tf.tensor_scatter_nd_update](\nhttps://www.tensorflow.org/api_docs/python/tf/tensor_scatter_nd_update) function\n",
+    "description": "This operation creates a new tensor by applying sparse `updates` to the passed\nin `tensor`.\nThis operation is very similar to `tf.scatter_nd`, except that the updates are\nscattered onto an existing tensor (as opposed to a zero-tensor). If the memory\nfor the existing tensor cannot be re-used, a copy is made and updated.\n\nIf `indices` contains duplicates, then we pick the last update for the index.\n\n**WARNING**: There are some GPU specific semantics for this operation.\n- If an out of bound index is found, the index is ignored.\n- The order in which updates are applied is nondeterministic, so the output\nwill be nondeterministic if `indices` contains duplicates.\n\n`indices` is an integer tensor containing indices into a new tensor of shape\n`shape`.\n\n* `indices` must have at least 2 axes: `(num_updates, index_depth)`.\n* The last axis of `indices` is how deep to index into `tensor` so  this index\n  depth must be less than the rank of `tensor`: `indices.shape[-1] <= tensor.ndim`\n\nif `indices.shape[-1] = tensor.rank` this Op indexes and updates scalar elements.\nif `indices.shape[-1] < tensor.rank` it indexes and updates slices of the input\n`tensor`.\n\nEach `update` has a rank of `tensor.rank - indices.shape[-1]`.\nThe overall shape of `updates` is:\n\n```\nindices.shape[:-1] + tensor.shape[indices.shape[-1]:]\n```\n\nIf `indices` contains any out-of-bound indices, depending on\n`bad_indices_policy`, the op will either return an error or ignore the\nout-of-bound indices. `bad_indices_policy` can be one of the following values:\n1. \"\" or \"DEFAULT\": raises on CPU and ignore on GPU. This is because\n   historically on CPU and GPU we handle errors in different ways, and for\n   backward compatibility we keep the default behavior.\n2. \"ERROR\": raises error; GPU does not support this value.\n3. \"IGNORE\": ignore the bad indices; supported on both CPU and GPU.\n\nFor usage examples see the python [tf.tensor_scatter_nd_update](\nhttps://www.tensorflow.org/api_docs/python/tf/tensor_scatter_nd_update) function\n",
     "attributes": [
       {
         "name": "T",
@@ -61052,6 +61172,11 @@
         "name": "Tindices",
         "type": "type",
         "description": "Must be one of the following: `int16`, `int32`, `int64`, `uint16`."
+      },
+      {
+        "name": "bad_indices_policy",
+        "type": "string",
+        "default": ""
       }
     ],
     "inputs": [
@@ -65911,6 +66036,72 @@
       },
       {
         "name": "updated_velocity",
+        "type": 1
+      }
+    ]
+  },
+  {
+    "name": "XlaSparseDenseMatmulGradWithCsrInput",
+    "attributes": [
+      {
+        "name": "N",
+        "type": "int64",
+        "minimum": 1
+      },
+      {
+        "name": "M",
+        "type": "int64",
+        "minimum": 1
+      },
+      {
+        "name": "custom_computation",
+        "type": "function"
+      },
+      {
+        "name": "table_name",
+        "type": "string"
+      }
+    ],
+    "inputs": [
+      {
+        "name": "row_pointers",
+        "type": 3
+      },
+      {
+        "name": "sorted_sample_ids",
+        "type": 3
+      },
+      {
+        "name": "sorted_token_ids",
+        "type": 3
+      },
+      {
+        "name": "sorted_gains",
+        "type": 1
+      },
+      {
+        "name": "activation_gradients",
+        "type": 1
+      },
+      {
+        "name": "tables",
+        "numberAttr": "N",
+        "type": 1
+      },
+      {
+        "name": "hyperparameters",
+        "numberAttr": "M",
+        "type": 1
+      },
+      {
+        "name": "num_minibatches_per_physical_sparse_core",
+        "type": 3
+      }
+    ],
+    "outputs": [
+      {
+        "name": "updated_tables",
+        "numberAttr": "N",
         "type": 1
       }
     ]

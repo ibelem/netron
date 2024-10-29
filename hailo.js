@@ -68,17 +68,20 @@ hailo.Graph = class {
             value.name = name;
             return value;
         });
+        const inputs = new Set();
         for (const layer of layers) {
             switch (layer.type) {
-                case 'const_input':
                 case 'input_layer': {
                     for (let i = 0; i < layer.output.length; i++) {
                         const shape = Array.isArray(layer.output_shapes) && layer.output_shapes.length > 0 ? layer.output_shapes[0] : null;
                         const type = shape ? new hailo.TensorType('?', new hailo.TensorShape(shape)) : null;
                         const output = layer.output[i];
-                        const name = `${layer.name}\n${output}`;
-                        const argument = new hailo.Argument('input', [values.map(name, type)]);
-                        this.inputs.push(argument);
+                        if (!inputs.has(output)) {
+                            const name = `${layer.name}\n${output}`;
+                            const argument = new hailo.Argument('input', [values.map(name, type)]);
+                            this.inputs.push(argument);
+                            inputs.add(output);
+                        }
                     }
                     break;
                 }
@@ -197,7 +200,7 @@ hailo.Tensor = class {
         if (array) {
             this.stride = array.strides.map((stride) => stride / array.itemsize);
             this.layout = this.type.dataType === 'string' || this.type.dataType === 'object' ? '|' : array.dtype.byteorder;
-            this.values = this.type.dataType === 'string' || this.type.dataType === 'object' ? array.tolist() : array.tobytes();
+            this.values = this.type.dataType === 'string' || this.type.dataType === 'object' || this.type.dataType === 'void' ? array.tolist() : array.tobytes();
         }
     }
 };
