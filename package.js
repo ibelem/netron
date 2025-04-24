@@ -251,7 +251,7 @@ const install = async () => {
 
 const start = async () => {
     await install();
-    await exec('npx electron .');
+    // await exec('npx electron .');
 };
 
 const purge = async () => {
@@ -308,10 +308,10 @@ const build = async (target) => {
         default: {
             writeLine('build');
             await rm('dist');
-            await install();
+            // await install();
             await build('web');
-            await build('electron');
-            await build('python');
+            // await build('electron');
+            // await build('python');
             break;
         }
     }

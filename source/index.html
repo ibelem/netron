@@ -14,6 +14,7 @@
 <link rel="apple-touch-icon" type="image/png" href="icon.png">
 <link rel="apple-touch-icon-precomposed" type="image/png" href="icon.png">
 <link rel="fluid-icon" type="image/png" href="icon.png">
+<script src="jszip.min.js"></script>
 <script type="text/javascript" src="index.js"></script>
 <style>
 html { touch-action: none; overflow: hidden; width: 100%; height: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; text-rendering: optimizeLegibility; -webkit-text-rendering: optimizeLegibility; -moz-text-rendering: optimizeLegibility; -ms-text-rendering: optimizeLegibility; -o-text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; -moz-font-smoothing: antialiased; -ms-font-smoothing: antialiased; -o-font-smoothing: antialiased; }
@@ -66,6 +67,9 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
 .logo-message { display: none; height: 0px; }
 .logo-github { display: none; }
 .open-file-button { top: 170px; left: 0px; width: 10.5em; }
+.logo-link { top: 260px; left: 0; font-size: 12px; line-height: 1.25; text-align: center; vertical-align: middle; min-width: 5em; height: 1.25em; transition: 0.1s; user-select: none; -webkit-user-select: none; -moz-user-select: none; }
+.logo-link a { color: #444444; text-decoration: none; font-weight: bold; }
+.logo-link a:hover { text-decoration: underline; }
 .progress { top: 120px; height: 2px; width: 400px; }
 .progress-bar { height: 100%; width: 0%; background-color: #444444; }
 .notification .logo-name { display: none; }
@@ -298,9 +302,162 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
 .menu { transition: none; }
 .sidebar { transition: none; }
 }
+#webnn-button {
+     border-top-right-radius: 6px;
+     border-bottom-right-radius: 6px;
+     border: 1px solid #777;
+     color: #777;
+     padding: 0 4px 0 4px;
+     width: auto !important;
+     margin: 0px 0 0px 4px;
+ }
+ #webnn-button:hover {
+     color: #000000;
+     border: 1px solid #000;
+ }
+ #webnn {
+     padding: 32px 1rem 32px 1rem;
+     max-height: 65vh;
+     overflow-y: scroll;
+ }
+ .showGrid {
+     display: grid;
+     transition: 1s;
+     position: absolute;
+     background-color: rgba(236, 236, 236, 0.2);
+     border-right: 1px solid rgba(255, 255, 255, 0.5);
+     margin: 0;
+     overflow: hidden;
+     width: 100%;
+     opacity: 1;
+     top: 0px;
+ }
+ .showGrid:hover {
+     background-color: #ececec;
+ }
+ .showNone {
+     display: none;
+     opacity: 0;
+ }
+ .map {
+     place-self: center;
+     background-color: transparent;
+ }
+ .map table {
+     border-collapse: collapse;
+     background-color: transparent;
+ }
+ .map table td,
+ .map table th {
+     border: 1px solid rgba(27, 31, 35, 0.05);
+     background-color: rgba(255, 255, 255, 0.8);
+     text-align: center;
+     padding: 2px 6px;
+     min-width: 90px;
+ }
+ #webnn table tr:hover {
+     background-color: rgba(255, 255, 255, 1);
+ }
+ #webnn-closebutton {
+     place-self: center;
+     height: 32px;
+     text-decoration: none;
+     font-size: 25px;
+     color: #777777;
+     opacity: 1.0;
+     transition: 0.2s;
+     cursor: pointer;
+     position: absolute;
+     top: -3px;
+     margin-left: -82px;
+ }
+ #webnn-closebutton:hover {
+     color: #242424;
+ }
+.export-tensors {
+    background-color: #ffffff;
+    border: 1px solid rgba(27, 31, 35, 0.05);
+    margin: 0 auto;
+    margin-top: -1px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: 1fr;
+    grid-column-gap: 10px;
+    grid-row-gap: 0px;
+    align-items: center;
+    padding: 5px 0;
+}
+.export-tensors div {
+    padding: 0.2rem 0;
+}
+@media all and (max-width: 640px) {
+    .export-tensors {
+        grid-template-rows: repeat(2, 1fr);
+        grid-template-columns: 1fr;
+        grid-column-gap: 0px;
+        grid-row-gap: 10px;
+    }
+}
+.export-tensors .info {
+    justify-self: end;
+}
+.export-tensors .action {
+    justify-self: start;
+}
+.action button {
+    height: auto !important;
+    padding: 0.2rem 1rem;
+}
+.external-links {
+    margin-top: -1px;
+    background-color: #ffffff;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    padding: 5px 0;
+    font-weight: bold;
+    justify-items: center;
+    align-items: center;
+    border: 1px solid rgba(27, 31, 35, 0.05);
+}
+
+.external-links a {
+    color: rgba(0, 123, 255, 1);
+    text-decoration: none;
+}
+.external-links a:hover {
+    color: rgba(255, 0, 129, 1);
+    text-decoration: dashed;
+}
+.alias {
+    max-width: 200px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
 </style>
 </head>
 <body class="welcome spinner">
+<div id="webnn" class="showNone">
+    <div id="map" class="map">
+        <div id="map-table"></div>
+        <div class="export-tensors">
+            <div class="info">Use WebNN with Vanilla JavaScript</div>
+            <div class="action">
+                <button id="export-button" class="logo-button export-button" title="Export graph and weights">Graph and Weights</button>
+                <button id="read-bin-json-button" class="logo-button read-bin-button" title="Read weights and biases in .bin and JSON format">Weights Reader</button>
+                <!-- <button id="export-npy-zip-button" class="logo-button export-npy-zip-button" title="Export weights and biases in .npy format (compressed as ZIP)">.npy</button> -->
+            </div>
+        </div>
+        <div class="external-links">
+            <div>
+                <a href="https://github.com/huningxin/onnx2webnn" title="Exports the ONNX file to a WebNN JavaScript file and a bin file containing weights.">ONNX2WebNN</a> · <a href="https://ibelem.github.io/webnn-code-generator/" title="Generate WebNN API code in vanilla JavaScript from ONNX, TensorFlow Lite, or other model formats.">WebNN Code Generator</a> 
+            </div>
+        </div>
+    </div>
+
+    <a id="webnn-closebutton">×</a>
+</div>
 <div id="graph" class="graph" tabindex="0">
     <svg id="canvas" class="canvas" preserveaspectratio="xMidYMid meet" width="100%" height="100%"></svg>
 </div>
@@ -401,6 +558,9 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
             <path d="M0 0L5 6L10 0Z" />
         </svg>
     </div>
+    <button id="webnn-button" class="toolbar-button" title="WebNN">
+        WebNN
+    </button>
     <div id="toolbar-path" class="toolbar-path">
         <button id="toolbar-path-back-button" class="toolbar-path-back-button" title="Back">
             &#x276E;
@@ -550,6 +710,11 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
         </svg>
     </a>
     <button id="open-file-button" class="center logo-button open-file-button" tabindex="0">Open Model&hellip;</button>
+    <div class="center logo-link">
+        Enhanced Netron for WebNN ·
+        <a id="onnx-to-webnn-button" href="https://github.com/huningxin/onnx2webnn" tabindex="1" title="Exports the ONNX file to a WebNN JavaScript file and a bin file containing weights.">ONNX2WebNN</a>
+        · <a id="webnn-code-generator-button" href="https://ibelem.github.io/webnn-code-generator" tabindex="2" title="Generate WebNN API code in vanilla JavaScript from ONNX, TensorFlow Lite, or other model formats.">WebNN Code Generator</a>
+    </div>
     <div class="center progress">
         <div id="progress-bar" class="progress-bar"></div>
     </div>

@@ -1080,6 +1080,26 @@ view.View = class {
         return name.includes('convtranspose') || name.includes('transposeconv');
     }
 
+    isRegularConv(node) {
+        if (!node || !node.type || typeof node.type.name !== 'string') return false;
+
+        // Check if it's any type of conv but not depthwise or transpose
+        const name = node.type.name.toLowerCase();
+        if (name.includes('conv') &&
+            !name.includes('depthwise') &&
+            !name.includes('transpose') &&
+            !name.includes('convtranspose')) {
+            return true;
+        }
+
+        // Make sure it's not a depthwise conv by group attribute
+        if (this.isDepthwiseConv(node)) {
+            return false;
+        }
+
+        return false;
+    }
+
     getTypedArray(array, dataType) {
         let typedArray;
         switch (dataType) {
@@ -1194,6 +1214,56 @@ view.View = class {
         }
     }
 
+    // Helper to check if a tensor is used as a kernel in a Conv/Depthwise/ConvTranspose op
+    _isKernelForConvRecursive(graph, tensorName, visited = new Set()) {
+        if (visited.has(tensorName)) return null;
+        visited.add(tensorName);
+
+        // 1. Direct use as kernel
+        for (const node of graph.nodes) {
+            for (const input of node.inputs) {
+                if (input && input.value && input.value.length > 0) {
+                    const value = input.value[0];
+                    if (value && value.name === tensorName) {
+                        if (this.isDepthwiseConv(node) || this.isConvTranspose(node)) {
+                            return { type: 'depthwise_or_transpose', node };
+                        } else if (node.type && typeof node.type.name === 'string' && node.type.name.toLowerCase().includes('conv')) {
+                            return { type: 'conv', node };
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Indirect use: tensor is input to a node, whose output is used as kernel
+        for (const node of graph.nodes) {
+            for (const input of node.inputs) {
+                if (input && input.value && input.value.length > 0) {
+                    const value = input.value[0];
+                    if (value && value.name === tensorName) {
+                        // Check all outputs of this node
+                        if (node.outputs && node.outputs.length > 0) {
+                            for (const output of node.outputs) {
+                                if (output.value && output.value.length > 0) {
+                                    const outValue = output.value[0];
+                                    if (outValue && outValue.name) {
+                                        // Recursively check if output is used as kernel
+                                        const result = this._isKernelForConvRecursive(graph, outValue.name, visited);
+                                        if (result) return result;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+
+
     async exportAllTensorsAsBinAndJson() {
         const weightBiasButtons = document.querySelectorAll('.action')[0];
 
@@ -1293,6 +1363,7 @@ view.View = class {
                                     let nhwcBuffer = tensorBuffer;
                                     let nhwcShape = shape;
                                     let nhwcByteLength = byteLength;
+
                                     if (Array.isArray(shape) && shape.length === 4) {
                                         let typedArray = null;
                                         if (tensor.data) {
@@ -1301,18 +1372,43 @@ view.View = class {
                                             typedArray = this.getTypedArray({ buffer: tensorBuffer, byteOffset: 0, byteLength: tensorBuffer.byteLength }, tensor.type.dataType);
                                         }
                                         if (typedArray) {
-                                            let transposed;
+                                            let transposed = { data: typedArray, elementSize: typedArray.BYTES_PER_ELEMENT, shape: shape };
+                                            nhwcShape = shape;
+                                            nhwc_kernel_layout = '';
+
                                             if (this.isDepthwiseConv(node) || this.isConvTranspose(node)) {
                                                 // Depthwise Conv: OIHW -> IHWO
                                                 transposed = this.transpose4D(typedArray, shape, [1, 2, 3, 0]);
                                                 nhwcShape = [shape[1], shape[2], shape[3], shape[0]];
                                                 nhwc_kernel_layout = 'IHWO';
-                                            } else {
+                                            } else if (this.isRegularConv(node)) {
                                                 // Regular Conv: OIHW -> OHWI
                                                 transposed = this.transpose4D(typedArray, shape, [0, 2, 3, 1]);
                                                 nhwcShape = [shape[0], shape[2], shape[3], shape[1]];
                                                 nhwc_kernel_layout = 'OHWI';
+                                            } else {
+                                                // Use the helper to check if this tensor is used as a kernel in a Conv/Depthwise/ConvTranspose op
+                                                const kernelInfo = this._isKernelForConvRecursive(graph, tensor.name || value.name);
+                                                if (kernelInfo) {
+                                                    if (kernelInfo.type === 'depthwise_or_transpose') {
+                                                        // OIHW -> IHWO
+                                                        transposed = this.transpose4D(typedArray, shape, [1, 2, 3, 0]);
+                                                        nhwcShape = [shape[1], shape[2], shape[3], shape[0]];
+                                                        nhwc_kernel_layout = 'IHWO';
+                                                    } else if (kernelInfo.type === 'conv') {
+                                                        // OIHW -> OHWI
+                                                        transposed = this.transpose4D(typedArray, shape, [0, 2, 3, 1]);
+                                                        nhwcShape = [shape[0], shape[2], shape[3], shape[1]];
+                                                        nhwc_kernel_layout = 'OHWI';
+                                                    }
+                                                } else {
+                                                    // Not a kernel: keep as-is, no kernel_layout
+                                                    transposed = { data: typedArray, elementSize: typedArray.BYTES_PER_ELEMENT, shape: shape };
+                                                    nhwcShape = shape;
+                                                    nhwc_kernel_layout = '';
+                                                }
                                             }
+
                                             const nhwcArray = transposed.data;
                                             const elementSize = transposed.elementSize;
                                             nhwcByteLength = nhwcArray.length * elementSize;
@@ -1351,17 +1447,41 @@ view.View = class {
                                             typedArray = this.getTypedArray({ buffer: tensorBuffer, byteOffset: 0, byteLength: tensorBuffer.byteLength }, tensor.type.dataType);
                                         }
                                         if (typedArray) {
-                                            let transposed;
+                                            let transposed = { data: typedArray, elementSize: typedArray.BYTES_PER_ELEMENT, shape: shape };
+                                            nchwShape = shape;
+                                            kernel_layout = '';
+
                                             if (this.isDepthwiseConv(node) || this.isConvTranspose(node)) {
                                                 // Depthwise Conv: IHWO -> OIHW
                                                 transposed = this.transpose4D(typedArray, shape, [3, 0, 1, 2]);
                                                 nchwShape = [shape[3], shape[0], shape[1], shape[2]];
                                                 kernel_layout = 'OIHW';
-                                            } else {
+                                            } else if (this.isRegularConv(node)) {
                                                 // Regular Conv: OHWI -> OIHW
                                                 transposed = this.transpose4D(typedArray, shape, [0, 3, 1, 2]);
                                                 nchwShape = [shape[0], shape[3], shape[1], shape[2]];
                                                 kernel_layout = 'OIHW';
+                                            } else {
+                                                // Use the helper to check if this tensor is used as a kernel in a Conv/Depthwise/ConvTranspose op
+                                                const kernelInfo = this._isKernelForConvRecursive(graph, tensor.name || value.name);
+                                                if (kernelInfo) {
+                                                    if (kernelInfo.type === 'depthwise_or_transpose') {
+                                                        // IHWO -> OIHW
+                                                        transposed = this.transpose4D(typedArray, shape, [3, 0, 1, 2]);
+                                                        nchwShape = [shape[3], shape[0], shape[1], shape[2]];
+                                                        kernel_layout = 'OIHW';
+                                                    } else if (kernelInfo.type === 'conv') {
+                                                        // OHWI -> OIHW
+                                                        transposed = this.transpose4D(typedArray, shape, [0, 3, 1, 2]);
+                                                        nchwShape = [shape[0], shape[3], shape[1], shape[2]];
+                                                        kernel_layout = 'OIHW';
+                                                    }
+                                                } else {
+                                                    // Not a kernel: keep as-is, no kernel_layout
+                                                    transposed = { data: typedArray, elementSize: typedArray.BYTES_PER_ELEMENT, shape: shape };
+                                                    nchwShape = shape;
+                                                    kernel_layout = '';
+                                                }
                                             }
                                             const nchwArray = transposed.data;
                                             const elementSize = transposed.elementSize;
