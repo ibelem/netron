@@ -1,3 +1,19 @@
+# WebNN Netron
+
+## Enhanced WebNN Netron Tool for Web Developers
+
+1. WebNN API Support Status in Chromium
+2. Enhanced WebNN Netron Tool for Web Developers. Provides the following features to streamline WebNN application development using Vanilla JavaScript
+3. Weight and Bias Validation: Includes a built-in reader to verify data correctness in exported .bin files
+
+This tool is based on [Netron](https://github.com/lutzroeder/netron). [Netron](https://github.com/lutzroeder/netron) is a viewer for neural network, deep learning and machine learning models developed by [Lutz Roeder](https://github.com/lutzroeder).
+
+## Getting Started
+
+- Visit [https://ibelem.github.io/netron/](https://ibelem.github.io/netron) page, load a model
+- Visit [https://ibelem.github.io/netron/?url=model_link](https://ibelem.github.io/netron/?url=https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite)
+- Visit [https://ibelem.github.io/netron/reader.html?json=json_url&bin=bin_url](https://ibelem.github.io/netron/reader.html?json=https://ibelem.github.io/netron/webnn/model_20250429081302.json&bin=https://ibelem.github.io/netron/webnn/model_20250429081302.bin) to view the model weights and biases data
+
 <div align="center">
 <img width="400px" height="100px" src="https://github.com/lutzroeder/netron/raw/main/.github/logo-light.svg#gh-light-mode-only">
 <img width="400px" height="100px" src="https://github.com/lutzroeder/netron/raw/main/.github/logo-dark.svg#gh-dark-mode-only">

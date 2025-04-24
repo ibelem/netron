@@ -441,6 +441,249 @@ browser.Host = class {
         return await this._openContext(context);
     }
 
+    _qs(element) {
+        return document.querySelector(element);
+    }
+
+    async _getWebnnOps() {
+        const response = await fetch("https://webmachinelearning.github.io/assets/json/webnn_status.json");
+        // const response = await fetch("https://ibelem.github.io/webnn_status.json");
+        const data = await response.json();
+        const status = data.impl_status;
+        const webnn = [];
+        for (const s of status) {
+            const item = {
+                "spec": "",
+                "alias": [],
+                "tflite": 0,
+                "tflite_chromium_version_added": '',
+                "dml": 0,
+                "dml_chromium_version_added": '',
+                "coreml": 0,
+                "coreml_chromium_version_added": ""
+            };
+            let op = s.op;
+            op = op.replace(/element-wise binary \/|element-wise unary \/|pooling \/|reduction \/ /g, '')
+                .trim();
+            item.spec = op;
+            let alias = [];
+            for (const o of s.tflite_op) {
+                if (o) alias.push(o);
+            }
+            item.tflite_chromium_version_added = s.tflite_chromium_version_added;
+            for (let o of s.dml_op) {
+                if (typeof (o) === 'object') {
+                    o = o[0];
+                }
+                o = o.toLowerCase()
+                    .replace(/map to other op|supported by tensor strides|element_wise_|activation_|reduce_function_/g, '')
+                    .trim();
+                if (o) alias.push(o);
+            }
+            item.dml_chromium_version_added = s.dml_chromium_version_added;
+            for (const o of s.coreml_op) {
+                if (o) alias.push(o);
+            }
+            item.coreml_chromium_version_added = s.coreml_chromium_version_added;
+            for (const o of s.fw_tflite_op) {
+                if (o) alias.push(o);
+            }
+            for (const o of s.fw_ort_op) {
+                if (o) alias.push(o);
+            }
+            // let filter = new Set(alias);
+            // alias = [...filter];
+            alias = new Map(alias.map(s => [s.toLowerCase(), s]));
+            alias = [...alias.values()];
+            alias = alias.filter((x) => x.toLowerCase() !== op.toLowerCase());
+            item.alias = alias;
+            if (s.tflite_progress === 4) {
+                item.tflite = 4;
+            } else if (s.tflite_progress === 3) {
+                item.tflite = 3;
+            }
+            if (s.dml_progress === 4) {
+                item.dml = 4;
+            } else if (s.dml_progress === 3) {
+                item.dml = 3;
+            }
+            if (s.coreml_progress === 4) {
+                item.coreml = 4;
+            } else if (s.coreml_progress === 3) {
+                item.coreml = 3;
+            }
+            webnn.push(item);
+        }
+        return webnn;
+    }
+
+    _isOnnx(model) {
+        if(model.identifier.toLowerCase().indexOf('onnx') !== -1) {
+            return true;
+        } else {
+            return false;
+        }
+    } 
+
+    _getOperationStats(operations) {
+        // Count occurrences of each operation
+        const counts = {};
+        operations.forEach(op => {
+            counts[op] = (counts[op] || 0) + 1;
+        });
+
+        // Calculate total
+        const total = operations.length;
+
+        // Format the results
+        const result = [];
+
+        // Add each operation with count and percentage
+        for (const [op, count] of Object.entries(counts)) {
+            result.push({
+                'op': op,
+                'count': count,
+                'percentage': ((count / total) * 100).toFixed(2) + '%'
+            });
+        }
+
+        // Add total row
+        result.push({
+            'op': 'Total',
+            'count': total,
+            'percentage': '100%'
+        });
+
+        return result;
+    }
+
+    async _showWebnnOpsMap(model) {
+        // _graphs[0] - ONNX
+        // graphs[0] - TFLite
+        let graphs;
+        if(this._isOnnx(model)) {
+            graphs = model._graphs[0];
+        } else {
+            graphs = model.graphs[0];
+        }
+        let nodes;
+        if(this._isOnnx(model)) {
+            nodes = graphs._nodes;
+        } else {
+            nodes = graphs.nodes
+        }
+        let ops = [];
+        nodes.map((x) => {
+            ops.push(x.type.name);
+        }
+        );
+
+        const filter = new Set(ops);
+        let ops_data = this._getOperationStats(ops);
+        ops = [...filter].sort();
+        const webnn = this._qs('#webnn');
+        const map = this._qs('#map-table');
+        const webnnops = await this._getWebnnOps();
+        if (ops?.length) {
+            webnn.removeAttribute("class");
+            webnn.setAttribute("class", "showGrid");
+            let index = 1, tr = '', trs = '';
+            for (const i of ops) {
+                const o = i.toLowerCase();
+                let spec = '';
+                let alias = '';
+                let tflite = 'No';
+                let dml = 'No';
+                let coreml = 'No';
+                let ops_data_json;
+                let count = 0;
+                let percentage = 0;
+                webnnops.map((v) => {
+                    if (v.spec.toLowerCase() === o) {
+                        spec = v.spec;
+                        alias = v.alias.toString().replaceAll(/,/g, ', ');
+                        if (v.tflite === 4) {
+                            tflite = `Yes, ${v.tflite_chromium_version_added}`;
+                        } else if (v.tflite === 3) {
+                            tflite = 'WIP';
+                        }
+                        if (v.dml === 4) {
+                            dml = `Yes, ${v.dml_chromium_version_added}`;
+                        } else if (v.dml === 3) {
+                            dml = 'WIP';
+                        }
+                        if (v.coreml === 4) {
+                            coreml = `Yes, ${v.coreml_chromium_version_added}`;
+                        } else if (v.coreml === 3) {
+                            coreml = 'WIP';
+                        }
+                    } else {
+                        for (const a of v.alias) {
+                            if (a.toLowerCase() === o) {
+                                spec = v.spec;
+                                alias = v.alias.toString().replaceAll(/,/g, ', ');
+                                if (v.tflite === 4) {
+                                    tflite = `Yes, ${v.tflite_chromium_version_added}`;
+                                } else if (v.tflite === 3) {
+                                    tflite = 'WIP';
+                                }
+                                if (v.dml === 4) {
+                                    dml = `Yes, ${v.dml_chromium_version_added}`;
+                                } else if (v.dml === 3) {
+                                    dml = 'WIP';
+                                }
+                                if (v.coreml === 4) {
+                                    coreml = `Yes, ${v.coreml_chromium_version_added}`;
+                                } else if (v.coreml === 3) {
+                                    coreml = 'WIP';
+                                }
+                            }
+                        }
+                    }
+                });
+
+                ops_data_json = ops_data.find(item => item.op.toLowerCase() === i.toLowerCase());
+                count = ops_data_json.count;
+                percentage = ops_data_json.percentage;
+
+                tr = `<tr><td>${index}</td><td>${i}</td><td>${count}</td><td>${percentage}</td><td>${tflite}</td><td>${dml}</td><td>${coreml}</td><td>${alias}</td></tr>`;
+                trs += tr;
+                index += 1;
+            }
+
+            const ops_data_json = ops_data.find(item => item.op.toLowerCase() === 'total');
+            const count = ops_data_json.count;
+
+            trs += `<tr><td></td><td></td><td>${count}</td><td>100%</td><td></td><td></td><td></td><td></td></tr>`;
+
+            const table = `
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="2">Index</th>
+                        <th colspan="3">Model Operations</th>
+                        <th colspan="5">WebNN API Support Status in Chromium</th>
+                    </tr>
+                    <tr>
+                        <th>WebNN Spec</th>
+                        <th>Count</th>
+                        <th>Percentage</th>
+                        <th>TensorFlow Lite</th>
+                        <th>DirectML</th>
+                        <th>Core ML</th>
+                        <th>Alias</th>
+                    </tr>
+                </thead>
+                <tbody id="support">${trs}</tbody>
+            </table>
+        `;
+            map.innerHTML = table;
+        } else {
+            webnn.removeAttribute("class");
+            webnn.setAttribute("class", "showNone");
+        }
+    }
+
     async _open(file, files) {
         this._view.show('welcome spinner');
         const context = new browser.BrowserFileContext(this, file, files);
@@ -495,6 +738,7 @@ browser.Host = class {
             if (model) {
                 this._view.show(null);
                 this.document.title = context.name || context.identifier;
+                await this._showWebnnOpsMap(model);
                 return '';
             }
             this.document.title = '';
