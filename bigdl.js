@@ -5,12 +5,13 @@ const bigdl = {};
 
 bigdl.ModelFactory = class {
 
-    match(context) {
-        const tags = context.tags('pb');
+    async match(context) {
+        const tags = await context.tags('pb');
         if (tags.has(2) && tags.has(7) && tags.has(8) &&
             tags.has(9) && tags.has(10) && tags.has(11) && tags.has(12)) {
-            context.type = 'bigdl';
+            return context.set('bigdl');
         }
+        return null;
     }
 
     async open(context) {
@@ -19,7 +20,7 @@ bigdl.ModelFactory = class {
         let module = null;
         try {
             // https://github.com/intel-analytics/BigDL/blob/master/spark/dl/src/main/resources/serialization/bigdl.proto
-            const reader = context.read('protobuf.binary');
+            const reader = await context.read('protobuf.binary');
             module = bigdl.proto.BigDLModule.decode(reader);
         } catch (error) {
             const message = error && error.message ? error.message : error.toString();
@@ -42,10 +43,10 @@ bigdl.Model = class {
 bigdl.Graph = class {
 
     constructor(metadata, module) {
-        this.type = module.moduleType;
         this.inputs = [];
         this.outputs = [];
         this.nodes = [];
+        this.description = module.moduleType;
         const tensors = module.attr && module.attr.global_storage && module.attr.global_storage.nameAttrListValue && module.attr.global_storage.nameAttrListValue.attr ? module.attr.global_storage.nameAttrListValue.attr : {};
         const values = new Map();
         values.map = (name) => {

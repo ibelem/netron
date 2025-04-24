@@ -128,7 +128,7 @@
       },
       {
         "name": "seed",
-        "description": "A Python integer to use as random seed incase of `dropout`."
+        "description": "A Python integer to use as random seed in case of `dropout`."
       }
     ],
     "inputs": [
@@ -312,6 +312,83 @@
     "examples": [
       {
         "code": "depth = 30\nheight = 30\nwidth = 30\nchannels = 3\n\ninputs = keras.layers.Input(shape=(depth, height, width, channels))\nlayer = keras.layers.AveragePooling3D(pool_size=3)\noutputs = layer(inputs)  # Shape: (batch_size, 10, 10, 10, 3)"
+      }
+    ]
+  },
+  {
+    "name": "LayerNormalization",
+    "module": "keras.layers",
+    "category": "Normalization",
+    "description": "Layer normalization layer (Ba et al., 2016).\n\nNormalize the activations of the previous layer for each given example in a\nbatch independently, rather than across a batch like Batch Normalization.\ni.e. applies a transformation that maintains the mean activation within each\nexample close to 0 and the activation standard deviation close to 1.\n\nIf `scale` or `center` are enabled, the layer will scale the normalized\noutputs by broadcasting them with a trainable variable `gamma`, and center\nthe outputs by broadcasting with a trainable variable `beta`. `gamma` will\ndefault to a ones tensor and `beta` will default to a zeros tensor, so that\ncentering and scaling are no-ops before training has begun.\n\nSo, with scaling and centering enabled the normalization equations\nare as follows:\n\nLet the intermediate activations for a mini-batch to be the `inputs`.\n\nFor each sample `x_i` in `inputs` with `k` features, we compute the mean and\nvariance of the sample:\n\n```python\nmean_i = sum(x_i[j] for j in range(k)) / k\nvar_i = sum((x_i[j] - mean_i) ** 2 for j in range(k)) / k\n```\n\nand then compute a normalized `x_i_normalized`, including a small factor\n`epsilon` for numerical stability.\n\n```python\nx_i_normalized = (x_i - mean_i) / sqrt(var_i + epsilon)\n```\n\nAnd finally `x_i_normalized ` is linearly transformed by `gamma` and `beta`,\nwhich are learned parameters:\n\n```python\noutput_i = x_i_normalized * gamma + beta\n```\n\n`gamma` and `beta` will span the axes of `inputs` specified in `axis`, and\nthis part of the inputs' shape must be fully defined.\n\nFor example:\n\n```\n>>> layer = keras.layers.LayerNormalization(axis=[1, 2, 3])\n>>> layer.build([5, 20, 30, 40])\n>>> print(layer.beta.shape)\n(20, 30, 40)\n>>> print(layer.gamma.shape)\n(20, 30, 40)\n```\n\nNote that other implementations of layer normalization may choose to define\n`gamma` and `beta` over a separate set of axes from the axes being\nnormalized across. For example, Group Normalization\n([Wu et al. 2018](https://arxiv.org/abs/1803.08494)) with group size of 1\ncorresponds to a Layer Normalization that normalizes across height, width,\nand channel and has `gamma` and `beta` span only the channel dimension.\nSo, this Layer Normalization implementation will not match a Group\nNormalization layer with group size set to 1.",
+    "attributes": [
+      {
+        "name": "axis",
+        "description": "Integer or List/Tuple. The axis or axes to normalize across.\n        Typically, this is the features axis/axes. The left-out axes are\n        typically the batch axis/axes. `-1` is the last dimension in the\n        input. Defaults to `-1`."
+      },
+      {
+        "name": "epsilon",
+        "description": "Small float added to variance to avoid dividing by zero.\n        Defaults to 1e-3."
+      },
+      {
+        "name": "center",
+        "description": "If True, add offset of `beta` to normalized tensor. If False,\n        `beta` is ignored. Defaults to `True`."
+      },
+      {
+        "name": "scale",
+        "description": "If True, multiply by `gamma`. If False, `gamma` is not used.\n        When the next layer is linear (also e.g. `nn.relu`), this can be\n        disabled since the scaling will be done by the next layer.\n        Defaults to `True`."
+      },
+      {
+        "name": "rms_scaling",
+        "description": "If True, `center` and `scale` are ignored, and the\n        inputs are scaled by `gamma` and the inverse square root\n        of the square of all inputs. This is an approximate and faster\n        approach that avoids ever computing the mean of the input. Note that\n        this *isn't* equivalent to the computation that the\n        `keras.layers.RMSNormalization` layer performs."
+      },
+      {
+        "name": "beta_initializer",
+        "description": "Initializer for the beta weight. Defaults to zeros."
+      },
+      {
+        "name": "gamma_initializer",
+        "description": "Initializer for the gamma weight. Defaults to ones."
+      },
+      {
+        "name": "beta_regularizer",
+        "description": "Optional regularizer for the beta weight.\n        None by default."
+      },
+      {
+        "name": "gamma_regularizer",
+        "description": "Optional regularizer for the gamma weight.\n        None by default."
+      },
+      {
+        "name": "beta_constraint",
+        "description": "Optional constraint for the beta weight.\n        None by default."
+      },
+      {
+        "name": "gamma_constraint",
+        "description": "Optional constraint for the gamma weight.\n        None by default."
+      },
+      {
+        "name": "**kwargs",
+        "description": "Base layer keyword arguments (e.g. `name` and `dtype`)."
+      }
+    ],
+    "inputs": [
+      {
+        "name": "input"
+      },
+      {
+        "name": "gamma"
+      },
+      {
+        "name": "beta"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "output"
+      }
+    ],
+    "references": [
+      {
+        "description": "[Lei Ba et al., 2016](https://arxiv.org/abs/1607.06450)."
       }
     ]
   },
@@ -559,14 +636,19 @@
     ],
     "references": [
       {
-        "description": "[Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift](https://arxiv.org/abs/1502.03167)"
+        "description": "[Ioffe and Szegedy, 2015](https://arxiv.org/abs/1502.03167).  **About setting `layer.trainable = False` on a `BatchNormalization` layer:**  The meaning of setting `layer.trainable = False` is to freeze the layer, i.e. its internal state will not change during training: its trainable weights will not be updated during `fit()` or `train_on_batch()`, and its state updates will not be run.  Usually, this does not necessarily mean that the layer is run in inference mode (which is normally controlled by the `training` argument that can be passed when calling a layer). \"Frozen state\" and \"inference mode\" are two separate concepts.  However, in the case of the `BatchNormalization` layer, **setting `trainable = False` on the layer means that the layer will be subsequently run in inference mode** (meaning that it will use the moving mean and the moving variance to normalize the current batch, rather than using the mean and variance of the current batch).  Note that: "
+      },
+      {
+        "description": "Setting `trainable` on an model containing other layers will recursively set the `trainable` value of all inner layers."
+      },
+      {
+        "description": "If the value of the `trainable` attribute is changed after calling `compile()` on a model, the new value doesn't take effect for this model until `compile()` is called again."
       }
     ]
   },
   {
     "name": "Bidirectional",
     "module": "keras.layers",
-    "category": "Wrapper",
     "description": "Bidirectional wrapper for RNNs.",
     "attributes": [
       {
@@ -767,7 +849,7 @@
     "name": "Conv2D",
     "module": "keras.layers",
     "category": "Layer",
-    "description": "2D convolution layer.\n\nThis layer creates a convolution kernel that is convolved with the layer\ninput over a 2D spatial (or temporal) dimension (height and width) to\nproduce a tensor of outputs. If `use_bias` is True, a bias vector is created\nand added to the outputs. Finally, if `activation` is not `None`, it is\napplied to the outputs as well.",
+    "description": "2D convolution layer.\n\nThis layer creates a convolution kernel that is convolved with the layer\ninput over a 2D spatial (or temporal) dimension (height and width) to\nproduce a tensor of outputs. If `use_bias` is True, a bias vector is created\nand added to the outputs. Finally, if `activation` is not `None`, it is\napplied to the outputs as well.\n\nNote on numerical precision: While in general Keras operation execution\nresults are identical across backends up to 1e-7 precision in float32,\n`Conv2D` operations may show larger variations. Due to the large\nnumber of element-wise multiplications and additions in convolution\noperations, especially with large inputs or kernel sizes, accumulated\nfloating-point differences can exceed this 1e-7 threshold. These variations\nare particularly noticeable when using different backends (e.g., TensorFlow\nvs JAX) or different hardware.",
     "attributes": [
       {
         "default": "linear",
@@ -1263,9 +1345,6 @@
     ],
     "references": [
       {
-        "description": " "
-      },
-      {
         "description": "[Shi et al., 2015](http://arxiv.org/abs/1506.04214v1) (the current implementation does not include the feedback loop on the cells output)."
       }
     ]
@@ -1274,7 +1353,7 @@
     "name": "Convolution2D",
     "module": "keras.layers",
     "category": "Layer",
-    "description": "2D convolution layer.\n\nThis layer creates a convolution kernel that is convolved with the layer\ninput over a 2D spatial (or temporal) dimension (height and width) to\nproduce a tensor of outputs. If `use_bias` is True, a bias vector is created\nand added to the outputs. Finally, if `activation` is not `None`, it is\napplied to the outputs as well.",
+    "description": "2D convolution layer.\n\nThis layer creates a convolution kernel that is convolved with the layer\ninput over a 2D spatial (or temporal) dimension (height and width) to\nproduce a tensor of outputs. If `use_bias` is True, a bias vector is created\nand added to the outputs. Finally, if `activation` is not `None`, it is\napplied to the outputs as well.\n\nNote on numerical precision: While in general Keras operation execution\nresults are identical across backends up to 1e-7 precision in float32,\n`Conv2D` operations may show larger variations. Due to the large\nnumber of element-wise multiplications and additions in convolution\noperations, especially with large inputs or kernel sizes, accumulated\nfloating-point differences can exceed this 1e-7 threshold. These variations\nare particularly noticeable when using different backends (e.g., TensorFlow\nvs JAX) or different hardware.",
     "attributes": [
       {
         "default": "linear",
@@ -1700,6 +1779,10 @@
       {
         "name": "lora_rank",
         "description": "Optional integer. If set, the layer's forward pass\n        will implement LoRA (Low-Rank Adaptation)\n        with the provided rank. LoRA sets the layer's kernel\n        to non-trainable and replaces it with a delta over the\n        original kernel, obtained via multiplying two lower-rank\n        trainable matrices. This can be useful to reduce the\n        computation cost of fine-tuning large dense layers.\n        You can also enable LoRA on an existing\n        `Dense` layer by calling `layer.enable_lora(rank)`."
+      },
+      {
+        "name": "lora_alpha",
+        "description": "Optional integer. If set, this parameter scales the\n        low-rank adaptation delta (computed as the product of two lower-rank\n        trainable matrices) during the forward pass. The delta is scaled by\n        `lora_alpha / lora_rank`, allowing you to fine-tune the strength of\n        the LoRA adjustment independently of `lora_rank`."
       }
     ],
     "inputs": [
@@ -1978,6 +2061,10 @@
       {
         "name": "weights",
         "description": "Optional floating-point matrix of size\n        `(input_dim, output_dim)`. The initial embeddings values\n        to use."
+      },
+      {
+        "name": "lora_alpha",
+        "description": "Optional integer. If set, this parameter scales the\n        low-rank adaptation delta (computed as the product of two lower-rank\n        trainable matrices) during the forward pass. The delta is scaled by\n        `lora_alpha / lora_rank`, allowing you to fine-tune the strength of\n        the LoRA adjustment independently of `lora_rank`."
       }
     ],
     "inputs": [
@@ -2172,7 +2259,7 @@
     "name": "GRU",
     "module": "keras.layers",
     "category": "Layer",
-    "description": "Gated Recurrent Unit - Cho et al. 2014.\n\nBased on available runtime hardware and constraints, this layer\nwill choose different implementations (cuDNN-based or backend-native)\nto maximize the performance. If a GPU is available and all\nthe arguments to the layer meet the requirement of the cuDNN kernel\n(see below for details), the layer will use a fast cuDNN implementation\nwhen using the TensorFlow backend.\n\nThe requirements to use the cuDNN implementation are:\n\n1. `activation` == `tanh`\n2. `recurrent_activation` == `sigmoid`\n3. `dropout` == 0 and `recurrent_dropout` == 0\n4. `unroll` is `False`\n5. `use_bias` is `True`\n6. `reset_after` is `True`\n7. Inputs, if use masking, are strictly right-padded.\n8. Eager execution is enabled in the outermost context.\n\nThere are two variants of the GRU implementation. The default one is based\non [v3](https://arxiv.org/abs/1406.1078v3) and has reset gate applied to\nhidden state before matrix multiplication. The other one is based on\n[original](https://arxiv.org/abs/1406.1078v1) and has the order reversed.\n\nThe second variant is compatible with CuDNNGRU (GPU-only) and allows\ninference on CPU. Thus it has separate biases for `kernel` and\n`recurrent_kernel`. To use this variant, set `reset_after=True` and\n`recurrent_activation='sigmoid'`.\n\nFor example:\n\n```\n>>> inputs = np.random.random((32, 10, 8))\n>>> gru = keras.layers.GRU(4)\n>>> output = gru(inputs)\n>>> output.shape\n(32, 4)\n>>> gru = keras.layers.GRU(4, return_sequences=True, return_state=True)\n>>> whole_sequence_output, final_state = gru(inputs)\n>>> whole_sequence_output.shape\n(32, 10, 4)\n>>> final_state.shape\n(32, 4)\n```",
+    "description": "Gated Recurrent Unit - Cho et al. 2014.\n\nBased on available runtime hardware and constraints, this layer\nwill choose different implementations (cuDNN-based or backend-native)\nto maximize the performance. If a GPU is available and all\nthe arguments to the layer meet the requirement of the cuDNN kernel\n(see below for details), the layer will use a fast cuDNN implementation\nwhen using the TensorFlow backend.\n\nThe requirements to use the cuDNN implementation are:\n\n1. `activation` == `tanh`\n2. `recurrent_activation` == `sigmoid`\n3. `recurrent_dropout` == 0\n4. `unroll` is `False`\n5. `use_bias` is `True`\n6. `reset_after` is `True`\n7. Inputs, if use masking, are strictly right-padded.\n8. Eager execution is enabled in the outermost context.\n\nThere are two variants of the GRU implementation. The default one is based\non [v3](https://arxiv.org/abs/1406.1078v3) and has reset gate applied to\nhidden state before matrix multiplication. The other one is based on\n[original](https://arxiv.org/abs/1406.1078v1) and has the order reversed.\n\nThe second variant is compatible with CuDNNGRU (GPU-only) and allows\ninference on CPU. Thus it has separate biases for `kernel` and\n`recurrent_kernel`. To use this variant, set `reset_after=True` and\n`recurrent_activation='sigmoid'`.\n\nFor example:\n\n```\n>>> inputs = np.random.random((32, 10, 8))\n>>> gru = keras.layers.GRU(4)\n>>> output = gru(inputs)\n>>> output.shape\n(32, 4)\n>>> gru = keras.layers.GRU(4, return_sequences=True, return_state=True)\n>>> whole_sequence_output, final_state = gru(inputs)\n>>> whole_sequence_output.shape\n(32, 10, 4)\n>>> final_state.shape\n(32, 4)\n```",
     "attributes": [
       {
         "default": "tanh",
@@ -2820,7 +2907,7 @@
     "name": "LSTM",
     "module": "keras.layers",
     "category": "Layer",
-    "description": "Long Short-Term Memory layer - Hochreiter 1997.\n\nBased on available runtime hardware and constraints, this layer\nwill choose different implementations (cuDNN-based or backend-native)\nto maximize the performance. If a GPU is available and all\nthe arguments to the layer meet the requirement of the cuDNN kernel\n(see below for details), the layer will use a fast cuDNN implementation\nwhen using the TensorFlow backend.\nThe requirements to use the cuDNN implementation are:\n\n1. `activation` == `tanh`\n2. `recurrent_activation` == `sigmoid`\n3. `dropout` == 0 and `recurrent_dropout` == 0\n4. `unroll` is `False`\n5. `use_bias` is `True`\n6. Inputs, if use masking, are strictly right-padded.\n7. Eager execution is enabled in the outermost context.\n\nFor example:\n\n```\n>>> inputs = np.random.random((32, 10, 8))\n>>> lstm = keras.layers.LSTM(4)\n>>> output = lstm(inputs)\n>>> output.shape\n(32, 4)\n>>> lstm = keras.layers.LSTM(\n...     4, return_sequences=True, return_state=True)\n>>> whole_seq_output, final_memory_state, final_carry_state = lstm(inputs)\n>>> whole_seq_output.shape\n(32, 10, 4)\n>>> final_memory_state.shape\n(32, 4)\n>>> final_carry_state.shape\n(32, 4)\n```",
+    "description": "Long Short-Term Memory layer - Hochreiter 1997.\n\nBased on available runtime hardware and constraints, this layer\nwill choose different implementations (cuDNN-based or backend-native)\nto maximize the performance. If a GPU is available and all\nthe arguments to the layer meet the requirement of the cuDNN kernel\n(see below for details), the layer will use a fast cuDNN implementation\nwhen using the TensorFlow backend.\nThe requirements to use the cuDNN implementation are:\n\n1. `activation` == `tanh`\n2. `recurrent_activation` == `sigmoid`\n3. `recurrent_dropout` == 0\n4. `unroll` is `False`\n5. `use_bias` is `True`\n6. Inputs, if use masking, are strictly right-padded.\n7. Eager execution is enabled in the outermost context.\n\nFor example:\n\n```\n>>> inputs = np.random.random((32, 10, 8))\n>>> lstm = keras.layers.LSTM(4)\n>>> output = lstm(inputs)\n>>> output.shape\n(32, 4)\n>>> lstm = keras.layers.LSTM(\n...     4, return_sequences=True, return_state=True)\n>>> whole_seq_output, final_memory_state, final_carry_state = lstm(inputs)\n>>> whole_seq_output.shape\n(32, 10, 4)\n>>> final_memory_state.shape\n(32, 4)\n>>> final_carry_state.shape\n(32, 4)\n```",
     "attributes": [
       {
         "description": "Positive integer, dimensionality of the output space.",
@@ -3091,7 +3178,7 @@
     "examples": [
       {
         "summary": "Consider a NumPy data array `x` of shape `(samples, timesteps, features)`,\nto be fed to an LSTM layer. You want to mask timestep #3 and #5 because you\nlack data for these timesteps. You can:\n- Set `x[:, 3, :] = 0.` and `x[:, 5, :] = 0.`\n- Insert a `Masking` layer with `mask_value=0.` before the LSTM layer:",
-        "code": "samples, timesteps, features = 32, 10, 8\ninputs = np.random.random([samples, timesteps, features]).astype(np.float32)\ninputs[:, 3, :] = 0.\ninputs[:, 5, :] = 0.\n\nmodel = keras.models.Sequential()\nmodel.add(keras.layers.Masking(mask_value=0.)\nmodel.add(keras.layers.LSTM(32))\noutput = model(inputs)\n# The time step 3 and 5 will be skipped from LSTM calculation."
+        "code": "samples, timesteps, features = 32, 10, 8\ninputs = np.random.random([samples, timesteps, features]).astype(np.float32)\ninputs[:, 3, :] = 0.\ninputs[:, 5, :] = 0.\n\nmodel = keras.models.Sequential()\nmodel.add(keras.layers.Masking(mask_value=0.0))\nmodel.add(keras.layers.LSTM(32))\noutput = model(inputs)\n# The time step 3 and 5 will be skipped from LSTM calculation."
       }
     ]
   },
@@ -3348,6 +3435,10 @@
       {
         "name": "seed",
         "description": "Optional integer to seed the dropout layer."
+      },
+      {
+        "name": "flash_attention",
+        "description": "If `None`, the layer attempts to use flash\n        attention for faster and more memory-efficient attention\n        computations when possible. This behavior can be configured using\n        `keras.config.enable_flash_attention()` or\n        `keras.config.disable_flash_attention()`."
       }
     ],
     "examples": [
@@ -3632,7 +3723,7 @@
     ],
     "examples": [
       {
-        "code": "from keras.layers import RNN\nfrom keras import ops\n\n# First, let's define a RNN Cell, as a layer subclass.\nclass MinimalRNNCell(keras.Layer):\n\n    def __init__(self, units, **kwargs):\n        super().__init__(**kwargs)\n        self.units = units\n        self.state_size = units\n\n    def build(self, input_shape):\n        self.kernel = self.add_weight(shape=(input_shape[-1], self.units),\n                                      initializer='uniform',\n                                      name='kernel')\n        self.recurrent_kernel = self.add_weight(\n            shape=(self.units, self.units),\n            initializer='uniform',\n            name='recurrent_kernel')\n        self.built = True\n\n    def call(self, inputs, states):\n        prev_output = states[0]\n        h = ops.matmul(inputs, self.kernel)\n        output = h + ops.matmul(prev_output, self.recurrent_kernel)\n        return output, [output]\n\n# Let's use this cell in a RNN layer:\n\ncell = MinimalRNNCell(32)\nx = keras.Input((None, 5))\nlayer = RNN(cell)\ny = layer(x)\n\n# Here's how to use the cell to build a stacked RNN:\n\ncells = [MinimalRNNCell(32), MinimalRNNCell(64)]\nx = keras.Input((None, 5))\nlayer = RNN(cells)\ny = layer(x)"
+        "code": "from keras.layers import RNN\nfrom keras import ops\n\n# First, let's define a RNN Cell, as a layer subclass.\nclass MinimalRNNCell(keras.Layer):\n\n    def __init__(self, units, **kwargs):\n        super().__init__(**kwargs)\n        self.units = units\n        self.state_size = units\n\n    def build(self, input_shape):\n        self.kernel = self.add_weight(shape=(input_shape[-1], self.units),\n                                      initializer='uniform',\n                                      name='kernel')\n        self.recurrent_kernel = self.add_weight(\n            shape=(self.units, self.units),\n            initializer='uniform',\n            name='recurrent_kernel')\n\n    def call(self, inputs, states):\n        prev_output = states[0]\n        h = ops.matmul(inputs, self.kernel)\n        output = h + ops.matmul(prev_output, self.recurrent_kernel)\n        return output, [output]\n\n# Let's use this cell in a RNN layer:\n\ncell = MinimalRNNCell(32)\nx = keras.Input((None, 5))\nlayer = RNN(cell)\ny = layer(x)\n\n# Here's how to use the cell to build a stacked RNN:\n\ncells = [MinimalRNNCell(32), MinimalRNNCell(64)]\nx = keras.Input((None, 5))\nlayer = RNN(cells)\ny = layer(x)"
       }
     ]
   },
@@ -3932,12 +4023,12 @@
       },
       {
         "default": false,
-        "description": "Boolean (default: `False`). If `True`, the last state\n        for each sample at index i in a batch will be used as initial\n        state for the sample of index i in the following batch.",
+        "description": "Boolean (default: `False`). If `True`, the last state\n        for each sample at index i in a batch will be used as the\n        initial state for the sample of index i in the following batch.",
         "name": "stateful"
       },
       {
         "default": false,
-        "description": "Boolean (default: `False`).\n        If `True`, the network will be unrolled,\n        else a symbolic loop will be used.\n        Unrolling can speed-up a RNN,\n        although it tends to be more memory-intensive.\n        Unrolling is only suitable for short sequences.",
+        "description": "Boolean (default: `False`).\n        If `True`, the network will be unrolled,\n        else a symbolic loop will be used.\n        Unrolling can speed-up an RNN,\n        although it tends to be more memory-intensive.\n        Unrolling is only suitable for short sequences.",
         "name": "unroll"
       },
       {
@@ -4201,7 +4292,7 @@
     ],
     "inputs": [
       {
-        "description": "3D tensor with shape: `(samples, timesteps, channels)`\n\nOutput shape: Same as input.\n\nReference:\n\n- [Tompson et al., 2014](https://arxiv.org/abs/1411.4280)",
+        "description": "3D tensor with shape: `(samples, timesteps, channels)`\n\nOutput shape: Same as input.",
         "name": "input"
       }
     ],
@@ -4213,7 +4304,7 @@
     ],
     "references": [
       {
-        "description": "[Efficient Object Localization Using Convolutional Networks](https://arxiv.org/abs/1411.4280)"
+        "description": "[Tompson et al., 2014](https://arxiv.org/abs/1411.4280)"
       }
     ]
   },
@@ -4234,7 +4325,7 @@
     ],
     "inputs": [
       {
-        "description": "4D tensor with shape: `(samples, channels, rows, cols)` if\n        data_format='channels_first'\n    or 4D tensor with shape: `(samples, rows, cols, channels)` if\n        data_format='channels_last'.\n\nOutput shape: Same as input.\n\nReference:\n\n- [Tompson et al., 2014](https://arxiv.org/abs/1411.4280)",
+        "description": "4D tensor with shape: `(samples, channels, rows, cols)` if\n        data_format='channels_first'\n    or 4D tensor with shape: `(samples, rows, cols, channels)` if\n        data_format='channels_last'.\n\nOutput shape: Same as input.",
         "name": "input"
       }
     ],
@@ -4246,7 +4337,7 @@
     ],
     "references": [
       {
-        "description": "[Efficient Object Localization Using Convolutional Networks](https://arxiv.org/abs/1411.4280)"
+        "description": "[Tompson et al., 2014](https://arxiv.org/abs/1411.4280)"
       }
     ]
   },
@@ -4267,7 +4358,7 @@
     ],
     "inputs": [
       {
-        "description": "5D tensor with shape: `(samples, channels, dim1, dim2, dim3)` if\n        data_format='channels_first'\n    or 5D tensor with shape: `(samples, dim1, dim2, dim3, channels)` if\n        data_format='channels_last'.\n\nOutput shape: Same as input.\n\nReference:\n\n- [Tompson et al., 2014](https://arxiv.org/abs/1411.4280)",
+        "description": "5D tensor with shape: `(samples, channels, dim1, dim2, dim3)` if\n        data_format='channels_first'\n    or 5D tensor with shape: `(samples, dim1, dim2, dim3, channels)` if\n        data_format='channels_last'.\n\nOutput shape: Same as input.",
         "name": "input"
       }
     ],
@@ -4279,7 +4370,7 @@
     ],
     "references": [
       {
-        "description": "[Efficient Object Localization Using Convolutional Networks](https://arxiv.org/abs/1411.4280)"
+        "description": "[Tompson et al., 2014](https://arxiv.org/abs/1411.4280)"
       }
     ]
   },
@@ -4362,7 +4453,6 @@
   {
     "name": "TimeDistributed",
     "module": "keras.layers",
-    "category": "Wrapper",
     "description": "This wrapper allows to apply a layer to every temporal slice of an input.\n\nEvery input should be at least 3D, and the dimension of index one of the\nfirst input will be considered to be the temporal dimension.\n\nConsider a batch of 32 video samples, where each sample is a 128x128 RGB\nimage with `channels_last` data format, across 10 timesteps.\nThe batch input shape is `(32, 10, 128, 128, 3)`.\n\nYou can then use `TimeDistributed` to apply the same `Conv2D` layer to each\nof the 10 timesteps, independently:\n\n```\n>>> inputs = layers.Input(shape=(10, 128, 128, 3), batch_size=32)\n>>> conv_2d_layer = layers.Conv2D(64, (3, 3))\n>>> outputs = layers.TimeDistributed(conv_2d_layer)(inputs)\n>>> outputs.shape\n(32, 10, 126, 126, 64)\n```\n\nBecause `TimeDistributed` applies the same instance of `Conv2D` to each of\nthe timestamps, the same set of weights are used at each timestamp.",
     "attributes": [
       {

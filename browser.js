@@ -1,9 +1,9 @@
 
 import * as base from './base.js';
 
-const host = {};
+const browser = {};
 
-host.BrowserHost = class {
+browser.Host = class {
 
     constructor() {
         this._window = window;
@@ -59,7 +59,7 @@ host.BrowserHost = class {
             if (days > 180) {
                 const link = this._element('logo-github').href;
                 this.document.body.classList.remove('spinner');
-                for (; ;) {
+                for (;;) {
                     /* eslint-disable no-await-in-loop */
                     await this.message('Please update to the newest version.', null, 'Update');
                     /* eslint-enable no-await-in-loop */
@@ -431,7 +431,7 @@ host.BrowserHost = class {
                     stream = await this._request(url, null, null, progress);
                 }
             }
-            context = new host.BrowserHost.Context(this, url, identifier, name, stream);
+            context = new browser.Context(this, url, identifier, name, stream);
             this._telemetry.set('session_engaged', 1);
         } catch (error) {
             await this._view.error(error, 'Model load request failed.');
@@ -444,6 +444,7 @@ host.BrowserHost = class {
     _qs(element) {
         return document.querySelector(element);
     }
+
     async _getWebnnOps() {
         const response = await fetch("https://webmachinelearning.github.io/assets/json/webnn_status.json");
         // const response = await fetch("https://ibelem.github.io/webnn_status.json");
@@ -635,7 +636,7 @@ host.BrowserHost = class {
 
     async _open(file, files) {
         this._view.show('welcome spinner');
-        const context = new host.BrowserHost.BrowserFileContext(this, file, files);
+        const context = new browser.BrowserFileContext(this, file, files);
         try {
             await context.open();
             await this._openContext(context);
@@ -667,7 +668,7 @@ host.BrowserHost = class {
             const encoder = new TextEncoder();
             const buffer = encoder.encode(file.content);
             const stream = new base.BinaryStream(buffer);
-            const context = new host.BrowserHost.Context(this, '', identifier, null, stream);
+            const context = new browser.Context(this, '', identifier, null, stream);
             await this._openContext(context);
         } catch (error) {
             await this._view.error(error, 'Error while loading Gist.');
@@ -678,8 +679,14 @@ host.BrowserHost = class {
     async _openContext(context) {
         this._telemetry.set('session_engaged', 1);
         try {
+            const attachment = await this._view.attach(context);
+            if (attachment) {
+                this._view.show(null);
+                return 'context-open-attachment';
+            }
             const model = await this._view.open(context);
             if (model) {
+                this._view.show(null);
                 this.document.title = context.name || context.identifier;
                 await this._showWebnnOpsMap(model);
                 return '';
@@ -780,7 +787,7 @@ host.BrowserHost = class {
     }
 };
 
-host.BrowserHost.BrowserFileContext = class {
+browser.BrowserFileContext = class {
 
     constructor(host, file, blobs) {
         this._host = host;
@@ -827,7 +834,7 @@ host.BrowserHost.BrowserFileContext = class {
                             const slice = blob.slice(position, Math.min(position + size, blob.size));
                             reader.readAsArrayBuffer(slice);
                         } else {
-                            const stream = new host.BrowserHost.FileStream(chunks, size, 0, position);
+                            const stream = new browser.FileStream(chunks, size, 0, position);
                             resolve(stream);
                         }
                     }
@@ -875,7 +882,7 @@ host.BrowserHost.BrowserFileContext = class {
     }
 };
 
-host.BrowserHost.FileStream = class {
+browser.FileStream = class {
 
     constructor(chunks, size, start, length) {
         this._chunks = chunks;
@@ -894,7 +901,7 @@ host.BrowserHost.FileStream = class {
     }
 
     stream(length) {
-        const file = new host.BrowserHost.FileStream(this._chunks, this._size, this._start + this._position, length);
+        const file = new browser.FileStream(this._chunks, this._size, this._start + this._position, length);
         this.skip(length);
         return file;
     }
@@ -982,7 +989,7 @@ host.BrowserHost.FileStream = class {
     }
 };
 
-host.BrowserHost.Context = class {
+browser.Context = class {
 
     constructor(host, url, identifier, name, stream) {
         this._host = host;
@@ -1029,7 +1036,7 @@ host.BrowserHost.Context = class {
 
 if (!('scrollBehavior' in window.document.documentElement.style)) {
     const __scrollTo__ = Element.prototype.scrollTo;
-    Element.prototype.scrollTo = function (...args) {
+    Element.prototype.scrollTo = function(...args) {
         const [options] = args;
         if (options !== undefined) {
             if (options === null || typeof options !== 'object' || options.behavior === undefined || options.behavior === 'auto' || options.behavior === 'instant') {
@@ -1037,7 +1044,7 @@ if (!('scrollBehavior' in window.document.documentElement.style)) {
                     __scrollTo__.apply(this, args);
                 }
             } else {
-                const now = () => window.performance && window.performance.now ? window.performance.now() : Date.now();
+                const now = () =>  window.performance && window.performance.now ? window.performance.now() : Date.now();
                 const ease = (k) => 0.5 * (1 - Math.cos(Math.PI * k));
                 const step = (context) => {
                     const value = ease(Math.min((now() - context.startTime) / 468, 1));
@@ -1064,7 +1071,7 @@ if (!('scrollBehavior' in window.document.documentElement.style)) {
 }
 
 if (typeof window !== 'undefined' && window.exports) {
-    window.exports.browser = host;
+    window.exports.browser = browser;
 }
 
-export const BrowserHost = host.BrowserHost;
+export const Host = browser.Host;

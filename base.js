@@ -626,6 +626,9 @@ base.Tensor = class {
 
     get data() {
         this._read();
+        if (this._data && this._data.peek) {
+            this._data = this._data.peek();
+        }
         return this._data;
     }
 
@@ -1252,7 +1255,7 @@ base.Metadata = class {
 
     get extensions() {
         return [
-            'onnx', 'tflite', 'pb', 'pt', 'pt2', 'pth', 'h5', 'pbtxt', 'prototxt', 'caffemodel', 'mlmodel', 'mlpackage',
+            'onnx', 'tflite', 'pb', 'pt', 'pt2', 'pte', 'pth', 'h5', 'pbtxt', 'prototxt', 'caffemodel', 'mlmodel', 'mlpackage',
             'model', 'json', 'xml', 'cfg', 'weights', 'bin',
             'ort',
             'dnn', 'cmf',
@@ -1264,7 +1267,7 @@ base.Metadata = class {
             'paddle', 'pdiparams', 'pdmodel', 'pdopt', 'pdparams', 'nb',
             'pkl', 'pickle', 'joblib', 'safetensors',
             'ptl', 't7',
-            'dlc', 'uff', 'armnn',
+            'dlc', 'uff', 'armnn', 'kann', 'kgraph',
             'mnn', 'ms', 'ncnn', 'om', 'tm', 'mge', 'tmfile', 'tnnproto', 'xmodel', 'kmodel', 'rknn',
             'tar', 'zip'
         ];

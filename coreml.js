@@ -5,11 +5,11 @@ const coreml = {};
 
 coreml.ModelFactory = class {
 
-    match(context) {
+    async match(context) {
         const stream = context.stream;
         const identifier = context.identifier.toLowerCase();
         const extension = identifier.split('.').pop().toLowerCase();
-        const tags = context.tags('pb');
+        const tags = await context.tags('pb');
         if (tags.get(1) === 0 && tags.get(2) === 2) {
             const match = (key) =>
                 (key >= 200 && key < 220) || (key >= 300 && key < 320) || (key >= 400 && key < 420) ||
@@ -17,56 +17,49 @@ coreml.ModelFactory = class {
                 (key === 900) ||
                 (key >= 2000 && key < 2010) || (key === 3000);
             if (extension === 'pb' && Array.from(tags.keys()).every((key) => !match(key))) {
-                return;
+                return null;
             }
-            context.type = 'coreml.pb';
-            return;
+            return context.set('coreml.pb');
         }
         if (extension === 'pbtxt') {
-            const tags = context.tags('pbtxt');
+            const tags = await context.tags('pbtxt');
             if (tags.has('specificationVersion') && tags.has('description')) {
-                context.type = 'coreml.pbtxt';
-                return;
+                return context.set('coreml.pbtxt');
             }
         }
         if (identifier === 'manifest.json') {
-            const obj = context.peek('json');
+            const obj = await context.peek('json');
             if (obj && obj.rootModelIdentifier && obj.itemInfoEntries) {
                 const entries = Object.keys(obj.itemInfoEntries).map((key) => obj.itemInfoEntries[key]);
                 if (entries.filter((entry) => entry.path.toLowerCase().endsWith('.mlmodel').length === 1)) {
-                    context.type = 'coreml.manifest';
-                    return;
+                    return context.set('coreml.manifest');
                 }
             }
         }
         if (identifier === 'model.mil') {
             try {
-                const reader = context.read('text', 2048);
+                const reader = await context.read('text', 2048);
                 const signature = reader.read('\n');
                 if (signature && signature.trim().startsWith('program')) {
-                    context.type = 'coreml.mil';
-                    return;
+                    return context.set('coreml.mil');
                 }
             } catch {
                 // continue regardless of error
             }
         }
         if (identifier === 'featuredescriptions.json') {
-            const obj = context.peek('json');
+            const obj = await context.peek('json');
             if (obj && (obj.Inputs || obj.Outputs)) {
-                context.type = 'coreml.featuredescriptions';
-                return;
+                return context.set('coreml.featuredescriptions');
             }
         }
         if (identifier === 'metadata.json') {
-            const obj = context.peek('json');
+            const obj = await context.peek('json');
             if (obj && obj.rootModelIdentifier && obj.itemInfoEntries) {
-                context.type = 'coreml.metadata';
-                return;
+                return context.set('coreml.metadata');
             }
             if (Array.isArray(obj) && obj.some((item) => item && item.metadataOutputVersion && item.specificationVersion)) {
-                context.type = 'coreml.metadata.mlmodelc';
-                return;
+                return context.set('coreml.metadata.mlmodelc');
             }
         }
         if (extension === 'bin' && stream.length > 16) {
@@ -74,11 +67,11 @@ coreml.ModelFactory = class {
             for (let i = 0; i < buffer.length - 4; i++) {
                 const signature = (buffer[i] | buffer[i + 1] << 8 | buffer[i + 2] << 16 | buffer [i + 3] << 24) >>> 0;
                 if (signature === 0xdeadbeef) {
-                    context.type = 'coreml.weights';
-                    return;
+                    return context.set('coreml.weights');
                 }
             }
         }
+        return null;
     }
 
     filter(context, type) {
@@ -95,7 +88,7 @@ coreml.ModelFactory = class {
         const openBinary = async (content, context, path, format) => {
             let model = null;
             try {
-                const reader = content.read('protobuf.binary');
+                const reader = await content.read('protobuf.binary');
                 model = coreml.proto.Model.decode(reader);
             } catch (error) {
                 const message = error && error.message ? error.message : error.toString();
@@ -158,7 +151,7 @@ coreml.ModelFactory = class {
         const openText = async (context) => {
             let model = null;
             try {
-                const reader = context.read('protobuf.text');
+                const reader = await context.read('protobuf.text');
                 model = coreml.proto.Model.decodeText(reader);
             } catch (error) {
                 const message = error && error.message ? error.message : error.toString();
@@ -180,18 +173,18 @@ coreml.ModelFactory = class {
         const openManifestStream = async (context, path) => {
             const name = `${path}Manifest.json`;
             const content = await context.fetch(name);
-            const obj = content.read('json');
+            const obj = await content.read('json');
             return openManifest(obj, context, path);
         };
         switch (context.type) {
             case 'coreml.pb': {
-                return openBinary(context, context, context.identifier);
+                return openBinary(context, context, '');
             }
             case 'coreml.pbtxt': {
-                return openText(context, context, context.identifier);
+                return openText(context, context, '');
             }
             case 'coreml.manifest': {
-                const obj = context.peek('json');
+                const obj = await context.peek('json');
                 return openManifest(obj, context, '');
             }
             case 'coreml.featuredescriptions':
@@ -220,6 +213,7 @@ coreml.Model = class {
         this.format = context.format;
         this.metadata = Array.from(context.metadata);
         this.graphs = context.graphs.map((context) => new coreml.Graph(context));
+        this.functions = context.functions.map((context) => new coreml.Graph(context));
         if (context.version) {
             this.version = context.version;
         }
@@ -233,7 +227,8 @@ coreml.Graph = class {
 
     constructor(context) {
         this.name = context.name || '';
-        this.type = context.type;
+        this.type = context.type || '';
+        this.description = context.description;
         this.groups = context.groups;
         for (const value of context.values.values()) {
             const name = value.name;
@@ -538,20 +533,21 @@ coreml.Context = class {
         this.format = format;
         this.metadata = [];
         this.graphs = [];
+        this.functions = [];
         const description = model.description;
         for (const func of description.functions) {
-            const graph = new coreml.Context.Graph(metadata, func.name, model, func, weights, values);
-            this.graphs.push(graph);
+            const graph = new coreml.Context.Graph(metadata, func.name, 'function', model, func, weights, values);
+            this.functions.push(graph);
         }
         if (description && description.defaultFunctionName) {
             const graph = this.graphs.find((graph) => graph.name === description.defaultFunctionName);
             if (graph) {
-                this.graphs.splice(this.graphs.indexOf(graph), 1);
-                this.graphs.unshift(graph);
+                this.functions.splice(this.graphs.indexOf(graph), 1);
+                this.functions.unshift(graph);
             }
         }
         if (model && !model.mlProgram || (model.mlProgram.functions && model.mlProgram.functions.main)) {
-            const graph = new coreml.Context.Graph(metadata, '', model, description, weights, values);
+            const graph = new coreml.Context.Graph(metadata, '', 'graph', model, description, weights, values);
             this.graphs.push(graph);
         }
         if (description && description.metadata) {
@@ -577,9 +573,10 @@ coreml.Context = class {
 
 coreml.Context.Graph = class {
 
-    constructor(metadata, name, model, description, weights, values) {
+    constructor(metadata, name, type, model, description, weights, values) {
         this.metadata = metadata;
         this.name = name;
+        this.type = type;
         this.weights = weights || new Map();
         this.values = values || new Map();
         this.nodes = [];
@@ -598,7 +595,7 @@ coreml.Context.Graph = class {
                 this.update(value, description);
                 this.inputs.push({ name: description.name, visible: true, value: [value] });
             }
-            this.type = this.model(model, '', description);
+            this.description = this.model(model, '', description);
             const outputs = description && Array.isArray(description.output) ? description.output : [];
             for (const description of outputs) {
                 const value = this.input(description.name);
@@ -609,7 +606,7 @@ coreml.Context.Graph = class {
     }
 
     context() {
-        return new coreml.Context.Graph(this.metadata, '', null, null, this.weights, this.values);
+        return new coreml.Context.Graph(this.metadata, '', 'graph', null, null, this.weights, this.values);
     }
 
     network(obj) {
@@ -619,7 +616,7 @@ coreml.Context.Graph = class {
             context.node(context.groups, type, layer.name, '', layer[type], layer.input, layer.output, layer.inputTensor, layer.outputTensor);
         }
         context.updatePreprocessing('', obj.preprocessing, null);
-        context.type = 'Neural Network';
+        context.description = 'Neural Network';
         return context;
     }
 
@@ -1303,7 +1300,7 @@ coreml.Context.Graph = class {
                                     break;
                                 }
                                 case 'float16':
-                                case 'int1': case 'int2': case 'int3': case 'int4': case 'int6': case 'int8':
+                                case 'int1': case 'int2': case 'int3': case 'int4': case 'int6': case 'int8': case 'int32':
                                 case 'uint1': case 'uint2': case 'uint3': case 'uint4': case 'uint6': case 'uint8': {
                                     data = stream.read(size);
                                     break;

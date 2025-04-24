@@ -3,33 +3,33 @@ const darknet = {};
 
 darknet.ModelFactory = class {
 
-    match(context) {
+    async match(context) {
         const identifier = context.identifier;
         const extension = identifier.split('.').pop().toLowerCase();
         if (extension === 'weights' && !identifier.toLowerCase().endsWith('.espresso.weights')) {
-            const weights = darknet.Weights.open(context);
+            const weights = await darknet.Weights.open(context);
             if (weights) {
-                context.type = 'darknet.weights';
-                context.target = weights;
+                return context.set('darknet.weights', weights);
             }
-            return;
+            return null;
         }
-        const reader = context.read('text', 65536);
+        const reader = await context.read('text', 65536);
         if (reader) {
             try {
                 for (let line = reader.read('\n'); line !== undefined; line = reader.read('\n')) {
                     const content = line.trim();
                     if (content.length > 0 && !content.startsWith('#')) {
                         if (content.startsWith('[') && content.endsWith(']')) {
-                            context.type = 'darknet.model';
+                            return context.set('darknet.model');
                         }
-                        return;
+                        return null;
                     }
                 }
             } catch {
                 // continue regardless of error
             }
         }
+        return null;
     }
 
     async open(context) {
@@ -40,10 +40,10 @@ darknet.ModelFactory = class {
         const basename = parts.join('.');
         switch (context.type) {
             case 'darknet.weights': {
-                const weights = context.target;
+                const weights = context.value;
                 const name = `${basename}.cfg`;
                 const content = await context.fetch(name);
-                const reader = content.read('text');
+                const reader = await content.read('text');
                 const configuration = new darknet.Configuration(reader, content.identifier);
                 return new darknet.Model(metadata, configuration, weights);
             }
@@ -51,12 +51,12 @@ darknet.ModelFactory = class {
                 try {
                     const name = `${basename}.weights`;
                     const content = await context.fetch(name);
-                    const weights = darknet.Weights.open(content);
-                    const reader = context.read('text');
+                    const weights = await darknet.Weights.open(content);
+                    const reader = await context.read('text');
                     const configuration = new darknet.Configuration(reader, context.identifier);
                     return new darknet.Model(metadata, configuration, weights);
                 } catch {
-                    const reader = context.read('text');
+                    const reader = await context.read('text');
                     const configuration = new darknet.Configuration(reader, context.identifier);
                     return new darknet.Model(metadata, configuration, null);
                 }
@@ -141,6 +141,21 @@ darknet.Graph = class {
             layer.weights.push(load_weights(`${prefix}weights`, [Math.floor(c / groups), n, size, size], prefix === ''));
             layer.outputs[0].type = new darknet.TensorType('float32', make_shape([layer.out_w, layer.out_h, layer.out_c], 'make_convolutional_layer'));
         };
+        const make_deconvolutional_layer = (l, batch, h, w, c, n, size, stride, padding, activation, batch_normalize) => {
+            const pad = padding;
+            l.out_w = Math.floor((w - 1) * stride + size - 2 * pad);
+            l.out_h = Math.floor((h - 1) * stride + size - 2 * pad);
+            l.out_c = n;
+            l.out = l.out_w * l.out_h * l.out_c;
+            l.weights.push(load_weights(`biases`, [n]));
+            if (batch_normalize) {
+                const batchnorm_layer = { weights: [] };
+                load_batch_normalize_weights(batchnorm_layer, '', n);
+                l.chain.push({ type: 'batchnorm', layer: batchnorm_layer });
+            }
+            l.weights.push(load_weights(`weights`, [c, n, size, size]));
+            l.outputs[0].type = new darknet.TensorType('float32', make_shape([l.out_w, l.out_h, l.out_c], 'make_convolutional_layer'));
+        };
         const make_connected_layer = (layer, prefix, inputs, outputs, batch_normalize) => {
             layer.out_h = 1;
             layer.out_w = 1;
@@ -180,7 +195,7 @@ darknet.Graph = class {
         }
         const inputType = params.w && params.h && params.c ?
             new darknet.TensorType('float32', make_shape([params.w, params.h, params.c], 'params-if')) :
-            new darknet.TensorType('float32', make_shape([params.inputs], 'params-else'));
+            new darknet.TensorType('float32', make_shape([params.inputs], ''));
         const inputName = 'input';
         params.value = [new darknet.Value(inputName, inputType, null)];
         this.inputs.push(new darknet.Argument(inputName, params.value));
@@ -256,8 +271,7 @@ darknet.Graph = class {
             if (infer) {
                 switch (section.type) {
                     case 'conv':
-                    case 'convolutional':
-                    case 'deconvolutional': {
+                    case 'convolutional': {
                         const shape = layer.inputs[0].type.shape.dimensions;
                         if (shape[0] !== params.w || shape[1] !== params.h || shape[2] !== params.c) {
                             throw new darknet.Error('Layer before convolutional layer must output image.');
@@ -277,6 +291,31 @@ darknet.Graph = class {
                         const batch_normalize = option_find_int(options, 'batch_normalize', 0);
                         const activation = option_find_str(options, 'activation', 'logistic');
                         make_convolutional_layer(layer, '', params.w, params.h, params.c, n, groups, size, stride_x, stride_y, padding, batch_normalize);
+                        if (activation !== 'logistic' && activation !== 'none') {
+                            layer.chain.push({ type: activation });
+                        }
+                        break;
+                    }
+                    case 'deconvolutional': {
+                        const shape = layer.inputs[0].type.shape.dimensions;
+                        if (shape[0] !== params.w || shape[1] !== params.h || shape[2] !== params.c) {
+                            throw new darknet.Error('Layer before convolutional layer must output image.');
+                        }
+                        const n = option_find_int(options, 'filters', 1);
+                        const size = option_find_int(options, 'size', 1);
+                        const stride = option_find_int(options, 'stride', 1);
+                        const activation = option_find_str(options, 'activation', 'logistic');
+                        const h = params.h;
+                        const w = params.w;
+                        const c = params.c;
+                        const batch = params.batch;
+                        let padding = option_find_int(options, 'padding', 0);
+                        const pad = option_find_int(options, 'pad', 0);
+                        if (pad) {
+                            padding = size / 2;
+                        }
+                        const batch_normalize = option_find_int(options, 'batch_normalize', 0);
+                        make_deconvolutional_layer(layer, batch, h, w, c, n, size, stride, padding, activation, batch_normalize);
                         if (activation !== 'logistic' && activation !== 'none') {
                             layer.chain.push({ type: activation });
                         }
@@ -936,8 +975,8 @@ darknet.Configuration = class {
 
 darknet.Weights = class {
 
-    static open(context) {
-        const reader = context.read('binary');
+    static async open(context) {
+        const reader = await context.read('binary');
         if (reader && reader.length >= 20) {
             const major = reader.int32();
             const minor = reader.int32();

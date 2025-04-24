@@ -3,7 +3,7 @@ const openvino = {};
 
 openvino.ModelFactory = class {
 
-    match(context) {
+    async match(context) {
         const identifier = context.identifier.toLowerCase();
         const extension = identifier.split('.').pop();
         if (/^.*\.ncnn\.bin$/.test(identifier) ||
@@ -11,7 +11,7 @@ openvino.ModelFactory = class {
             /^.*pytorch_model.*\.bin$/.test(identifier) ||
             /^.*group.+-shard.+of.+\.bin$/.test(identifier) ||
             /^.*param\.bin$/.test(identifier)) {
-            return;
+            return null;
         }
         if (extension === 'bin') {
             const stream = context.stream;
@@ -24,7 +24,7 @@ openvino.ModelFactory = class {
                     const signature = view.getUint32(i, true);
                     if (signature === 0xdeadbeef || // Core ML
                         signature === 0x01306b47 || signature === 0x000d4b38 || signature === 0x0002c056) { // ncnn
-                        return;
+                        return null;
                     }
                 }
                 const match = (pattern, identifier, buffer) => {
@@ -42,8 +42,7 @@ openvino.ModelFactory = class {
                     { identifier: 'text-recognition-0012.bin', signature: [0x0B, 0x21, 0xC6, 0xBC, 0xD0, 0xBB, 0xC1, 0x3B] },
                 ];
                 if (include.some((pattern) => match(pattern, identifier, buffer))) {
-                    context.type = 'openvino.bin';
-                    return;
+                    return context.set('openvino.bin');
                 }
                 const exclude = [
                     { identifier: '__model__.bin' },
@@ -56,16 +55,15 @@ openvino.ModelFactory = class {
                     { signature: [0x21, 0xA8, 0xEF, 0xBE, 0xAD, 0xDE] }
                 ];
                 if (exclude.some((pattern) => match(pattern, identifier, buffer))) {
-                    return;
+                    return null;
                 }
                 if (signature === 0x00000001) {
-                    return;
+                    return null;
                 }
                 const size = Math.min(buffer.length & 0xfffffffc, 128);
                 buffer = buffer.subarray(0, size);
                 if (Array.from(buffer).every((value) => value === 0)) {
-                    context.type = 'openvino.bin';
-                    return;
+                    return context.set('openvino.bin');
                 }
                 const f32 = new Array(buffer.length >> 2);
                 for (let i = 0; i < f32.length; i++) {
@@ -85,16 +83,16 @@ openvino.ModelFactory = class {
                 const validateInt = (array) => array.length > 32 &&
                     array.slice(0, 32).every((x) => x === 0 || x === 1 || x === 2 || x === 0x7fffffff);
                 if (validateFloat(f32) || validateFloat(f16) || validateInt(i32)) {
-                    context.type = 'openvino.bin';
-                    return;
+                    return context.set('openvino.bin');
                 }
             }
-            return;
+            return null;
         }
-        const tags = context.tags('xml');
+        const tags = await context.tags('xml');
         if (tags.has('net')) {
-            context.type = 'openvino.xml';
+            return context.set('openvino.xml');
         }
+        return null;
     }
 
     filter(context, type) {
@@ -133,7 +131,7 @@ openvino.ModelFactory = class {
         }
         let document = null;
         try {
-            document = context.read('xml');
+            document = await context.read('xml');
         } catch (error) {
             const message = error && error.message ? error.message : error.toString();
             throw new openvino.Error(`File format is not OpenVINO XML (${message.replace(/\.$/, '')}).`);
@@ -648,13 +646,15 @@ openvino.Node = class {
             const precision = blob.precision || layer.precision;
             let itemSize = -1;
             switch (precision) {
-                case 'BOOL': case 'BOOLEAN':            itemSize = 1; break;
-                case 'I1':   case 'U1':                 itemSize = 0.125; break;
-                case 'I4':   case 'U4':                 itemSize = 0.5; break;
-                case 'I8':   case 'U8':  case 'F8E4M3': itemSize = 1; break;
-                case 'I16':  case 'U16': case 'FP16':   itemSize = 2; break;
-                case 'I32':  case 'U32': case 'FP32':   itemSize = 4; break;
-                case 'I64':  case 'U64': case 'FP64':   itemSize = 8; break;
+                case 'BOOL': case 'BOOLEAN':          itemSize = 1; break;
+                case 'I1':   case 'U1':               itemSize = 0.125; break;
+                case 'I4':   case 'U4':               itemSize = 0.5; break;
+                case 'I8':   case 'U8':               itemSize = 1; break;
+                case 'I16':  case 'U16': case 'FP16': itemSize = 2; break;
+                case 'I32':  case 'U32': case 'FP32': itemSize = 4; break;
+                case 'I64':  case 'U64': case 'FP64': itemSize = 8; break;
+                case 'F8E4M3':                        itemSize = 1; break;
+                case 'BF16':                          itemSize = 2; break;
                 default: throw new openvino.Error(`Unsupported data type size '${precision}'.`);
             }
             const weight = (name, precision, dimensions, data) => {
@@ -795,36 +795,39 @@ openvino.TensorType = class {
     constructor(precision, shape) {
         precision = precision ? precision.toLowerCase() : precision;
         switch (precision) {
-            case 'f4e2m1':  this.dataType = 'float4e2m1'; break;
-            case 'f8e4m3':  this.dataType = 'float8e4m3'; break;
-            case 'f8e5m2':  this.dataType = 'float8e5m2'; break;
-            case 'f8e8m0':  this.dataType = 'float8e8m0'; break;
-            case 'f16':     this.dataType = 'float16'; break;
-            case 'f32':     this.dataType = 'float32'; break;
-            case 'f64':     this.dataType = 'float64'; break;
-            case 'fp16':    this.dataType = 'float16'; break;
-            case 'fp32':    this.dataType = 'float32'; break;
-            case 'fp64':    this.dataType = 'float64'; break;
-            case 'bf16':    this.dataType = 'bfloat16'; break;
-            case 'nf4':     this.dataType = 'nfloat4'; break;
-            case 'i4':      this.dataType = 'int4'; break;
-            case 'i8':      this.dataType = 'int8'; break;
-            case 'i16':     this.dataType = 'int16'; break;
-            case 'i32':     this.dataType = 'int32'; break;
-            case 'i64':     this.dataType = 'int64'; break;
-            case 'u1':      this.dataType = 'boolean'; break;
-            case 'u4':      this.dataType = 'uint4'; break;
-            case 'u8':      this.dataType = 'uint8'; break;
-            case 'u16':     this.dataType = 'uint16'; break;
-            case 'u32':     this.dataType = 'uint32'; break;
-            case 'u64':     this.dataType = 'uint64'; break;
-            case 'bool':    this.dataType = 'boolean'; break;
-            case 'boolean': this.dataType = 'boolean'; break;
-            case 'bin':     this.dataType = 'bit'; break;
-            case 'string':  this.dataType = 'string'; break;
-            case '':        this.dataType = '?'; break;
-            case null:      this.dataType = '?'; break;
-            default:        throw new openvino.Error(`Unsupported precision '${JSON.stringify(precision)}'.`);
+            case 'f4e2m1':      this.dataType = 'float4e2m1'; break;
+            case 'f8e4m3':      this.dataType = 'float8e4m3'; break;
+            case 'f8e5m2':      this.dataType = 'float8e5m2'; break;
+            case 'f8e8m0':      this.dataType = 'float8e8m0'; break;
+            case 'f16':         this.dataType = 'float16'; break;
+            case 'f32':         this.dataType = 'float32'; break;
+            case 'f64':         this.dataType = 'float64'; break;
+            case 'fp16':        this.dataType = 'float16'; break;
+            case 'fp32':        this.dataType = 'float32'; break;
+            case 'fp64':        this.dataType = 'float64'; break;
+            case 'bf16':        this.dataType = 'bfloat16'; break;
+            case 'nf4':         this.dataType = 'nfloat4'; break;
+            case 'i2':          this.dataType = 'int2'; break;
+            case 'i4':          this.dataType = 'int4'; break;
+            case 'i8':          this.dataType = 'int8'; break;
+            case 'i16':         this.dataType = 'int16'; break;
+            case 'i32':         this.dataType = 'int32'; break;
+            case 'i64':         this.dataType = 'int64'; break;
+            case 'u1':          this.dataType = 'boolean'; break;
+            case 'u4':          this.dataType = 'uint4'; break;
+            case 'u8':          this.dataType = 'uint8'; break;
+            case 'u16':         this.dataType = 'uint16'; break;
+            case 'u32':         this.dataType = 'uint32'; break;
+            case 'u64':         this.dataType = 'uint64'; break;
+            case 'bool':        this.dataType = 'boolean'; break;
+            case 'boolean':     this.dataType = 'boolean'; break;
+            case 'bin':         this.dataType = 'bit'; break;
+            case 'string':      this.dataType = 'string'; break;
+            case 'dynamic':     this.dataType = 'dynamic'; break;
+            case 'unspecified': this.dataType = 'unspecified'; break;
+            case '':            this.dataType = '?'; break;
+            case null:          this.dataType = '?'; break;
+            default:            throw new openvino.Error(`Unsupported precision '${JSON.stringify(precision)}'.`);
         }
         this.shape = shape;
     }

@@ -5,26 +5,26 @@ const pickle = {};
 
 pickle.ModelFactory = class {
 
-    match(context) {
+    async match(context) {
         const stream = context.stream;
         const signature = [0x80, undefined, 0x8a, 0x0a, 0x6c, 0xfc, 0x9c, 0x46, 0xf9, 0x20, 0x6a, 0xa8, 0x50, 0x19];
         if (stream && signature.length <= stream.length && stream.peek(signature.length).every((value, index) => signature[index] === undefined || signature[index] === value)) {
             // Reject PyTorch models with .pkl file extension.
-            return;
+            return null;
         }
-        const obj = context.peek('pkl');
+        const obj = await context.peek('pkl');
         if (obj !== undefined) {
             const name = obj && obj.__class__ && obj.__class__.__module__ && obj.__class__.__name__ ? `${obj.__class__.__module__}.${obj.__class__.__name__}` : '';
             if (!name.startsWith('__torch__.')) {
-                context.type = 'pickle';
-                context.target = obj;
+                return context.set('pickle', obj);
             }
         }
+        return null;
     }
 
     async open(context) {
         let format = 'Pickle';
-        const obj = context.target;
+        const obj = context.value;
         if (obj === null || obj === undefined) {
             context.error(new pickle.Error("Unsupported Pickle null object."));
         } else if (obj instanceof Error) {
@@ -211,15 +211,17 @@ pickle.Tensor = class {
                 } else if (size.every((v) => v !== 0)) {
                     length = size.reduce((a, v, i) => a + stride[i] * (v - 1), 1);
                 }
-                if (offset !== 0 || length !== storage.size()) {
-                    const itemsize = storage.dtype.itemsize();
-                    const stream = this.values;
-                    const position = stream.position;
-                    stream.seek(itemsize * offset);
-                    this.values = stream.peek(itemsize * length);
-                    stream.seek(position);
-                } else if (this.values) {
-                    this.values = this.values.peek();
+                if (this.values !== undefined) {
+                    if (offset !== 0 || length !== storage.size()) {
+                        const itemsize = storage.dtype.itemsize();
+                        const stream = this.values;
+                        const position = stream.position;
+                        stream.seek(itemsize * offset);
+                        this.values = stream.peek(itemsize * length);
+                        stream.seek(position);
+                    } else if (this.values) {
+                        this.values = this.values.peek();
+                    }
                 }
             } else {
                 throw new pickle.Error(`Unsupported tensor layout '${layout}'.`);
