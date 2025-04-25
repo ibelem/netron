@@ -525,6 +525,38 @@ browser.Host = class {
         }
     } 
 
+    _getOperationStats(operations) {
+        // Count occurrences of each operation
+        const counts = {};
+        operations.forEach(op => {
+            counts[op] = (counts[op] || 0) + 1;
+        });
+
+        // Calculate total
+        const total = operations.length;
+
+        // Format the results
+        const result = [];
+
+        // Add each operation with count and percentage
+        for (const [op, count] of Object.entries(counts)) {
+            result.push({
+                'op': op,
+                'count': count,
+                'percentage': ((count / total) * 100).toFixed(2) + '%'
+            });
+        }
+
+        // Add total row
+        result.push({
+            'op': 'Total',
+            'count': total,
+            'percentage': '100%'
+        });
+
+        return result;
+    }
+
     async _showWebnnOpsMap(model) {
         // _graphs[0] - ONNX
         // graphs[0] - TFLite
@@ -545,7 +577,9 @@ browser.Host = class {
             ops.push(x.type.name);
         }
         );
+
         const filter = new Set(ops);
+        let ops_data = this._getOperationStats(ops);
         ops = [...filter].sort();
         const webnn = this._qs('#webnn');
         const map = this._qs('#map');
@@ -561,10 +595,16 @@ browser.Host = class {
                 let tflite = 'No';
                 let dml = 'No';
                 let coreml = 'No';
+                let ops_data_json;
+                let count = 0;
+                let percentage = 0;
                 webnnops.map((v) => {
                     if (v.spec.toLowerCase() === o) {
                         spec = v.spec;
                         alias = v.alias.toString().replaceAll(/,/g, ', ');
+                        ops_data_json = ops_data.find(item => item.op.toLowerCase() === o);
+                        count = ops_data_json.count;
+                        percentage = ops_data_json.percentage;
                         if (v.tflite === 4) {
                             tflite = `Yes, ${v.tflite_chromium_version_added}`;
                         } else if (v.tflite === 3) {
@@ -585,6 +625,9 @@ browser.Host = class {
                             if (a.toLowerCase() === o) {
                                 spec = v.spec;
                                 alias = v.alias.toString().replaceAll(/,/g, ', ');
+                                ops_data_json = ops_data.find(item => item.op.toLowerCase() === o);
+                                count = ops_data_json.count;
+                                percentage = ops_data_json.percentage;
                                 if (v.tflite === 4) {
                                     tflite = `Yes, ${v.tflite_chromium_version_added}`;
                                 } else if (v.tflite === 3) {
@@ -604,20 +647,28 @@ browser.Host = class {
                         }
                     }
                 });
-                tr = `<tr><td>${index}</td><td>${i}</td><td>${spec}</td><td>${tflite}</td><td>${dml}</td><td>${coreml}</td><td>${alias}</td></tr>`;
+                tr = `<tr><td>${index}</td><td>${spec}</td><td>${count}</td><td>${percentage}</td><td>${tflite}</td><td>${dml}</td><td>${coreml}</td><td>${alias}</td></tr>`;
                 trs += tr;
                 index += 1;
             }
+
+            const ops_data_json = ops_data.find(item => item.op.toLowerCase() === 'total');
+            const count = ops_data_json.count;
+
+            trs += `<tr><td></td><td></td><td>${count}</td><td>100%</td><td></td><td></td><td></td><td></td></tr>`;
+
             const table = `
             <table>
                 <thead>
                     <tr>
                         <th rowspan="2">Index</th>
-                        <th rowspan="2">Model Operations</th>
+                        <th colspan="3">Model Operations</th>
                         <th colspan="5">WebNN API Support Status in Chromium</th>
                     </tr>
                     <tr>
                         <th>WebNN Spec</th>
+                        <th>Count</th>
+                        <th>Percentage</th>
                         <th>TensorFlow Lite</th>
                         <th>DirectML</th>
                         <th>Core ML</th>
