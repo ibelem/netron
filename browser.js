@@ -602,9 +602,6 @@ browser.Host = class {
                     if (v.spec.toLowerCase() === o) {
                         spec = v.spec;
                         alias = v.alias.toString().replaceAll(/,/g, ', ');
-                        ops_data_json = ops_data.find(item => item.op.toLowerCase() === o);
-                        count = ops_data_json.count;
-                        percentage = ops_data_json.percentage;
                         if (v.tflite === 4) {
                             tflite = `Yes, ${v.tflite_chromium_version_added}`;
                         } else if (v.tflite === 3) {
@@ -625,9 +622,6 @@ browser.Host = class {
                             if (a.toLowerCase() === o) {
                                 spec = v.spec;
                                 alias = v.alias.toString().replaceAll(/,/g, ', ');
-                                ops_data_json = ops_data.find(item => item.op.toLowerCase() === o);
-                                count = ops_data_json.count;
-                                percentage = ops_data_json.percentage;
                                 if (v.tflite === 4) {
                                     tflite = `Yes, ${v.tflite_chromium_version_added}`;
                                 } else if (v.tflite === 3) {
@@ -647,7 +641,12 @@ browser.Host = class {
                         }
                     }
                 });
-                tr = `<tr><td>${index}</td><td>${spec}</td><td>${count}</td><td>${percentage}</td><td>${tflite}</td><td>${dml}</td><td>${coreml}</td><td>${alias}</td></tr>`;
+
+                ops_data_json = ops_data.find(item => item.op.toLowerCase() === i.toLowerCase());
+                count = ops_data_json.count;
+                percentage = ops_data_json.percentage;
+
+                tr = `<tr><td>${index}</td><td>${i}</td><td>${count}</td><td>${percentage}</td><td>${tflite}</td><td>${dml}</td><td>${coreml}</td><td>${alias}</td></tr>`;
                 trs += tr;
                 index += 1;
             }
