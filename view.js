@@ -53,6 +53,9 @@ view.View = class {
             this._element('webnn-button').addEventListener('click', () => {
                 this.toggleWebnn();
             });
+            this._element('export-tensors').addEventListener('click', async () => {
+                await this.exportAllTensorsAsZip();
+            });
             this._element('webnn-closebutton').addEventListener('click', () => {
                 this.toggleWebnn();
             });
@@ -374,6 +377,69 @@ view.View = class {
 
     toggleWebnn() {
         this._toggleWebNN();
+    }
+
+    async exportAllTensorsAsZip() {
+        if (!this._model || !this._model.graphs) {
+            console.warn('No model or graphs available to export tensors.');
+            return;
+        }
+    
+        const jszip = new JSZip(); // Use JSZip library for zipping files
+        for (const graph of this._model.graphs) {
+            for (const node of graph.nodes) {
+                for (const input of node.inputs) {
+                    for (const value of input.value) {
+                        if (value && value.initializer) {
+                            const tensor = new base.Tensor(value.initializer);
+                            const defaultPath = tensor.name
+                                ? tensor.name.split('/').join('_').split(':').join('_').split('.').join('_')
+                                : 'tensor';
+                            let weightsBiasName = '';
+                            if (input.name.toLowerCase() === 'w') {
+                                weightsBiasName = 'weight';
+                            } else if (input.name.toLowerCase() === 'b') {
+                                weightsBiasName = 'bias';
+                            } else {
+                                weightsBiasName = defaultPath;
+                            }
+                            const fileName = `${node.name.toLowerCase()}_${weightsBiasName}.npy`;
+    
+                            try {
+                                const npyData = await this._getTensorAsNpy(tensor);
+                                jszip.file(fileName, npyData); // Add the .npy file to the zip
+                                console.log(`Added to zip: ${fileName}`);
+                            } catch (error) {
+                                console.error(`Failed to add tensor to zip: ${fileName}`, error);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    
+        // Generate the zip file and trigger download
+        jszip.generateAsync({ type: 'blob' }).then((blob) => {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'tensors.zip';
+            link.click();
+            console.log('Downloaded tensors.zip');
+        }).catch((error) => {
+            console.error('Failed to generate zip file.', error);
+        });
+    }
+    
+    async _getTensorAsNpy(tensor) {
+        const dataType = tensor.type.dataType;
+        const python = await import('./python.js');
+        const execution = new python.Execution();
+        const bytes = execution.invoke('io.BytesIO', []);
+        const dtype = execution.invoke('numpy.dtype', [dataType]);
+        const array = execution.invoke('numpy.asarray', [tensor.value, dtype]);
+        execution.invoke('numpy.save', [bytes, array]);
+        bytes.seek(0);
+        return bytes.read(); // Return the binary data of the .npy file
     }
 
     resetZoom() {
@@ -3368,6 +3434,7 @@ view.TensorView = class extends view.Expander {
                 } else {
                     content.innerHTML = tensor.toString();
                     if (this._host.save && value.type.shape && value.type.shape.dimensions && value.type.shape.dimensions.length > 0) {
+                        console.log(this);
                         this._saveButton = this.createElement('div', 'sidebar-item-value-button');
                         this._saveButton.classList.add('sidebar-item-value-button-context');
                         this._saveButton.setAttribute('style', 'float: right;');

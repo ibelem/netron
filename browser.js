@@ -582,7 +582,7 @@ browser.Host = class {
         let ops_data = this._getOperationStats(ops);
         ops = [...filter].sort();
         const webnn = this._qs('#webnn');
-        const map = this._qs('#map');
+        const map = this._qs('#map-table');
         const webnnops = await this._getWebnnOps();
         if (ops?.length) {
             webnn.removeAttribute("class");
