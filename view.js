@@ -389,7 +389,7 @@ view.View = class {
             weightBiasButtons.innerHTML = "No model or graphs available to export tensors.";
             return;
         }
-    
+
         const jszip = new JSZip(); // Use JSZip library for zipping files
         for (const graph of this._model.graphs) {
             for (const node of graph.nodes) {
@@ -409,7 +409,7 @@ view.View = class {
                                 weightsBiasName = defaultPath;
                             }
                             const fileName = `${node.name.toLowerCase()}_${weightsBiasName}.npy`;
-    
+
                             try {
                                 const npyData = await this._getTensorAsNpy(tensor);
                                 jszip.file(fileName, npyData); // Add the .npy file to the zip
@@ -422,7 +422,7 @@ view.View = class {
                 }
             }
         }
-    
+
         // Generate the zip file and trigger download
         jszip.generateAsync({ type: 'blob' }).then((blob) => {
             const link = document.createElement('a');
@@ -435,11 +435,11 @@ view.View = class {
         });
     }
 
-    _getJsonObject(node, input, name, dataOffset, byteLength, dataType, shape) {
+    _getJsonObject(node, type, input, dataOffset, byteLength, dataType, shape) {
         return {
             node: node,
+            type: type,
             input: input,
-            name: name,
             dataOffset: dataOffset,
             byteLength: byteLength,
             dataType: dataType,
@@ -447,24 +447,24 @@ view.View = class {
         }
     }
 
-    async _downloadModelWeightBiasJson(fileName, modelWeightBias) {    
+    async _downloadModelWeightBiasJson(fileName, modelWeightBias) {
         // Convert the JSON object to a string
         const jsonString = JSON.stringify(modelWeightBias, null, 2);
-    
+
         // Create a Blob from the JSON string
         const blob = new Blob([jsonString], { type: "application/json" });
-    
+
         // Create a temporary link element
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
         link.download = fileName;
-    
+
         // Trigger the download
         link.click();
-    
+
         // Clean up the URL object
         URL.revokeObjectURL(link.href);
-    
+
         console.log(`Downloaded: ${fileName}`);
     }
 
@@ -477,10 +477,10 @@ view.View = class {
             concatenatedBuffer.set(new Uint8Array(buffer), offset);
             offset += buffer.byteLength;
         }
-    
+
         // Create a Blob from the concatenated binary data
         const blob = new Blob([concatenatedBuffer], { type: "application/octet-stream" });
-    
+
         // Trigger the download
         if (this._host && this._host.export) {
             await this._host.export(fileName, blob);
@@ -490,7 +490,7 @@ view.View = class {
     }
 
     async exportAllTensorsAsBinAndJson() {
-        let modelWeightBias = { "weight_bias": [] };
+        let modelWeightBias = {}; // Change to an object instead of an array
         const weightBiasButtons = document.querySelectorAll('.action')[0];
     
         if (!this._model || !this._model.graphs) {
@@ -515,16 +515,18 @@ view.View = class {
                             binaryData.push(tensorBuffer);
     
                             // Create the JSON object and update the dataOffset
-                            let jsonObject = this._getJsonObject(
+                            const jsonObject = this._getJsonObject(
                                 node.name.toLowerCase(),
+                                node.type.name,
                                 input.name,
-                                tensor.name,
                                 currentOffset,
                                 byteLength,
                                 tensor.type.dataType,
                                 tensor.type.shape.dimensions
                             );
-                            modelWeightBias.weight_bias.push(jsonObject);
+    
+                            // Use the tensor name as the key in the JSON object
+                            modelWeightBias[tensor.name] = jsonObject;
     
                             // Update the current offset
                             currentOffset += byteLength;
@@ -550,7 +552,7 @@ view.View = class {
     
         console.log(`Downloaded: ${jsonName} and ${binName}`);
     }
-    
+
     async _getTensorAsNpy(tensor) {
         const dataType = tensor.type.dataType;
         const python = await import('./python.js');
@@ -1484,7 +1486,7 @@ view.Menu = class {
                     default: {
                         this._stack = [this];
                         if (this._root.length > 1) {
-                            this._root =  [this];
+                            this._root = [this];
                             this._rebuild();
                         }
                         this._update();
@@ -2290,7 +2292,7 @@ view.Node = class extends grapher.Node {
     _add(value, type) {
         const node = type === 'graph' ? { type: value } : value;
         const options = this.context.options;
-        const header =  this.header();
+        const header = this.header();
         const category = node.type && node.type.category ? node.type.category : '';
         if (node.type && typeof node.type.name !== 'string' || !node.type.name.split) { // #416
             const error = new view.Error(`Unsupported node type '${JSON.stringify(node.type.name)}'.`);
@@ -2369,8 +2371,8 @@ view.Node = class extends grapher.Node {
                 const type = argument.type;
                 if (argument.visible !== false &&
                     ((type === 'graph') ||
-                    (type === 'object' && isObject(argument.value)) ||
-                    (type === 'object[]' || type === 'function' || type === 'function[]'))) {
+                        (type === 'object' && isObject(argument.value)) ||
+                        (type === 'object[]' || type === 'function' || type === 'function[]'))) {
                     objects.push(argument);
                 } else if (options.weights && argument.visible !== false && argument.type !== 'attribute' && Array.isArray(argument.value) && argument.value.length === 1 && argument.value[0].initializer) {
                     const item = this.context.createArgument(argument);
@@ -2390,8 +2392,8 @@ view.Node = class extends grapher.Node {
                 const type = argument.type;
                 if (argument.visible !== false &&
                     ((type === 'graph') ||
-                    (type === 'object') ||
-                    type === 'object[]' || type === 'function' || type === 'function[]')) {
+                        (type === 'object') ||
+                        type === 'object[]' || type === 'function' || type === 'function[]')) {
                     objects.push(argument);
                 } else if (options.attributes && argument.visible !== false) {
                     const item = attribute(argument);
@@ -5298,7 +5300,7 @@ markdown.Generator = class {
             if (match) {
                 source = source.substring(match[0].length);
                 prevChar = match[0].slice(-1);
-                tokens.push({ type: 'text' , text: inRawBlock ? match[0] : this._escape(match[0]) });
+                tokens.push({ type: 'text', text: inRawBlock ? match[0] : this._escape(match[0]) });
                 continue;
             }
             throw new Error(`Unexpected '${source.charCodeAt(0)}'.`);
@@ -5312,7 +5314,7 @@ markdown.Generator = class {
                 case 'paragraph':
                 case 'text':
                 case 'heading': {
-                    token.tokens  = this._tokenizeInline(token.text, links, false, false, '');
+                    token.tokens = this._tokenizeInline(token.text, links, false, false, '');
                     break;
                 }
                 case 'table': {
@@ -6474,7 +6476,7 @@ view.ModelFactoryService = class {
                     { name: 'Tokenizers data', tags: ['version', 'added_tokens', 'model'] }, // https://github.com/huggingface/tokenizers/blob/main/tokenizers/src/tokenizer/serialization.rs
                     { name: 'Tokenizer data', tags: ['<eos>', '<bos>'] },
                     { name: 'Jupyter Notebook data', tags: ['cells', 'nbformat'] },
-                    { name: 'Kaggle credentials', tags: ['username','key'] },
+                    { name: 'Kaggle credentials', tags: ['username', 'key'] },
                     { name: '.NET runtime configuration', tags: ['runtimeOptions.configProperties'] },
                     { name: '.NET dependency manifest', tags: ['runtimeTarget', 'targets', 'libraries'] },
                 ];
@@ -6546,17 +6548,17 @@ view.ModelFactoryService = class {
             const tags = await context.tags('pb+');
             if (Object.keys(tags).length > 0) {
                 const formats = [
-                    { name: 'sentencepiece.ModelProto data', tags: [[1,[[1,2],[2,5],[3,0]]],[2,[[1,2],[2,2],[3,0],[4,0],[5,2],[6,0],[7,2],[10,5],[16,0],[40,0],[41,0],[42,0],[43,0]]],[3,[]],[4,[]],[5,[]]] },
-                    { name: 'mediapipe.BoxDetectorIndex data', tags: [[1,[[1,[[1,[[1,5],[2,5],[3,5],[4,5],[6,0],[7,5],[8,5],[10,5],[11,0],[12,0]]],[2,5],[3,[]]]],[2,false],[3,false],[4,false],[5,false]]],[2,false],[3,false]] },
-                    { name: 'third_party.tensorflow.python.keras.protobuf.SavedMetadata data', tags: [[1,[[1,[[1,0],[2,0]]],[2,0],[3,2],[4,2],[5,2]]]] },
-                    { name: 'pblczero.Net data', tags: [[1,5],[2,2],[3,[[1,0],[2,0],[3,0]],[10,[[1,[]],[2,[]],[3,[]],[4,[]],[5,[]],[6,[]]]],[11,[]]]] }, // https://github.com/LeelaChessZero/lczero-common/blob/master/proto/net.proto
-                    { name: 'chrome_browser_media.PreloadedData', tags: [[1,2]], identifier: 'preloaded_data.pb' }, // https://github.com/kiwibrowser/src/blob/86afd150b847c9dd6f9ad3faddee1a28b8c9b23b/chrome/browser/media/media_engagement_preload.proto#L9
-                    { name: 'mind_ir.ModelProto', tags: [[1,2],[2,2],[5,2],[7,[]],[10,0],[12,[]],[13,0]] }, // https://github.com/mindspore-ai/mindspore/blob/master/mindspore/core/proto/mind_ir.proto
-                    { name: 'mindspore.irpb.Checkpoint', tags: [[1,[[1,2],[2,[[1,0],[2,2],[3,2]]]]]] }, // https://github.com/mindspore-ai/mindspore/blob/master/mindspore/ccsrc/utils/checkpoint.proto
-                    { name: 'optimization_guide.proto.PageTopicsOverrideList data', tags: [[1,[[1,2],[2,[]]]]] }, // https://github.com/chromium/chromium/blob/main/components/optimization_guide/proto/page_topics_override_list.proto
-                    { name: 'optimization_guide.proto.ModelInfo data', tags: [[1,0],[2,0],[4,0],[6,false],[7,[]],[9,0]] }, // https://github.com/chromium/chromium/blob/22b0d711657b451b61d50dd2e242b3c6e38e6ef5/components/optimization_guide/proto/models.proto#L80
-                    { name: 'Hobot Dnn data', tags: [[1,0],[2,0],[4,[[1,2],[2,2]]]] }, // https://github.com/HorizonRDK/hobot_dnn
-                    { name: 'Hobot Dnn data', tags: [[1,0],[2,0],[6,[1,[[1,2],[2,2]]]]] }, // https://github.com/HorizonRDK/hobot_dnn
+                    { name: 'sentencepiece.ModelProto data', tags: [[1, [[1, 2], [2, 5], [3, 0]]], [2, [[1, 2], [2, 2], [3, 0], [4, 0], [5, 2], [6, 0], [7, 2], [10, 5], [16, 0], [40, 0], [41, 0], [42, 0], [43, 0]]], [3, []], [4, []], [5, []]] },
+                    { name: 'mediapipe.BoxDetectorIndex data', tags: [[1, [[1, [[1, [[1, 5], [2, 5], [3, 5], [4, 5], [6, 0], [7, 5], [8, 5], [10, 5], [11, 0], [12, 0]]], [2, 5], [3, []]]], [2, false], [3, false], [4, false], [5, false]]], [2, false], [3, false]] },
+                    { name: 'third_party.tensorflow.python.keras.protobuf.SavedMetadata data', tags: [[1, [[1, [[1, 0], [2, 0]]], [2, 0], [3, 2], [4, 2], [5, 2]]]] },
+                    { name: 'pblczero.Net data', tags: [[1, 5], [2, 2], [3, [[1, 0], [2, 0], [3, 0]], [10, [[1, []], [2, []], [3, []], [4, []], [5, []], [6, []]]], [11, []]]] }, // https://github.com/LeelaChessZero/lczero-common/blob/master/proto/net.proto
+                    { name: 'chrome_browser_media.PreloadedData', tags: [[1, 2]], identifier: 'preloaded_data.pb' }, // https://github.com/kiwibrowser/src/blob/86afd150b847c9dd6f9ad3faddee1a28b8c9b23b/chrome/browser/media/media_engagement_preload.proto#L9
+                    { name: 'mind_ir.ModelProto', tags: [[1, 2], [2, 2], [5, 2], [7, []], [10, 0], [12, []], [13, 0]] }, // https://github.com/mindspore-ai/mindspore/blob/master/mindspore/core/proto/mind_ir.proto
+                    { name: 'mindspore.irpb.Checkpoint', tags: [[1, [[1, 2], [2, [[1, 0], [2, 2], [3, 2]]]]]] }, // https://github.com/mindspore-ai/mindspore/blob/master/mindspore/ccsrc/utils/checkpoint.proto
+                    { name: 'optimization_guide.proto.PageTopicsOverrideList data', tags: [[1, [[1, 2], [2, []]]]] }, // https://github.com/chromium/chromium/blob/main/components/optimization_guide/proto/page_topics_override_list.proto
+                    { name: 'optimization_guide.proto.ModelInfo data', tags: [[1, 0], [2, 0], [4, 0], [6, false], [7, []], [9, 0]] }, // https://github.com/chromium/chromium/blob/22b0d711657b451b61d50dd2e242b3c6e38e6ef5/components/optimization_guide/proto/models.proto#L80
+                    { name: 'Hobot Dnn data', tags: [[1, 0], [2, 0], [4, [[1, 2], [2, 2]]]] }, // https://github.com/HorizonRDK/hobot_dnn
+                    { name: 'Hobot Dnn data', tags: [[1, 0], [2, 0], [6, [1, [[1, 2], [2, 2]]]]] }, // https://github.com/HorizonRDK/hobot_dnn
                 ];
                 const match = (tags, schema) => {
                     for (const [key, inner] of schema) {
@@ -6815,8 +6817,8 @@ view.ModelFactoryService = class {
         let accept = false;
         for (const extension of this._patterns) {
             if ((typeof extension === 'string' &&
-                    ((extension !== '' && identifier.endsWith(extension)) ||
-                     (extension === '' && identifier.indexOf('.') === -1))) ||
+                ((extension !== '' && identifier.endsWith(extension)) ||
+                    (extension === '' && identifier.indexOf('.') === -1))) ||
                 (extension instanceof RegExp && extension.exec(identifier))) {
                 accept = true;
                 break;
