@@ -314,7 +314,7 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
  }
  #webnn {
      padding: 32px 1rem 32px 1rem;
-     max-height: 62vh;
+     max-height: 65vh;
      overflow-y: scroll;
  }
  .showGrid {
@@ -371,27 +371,52 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
  #webnn-closebutton:hover {
      color: #242424;
  }
- #export-tensors {
+.export-tensors {
     background-color: #ffffff;
     border: 1px solid rgba(27, 31, 35, 0.05);
-    padding: 0.2rem 1rem;
     margin: 0 auto;
-    cursor: pointer;
-    color: #f72684;
     margin-top: -1px;
- }
- #export-tensors:hover {
-    background-color: #f72684;
-    color: #fff;
- }
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: 1fr;
+    grid-column-gap: 10px;
+    grid-row-gap: 0px;
+    align-items: center;
+    padding: 5px 0;
+}
+.export-tensors div {
+    padding: 0.2rem 0;
+}
+@media all and (max-width: 640px) {
+    .export-tensors {
+        grid-template-rows: repeat(2, 1fr);
+        grid-template-columns: 1fr;
+        grid-column-gap: 0px;
+        grid-row-gap: 10px;
+    }
+}
+.export-tensors .info {
+    justify-self: end;
+}
+.export-tensors .action {
+    justify-self: start;
+}
+.action button {
+    height: auto !important;
+    padding: 0.2rem 1rem;
+}
 </style>
 </head>
 <body class="welcome spinner">
 <div id="webnn" class="showNone">
     <div id="map" class="map">
         <div id="map-table"></div>
-        <div id="export-tensors" title="Export weights and biases in .npy format (compressed as ZIP). For use with WebNN API in Vanilla JavaScript only.">
-          Export weights and biases in .npy format (compressed as ZIP). For use with WebNN API in Vanilla JavaScript only.
+        <div class="export-tensors">
+            <div class="info">Use WebNN with Vanilla JavaScript. Export weights and biases:</div>
+            <div class="action">
+                <button id="export-bin-json-button" class="logo-button export-bin-button" title="Export weights and biases in .bin and JSON format">.bin + .json</button>
+                <button id="export-npy-zip-button" class="logo-button export-npy-zip-button" title="Export weights and biases in .npy format (compressed as ZIP)">.npy (.zip)</button>
+            </div>
         </div>
     </div>
 

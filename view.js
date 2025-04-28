@@ -53,7 +53,10 @@ view.View = class {
             this._element('webnn-button').addEventListener('click', () => {
                 this.toggleWebnn();
             });
-            this._element('export-tensors').addEventListener('click', async () => {
+            this._element('export-bin-json-button').addEventListener('click', async () => {
+                await this.exportAllTensorsAsBinAndJson();
+            });
+            this._element('export-npy-zip-button').addEventListener('click', async () => {
                 await this.exportAllTensorsAsZip();
             });
             this._element('webnn-closebutton').addEventListener('click', () => {
@@ -380,8 +383,10 @@ view.View = class {
     }
 
     async exportAllTensorsAsZip() {
+        const weightBiasButtons = document.querySelectorAll('.action')[0];
         if (!this._model || !this._model.graphs) {
             console.warn('No model or graphs available to export tensors.');
+            weightBiasButtons.innerHTML = "No model or graphs available to export tensors.";
             return;
         }
     
@@ -428,6 +433,122 @@ view.View = class {
         }).catch((error) => {
             console.error('Failed to generate zip file.', error);
         });
+    }
+
+    _getJsonObject(node, input, name, dataOffset, byteLength, dataType, shape) {
+        return {
+            node: node,
+            input: input,
+            name: name,
+            dataOffset: dataOffset,
+            byteLength: byteLength,
+            dataType: dataType,
+            shape: shape
+        }
+    }
+
+    async _downloadModelWeightBiasJson(fileName, modelWeightBias) {    
+        // Convert the JSON object to a string
+        const jsonString = JSON.stringify(modelWeightBias, null, 2);
+    
+        // Create a Blob from the JSON string
+        const blob = new Blob([jsonString], { type: "application/json" });
+    
+        // Create a temporary link element
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+    
+        // Trigger the download
+        link.click();
+    
+        // Clean up the URL object
+        URL.revokeObjectURL(link.href);
+    
+        console.log(`Downloaded: ${fileName}`);
+    }
+
+    async _downloadModelWeightBiasBin(fileName, binaryData) {
+        // Concatenate all ArrayBuffers into a single binary file
+        const totalLength = binaryData.reduce((sum, buffer) => sum + buffer.byteLength, 0);
+        const concatenatedBuffer = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const buffer of binaryData) {
+            concatenatedBuffer.set(new Uint8Array(buffer), offset);
+            offset += buffer.byteLength;
+        }
+    
+        // Create a Blob from the concatenated binary data
+        const blob = new Blob([concatenatedBuffer], { type: "application/octet-stream" });
+    
+        // Trigger the download
+        if (this._host && this._host.export) {
+            await this._host.export(fileName, blob);
+        } else {
+            console.error("Host export method is not available.");
+        }
+    }
+
+    async exportAllTensorsAsBinAndJson() {
+        let modelWeightBias = { "weight_bias": [] };
+        const weightBiasButtons = document.querySelectorAll('.action')[0];
+    
+        if (!this._model || !this._model.graphs) {
+            console.warn('No model or graphs available to export tensors.');
+            weightBiasButtons.innerHTML = "No model or graphs available to export tensors.";
+            return;
+        }
+    
+        let binaryData = [];
+        let currentOffset = 0;
+    
+        for (const graph of this._model.graphs) {
+            for (const node of graph.nodes) {
+                for (const input of node.inputs) {
+                    for (const value of input.value) {
+                        if (value && value.initializer) {
+                            const tensor = new base.Tensor(value.initializer);
+                            const byteLength = tensor.data?.byteLength || 0;
+    
+                            // Get the tensor data as an ArrayBuffer
+                            const tensorBuffer = tensor.data?.buffer || new ArrayBuffer(0);
+                            binaryData.push(tensorBuffer);
+    
+                            // Create the JSON object and update the dataOffset
+                            let jsonObject = this._getJsonObject(
+                                node.name.toLowerCase(),
+                                input.name,
+                                tensor.name,
+                                currentOffset,
+                                byteLength,
+                                tensor.type.dataType,
+                                tensor.type.shape.dimensions
+                            );
+                            modelWeightBias.weight_bias.push(jsonObject);
+    
+                            // Update the current offset
+                            currentOffset += byteLength;
+                        }
+                    }
+                }
+            }
+        }
+    
+        // Generate the current datetime string
+        const now = new Date().toISOString();
+        const datetime = now.replace(/[-:T.Z]/g, '').substring(0, 14);
+    
+        // Create filenames
+        const jsonName = `model_${datetime}.json`;
+        const binName = `model_${datetime}.bin`;
+    
+        // Trigger download for the JSON file
+        await this._downloadModelWeightBiasJson(jsonName, modelWeightBias);
+    
+        // Trigger download for the binary file
+        await this._downloadModelWeightBiasBin(binName, binaryData);
+    
+        console.log(`Downloaded: ${jsonName} and ${binName}`);
     }
     
     async _getTensorAsNpy(tensor) {
