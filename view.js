@@ -56,6 +56,9 @@ view.View = class {
             this._element('export-bin-json-button').addEventListener('click', async () => {
                 await this.exportAllTensorsAsBinAndJson();
             });
+            this._element('read-bin-json-button').addEventListener('click', async () => {
+                location.href = './reader.html';
+            });
             this._element('export-npy-zip-button').addEventListener('click', async () => {
                 await this.exportAllTensorsAsZip();
             });
