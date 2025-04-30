@@ -1,8 +1,9 @@
 {
   "Conv2D/filter:0": {
-    "node": "conv__158",
-    "type": "Conv",
+    "nodeName": "conv__158",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D/filter:0",
     "dataOffset": 0,
     "byteLength": 1728,
     "dataType": "float32",
@@ -14,9 +15,10 @@
     ]
   },
   "conv2d_1/y:0": {
-    "node": "conv__158",
-    "type": "Conv",
+    "nodeName": "conv__158",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_1/y:0",
     "dataOffset": 1728,
     "byteLength": 64,
     "dataType": "float32",
@@ -25,9 +27,10 @@
     ]
   },
   "const_fold_opt__408": {
-    "node": "add_10",
-    "type": "Add",
+    "nodeName": "add_10",
+    "nodeType": "Add",
     "input": "B",
+    "name": "const_fold_opt__408",
     "dataOffset": 329264,
     "byteLength": 4,
     "dataType": "float32",
@@ -39,9 +42,10 @@
     ]
   },
   "": {
-    "node": "",
-    "type": "Resize",
+    "nodeName": "",
+    "nodeType": "Resize",
     "input": "roi",
+    "name": "",
     "dataOffset": 420440,
     "byteLength": 0,
     "dataType": "float32",
@@ -50,18 +54,20 @@
     ]
   },
   "mul_3/y:0": {
-    "node": "mul_20",
-    "type": "Mul",
+    "nodeName": "mul_20",
+    "nodeType": "Mul",
     "input": "A",
+    "name": "mul_3/y:0",
     "dataOffset": 329268,
     "byteLength": 4,
     "dataType": "float32",
     "shape": []
   },
   "Conv2D_2/filter:0": {
-    "node": "conv__161",
-    "type": "Conv",
+    "nodeName": "conv__161",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_2/filter:0",
     "dataOffset": 1800,
     "byteLength": 1024,
     "dataType": "float32",
@@ -73,9 +79,10 @@
     ]
   },
   "conv2d_1_1/y:0": {
-    "node": "conv__161",
-    "type": "Conv",
+    "nodeName": "conv__161",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_1_1/y:0",
     "dataOffset": 2824,
     "byteLength": 64,
     "dataType": "float32",
@@ -84,9 +91,10 @@
     ]
   },
   "const_fold_opt__377": {
-    "node": "conv__162",
-    "type": "Conv",
+    "nodeName": "conv__162",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "const_fold_opt__377",
     "dataOffset": 2888,
     "byteLength": 576,
     "dataType": "float32",
@@ -98,9 +106,10 @@
     ]
   },
   "depthwise_conv2d/y:0": {
-    "node": "conv__162",
-    "type": "Conv",
+    "nodeName": "conv__162",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "depthwise_conv2d/y:0",
     "dataOffset": 3464,
     "byteLength": 64,
     "dataType": "float32",
@@ -109,9 +118,10 @@
     ]
   },
   "Conv2D_3/filter:0": {
-    "node": "conv__165",
-    "type": "Conv",
+    "nodeName": "conv__165",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_3/filter:0",
     "dataOffset": 3528,
     "byteLength": 512,
     "dataType": "float32",
@@ -123,9 +133,10 @@
     ]
   },
   "conv2d_2_1/y:0": {
-    "node": "conv__165",
-    "type": "Conv",
+    "nodeName": "conv__165",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_2_1/y:0",
     "dataOffset": 4040,
     "byteLength": 32,
     "dataType": "float32",
@@ -134,9 +145,10 @@
     ]
   },
   "Conv2D_4/filter:0": {
-    "node": "conv__166",
-    "type": "Conv",
+    "nodeName": "conv__166",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_4/filter:0",
     "dataOffset": 4072,
     "byteLength": 512,
     "dataType": "float32",
@@ -148,9 +160,10 @@
     ]
   },
   "conv2d_3_1/y:0": {
-    "node": "conv__166",
-    "type": "Conv",
+    "nodeName": "conv__166",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_3_1/y:0",
     "dataOffset": 4584,
     "byteLength": 64,
     "dataType": "float32",
@@ -159,9 +172,10 @@
     ]
   },
   "Conv2D_5/filter:0": {
-    "node": "conv__167",
-    "type": "Conv",
+    "nodeName": "conv__167",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_5/filter:0",
     "dataOffset": 4648,
     "byteLength": 1024,
     "dataType": "float32",
@@ -173,9 +187,10 @@
     ]
   },
   "conv2d_4_1/y:0": {
-    "node": "conv__167",
-    "type": "Conv",
+    "nodeName": "conv__167",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_4_1/y:0",
     "dataOffset": 5672,
     "byteLength": 64,
     "dataType": "float32",
@@ -184,9 +199,10 @@
     ]
   },
   "Conv2D_6/filter:0": {
-    "node": "conv__171",
-    "type": "Conv",
+    "nodeName": "conv__171",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_6/filter:0",
     "dataOffset": 5736,
     "byteLength": 4608,
     "dataType": "float32",
@@ -198,9 +214,10 @@
     ]
   },
   "conv2d_5_1/y:0": {
-    "node": "conv__171",
-    "type": "Conv",
+    "nodeName": "conv__171",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_5_1/y:0",
     "dataOffset": 10344,
     "byteLength": 288,
     "dataType": "float32",
@@ -209,9 +226,10 @@
     ]
   },
   "const_fold_opt__387": {
-    "node": "conv__172",
-    "type": "Conv",
+    "nodeName": "conv__172",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "const_fold_opt__387",
     "dataOffset": 10632,
     "byteLength": 2592,
     "dataType": "float32",
@@ -223,9 +241,10 @@
     ]
   },
   "depthwise_conv2d_1/y:0": {
-    "node": "conv__172",
-    "type": "Conv",
+    "nodeName": "conv__172",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "depthwise_conv2d_1/y:0",
     "dataOffset": 13224,
     "byteLength": 288,
     "dataType": "float32",
@@ -234,9 +253,10 @@
     ]
   },
   "Conv2D_7/filter:0": {
-    "node": "conv__173",
-    "type": "Conv",
+    "nodeName": "conv__173",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_7/filter:0",
     "dataOffset": 13512,
     "byteLength": 6912,
     "dataType": "float32",
@@ -248,9 +268,10 @@
     ]
   },
   "conv2d_6_1/y:0": {
-    "node": "conv__173",
-    "type": "Conv",
+    "nodeName": "conv__173",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_6_1/y:0",
     "dataOffset": 20424,
     "byteLength": 96,
     "dataType": "float32",
@@ -259,9 +280,10 @@
     ]
   },
   "Conv2D_8/filter:0": {
-    "node": "conv__176",
-    "type": "Conv",
+    "nodeName": "conv__176",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_8/filter:0",
     "dataOffset": 20520,
     "byteLength": 8448,
     "dataType": "float32",
@@ -273,9 +295,10 @@
     ]
   },
   "conv2d_7_1/y:0": {
-    "node": "conv__176",
-    "type": "Conv",
+    "nodeName": "conv__176",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_7_1/y:0",
     "dataOffset": 28968,
     "byteLength": 352,
     "dataType": "float32",
@@ -284,9 +307,10 @@
     ]
   },
   "const_fold_opt__385": {
-    "node": "conv__177",
-    "type": "Conv",
+    "nodeName": "conv__177",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "const_fold_opt__385",
     "dataOffset": 29320,
     "byteLength": 3168,
     "dataType": "float32",
@@ -298,9 +322,10 @@
     ]
   },
   "depthwise_conv2d_2/y:0": {
-    "node": "conv__177",
-    "type": "Conv",
+    "nodeName": "conv__177",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "depthwise_conv2d_2/y:0",
     "dataOffset": 32488,
     "byteLength": 352,
     "dataType": "float32",
@@ -309,9 +334,10 @@
     ]
   },
   "Conv2D_9/filter:0": {
-    "node": "conv__178",
-    "type": "Conv",
+    "nodeName": "conv__178",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_9/filter:0",
     "dataOffset": 32840,
     "byteLength": 8448,
     "dataType": "float32",
@@ -323,9 +349,10 @@
     ]
   },
   "conv2d_8_1/y:0": {
-    "node": "conv__178",
-    "type": "Conv",
+    "nodeName": "conv__178",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_8_1/y:0",
     "dataOffset": 41288,
     "byteLength": 96,
     "dataType": "float32",
@@ -334,9 +361,10 @@
     ]
   },
   "Conv2D_10/filter:0": {
-    "node": "conv__183",
-    "type": "Conv",
+    "nodeName": "conv__183",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_10/filter:0",
     "dataOffset": 41384,
     "byteLength": 9216,
     "dataType": "float32",
@@ -348,9 +376,10 @@
     ]
   },
   "conv2d_9_1/y:0": {
-    "node": "conv__183",
-    "type": "Conv",
+    "nodeName": "conv__183",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_9_1/y:0",
     "dataOffset": 50600,
     "byteLength": 384,
     "dataType": "float32",
@@ -359,9 +388,10 @@
     ]
   },
   "const_fold_opt__383": {
-    "node": "conv__186",
-    "type": "Conv",
+    "nodeName": "conv__186",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "const_fold_opt__383",
     "dataOffset": 50992,
     "byteLength": 9600,
     "dataType": "float32",
@@ -373,9 +403,10 @@
     ]
   },
   "depthwise_conv2d_3/y:0": {
-    "node": "conv__186",
-    "type": "Conv",
+    "nodeName": "conv__186",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "depthwise_conv2d_3/y:0",
     "dataOffset": 60592,
     "byteLength": 384,
     "dataType": "float32",
@@ -384,9 +415,10 @@
     ]
   },
   "Conv2D_11/filter:0": {
-    "node": "conv__189",
-    "type": "Conv",
+    "nodeName": "conv__189",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_11/filter:0",
     "dataOffset": 60984,
     "byteLength": 9216,
     "dataType": "float32",
@@ -398,9 +430,10 @@
     ]
   },
   "conv2d_10_1/y:0": {
-    "node": "conv__189",
-    "type": "Conv",
+    "nodeName": "conv__189",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_10_1/y:0",
     "dataOffset": 70200,
     "byteLength": 96,
     "dataType": "float32",
@@ -409,9 +442,10 @@
     ]
   },
   "Conv2D_12/filter:0": {
-    "node": "conv__190",
-    "type": "Conv",
+    "nodeName": "conv__190",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_12/filter:0",
     "dataOffset": 70296,
     "byteLength": 9216,
     "dataType": "float32",
@@ -423,9 +457,10 @@
     ]
   },
   "conv2d_11_1/y:0": {
-    "node": "conv__190",
-    "type": "Conv",
+    "nodeName": "conv__190",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_11_1/y:0",
     "dataOffset": 79512,
     "byteLength": 384,
     "dataType": "float32",
@@ -434,9 +469,10 @@
     ]
   },
   "Conv2D_13/filter:0": {
-    "node": "conv__191",
-    "type": "Conv",
+    "nodeName": "conv__191",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_13/filter:0",
     "dataOffset": 79896,
     "byteLength": 12288,
     "dataType": "float32",
@@ -448,9 +484,10 @@
     ]
   },
   "conv2d_12_1/y:0": {
-    "node": "conv__191",
-    "type": "Conv",
+    "nodeName": "conv__191",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_12_1/y:0",
     "dataOffset": 92184,
     "byteLength": 128,
     "dataType": "float32",
@@ -459,9 +496,10 @@
     ]
   },
   "Conv2D_14/filter:0": {
-    "node": "conv__194",
-    "type": "Conv",
+    "nodeName": "conv__194",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_14/filter:0",
     "dataOffset": 92312,
     "byteLength": 16384,
     "dataType": "float32",
@@ -473,9 +511,10 @@
     ]
   },
   "conv2d_13_1/y:0": {
-    "node": "conv__194",
-    "type": "Conv",
+    "nodeName": "conv__194",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_13_1/y:0",
     "dataOffset": 108696,
     "byteLength": 512,
     "dataType": "float32",
@@ -484,9 +523,10 @@
     ]
   },
   "const_fold_opt__381": {
-    "node": "conv__197",
-    "type": "Conv",
+    "nodeName": "conv__197",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "const_fold_opt__381",
     "dataOffset": 109216,
     "byteLength": 12800,
     "dataType": "float32",
@@ -498,9 +538,10 @@
     ]
   },
   "depthwise_conv2d_4/y:0": {
-    "node": "conv__197",
-    "type": "Conv",
+    "nodeName": "conv__197",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "depthwise_conv2d_4/y:0",
     "dataOffset": 122016,
     "byteLength": 512,
     "dataType": "float32",
@@ -509,9 +550,10 @@
     ]
   },
   "Conv2D_15/filter:0": {
-    "node": "conv__200",
-    "type": "Conv",
+    "nodeName": "conv__200",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_15/filter:0",
     "dataOffset": 122536,
     "byteLength": 16384,
     "dataType": "float32",
@@ -523,9 +565,10 @@
     ]
   },
   "conv2d_14_1/y:0": {
-    "node": "conv__200",
-    "type": "Conv",
+    "nodeName": "conv__200",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_14_1/y:0",
     "dataOffset": 138920,
     "byteLength": 128,
     "dataType": "float32",
@@ -534,9 +577,10 @@
     ]
   },
   "Conv2D_16/filter:0": {
-    "node": "conv__201",
-    "type": "Conv",
+    "nodeName": "conv__201",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_16/filter:0",
     "dataOffset": 139048,
     "byteLength": 16384,
     "dataType": "float32",
@@ -548,9 +592,10 @@
     ]
   },
   "conv2d_15_1/y:0": {
-    "node": "conv__201",
-    "type": "Conv",
+    "nodeName": "conv__201",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_15_1/y:0",
     "dataOffset": 155432,
     "byteLength": 512,
     "dataType": "float32",
@@ -559,9 +604,10 @@
     ]
   },
   "Conv2D_17/filter:0": {
-    "node": "conv__202",
-    "type": "Conv",
+    "nodeName": "conv__202",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_17/filter:0",
     "dataOffset": 155944,
     "byteLength": 16384,
     "dataType": "float32",
@@ -573,9 +619,10 @@
     ]
   },
   "conv2d_16_1/y:0": {
-    "node": "conv__202",
-    "type": "Conv",
+    "nodeName": "conv__202",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_16_1/y:0",
     "dataOffset": 172328,
     "byteLength": 128,
     "dataType": "float32",
@@ -584,9 +631,10 @@
     ]
   },
   "Conv2D_18/filter:0": {
-    "node": "conv__205",
-    "type": "Conv",
+    "nodeName": "conv__205",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_18/filter:0",
     "dataOffset": 172456,
     "byteLength": 16384,
     "dataType": "float32",
@@ -598,9 +646,10 @@
     ]
   },
   "conv2d_17_1/y:0": {
-    "node": "conv__205",
-    "type": "Conv",
+    "nodeName": "conv__205",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_17_1/y:0",
     "dataOffset": 188840,
     "byteLength": 512,
     "dataType": "float32",
@@ -609,9 +658,10 @@
     ]
   },
   "const_fold_opt__379": {
-    "node": "conv__208",
-    "type": "Conv",
+    "nodeName": "conv__208",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "const_fold_opt__379",
     "dataOffset": 189360,
     "byteLength": 12800,
     "dataType": "float32",
@@ -623,9 +673,10 @@
     ]
   },
   "depthwise_conv2d_5/y:0": {
-    "node": "conv__208",
-    "type": "Conv",
+    "nodeName": "conv__208",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "depthwise_conv2d_5/y:0",
     "dataOffset": 202160,
     "byteLength": 512,
     "dataType": "float32",
@@ -634,9 +685,10 @@
     ]
   },
   "Conv2D_19/filter:0": {
-    "node": "conv__211",
-    "type": "Conv",
+    "nodeName": "conv__211",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_19/filter:0",
     "dataOffset": 202680,
     "byteLength": 16384,
     "dataType": "float32",
@@ -648,9 +700,10 @@
     ]
   },
   "conv2d_18_1/y:0": {
-    "node": "conv__211",
-    "type": "Conv",
+    "nodeName": "conv__211",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_18_1/y:0",
     "dataOffset": 219064,
     "byteLength": 128,
     "dataType": "float32",
@@ -659,9 +712,10 @@
     ]
   },
   "Conv2D_20/filter:0": {
-    "node": "conv__212",
-    "type": "Conv",
+    "nodeName": "conv__212",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_20/filter:0",
     "dataOffset": 219192,
     "byteLength": 16384,
     "dataType": "float32",
@@ -673,9 +727,10 @@
     ]
   },
   "conv2d_19_1/y:0": {
-    "node": "conv__212",
-    "type": "Conv",
+    "nodeName": "conv__212",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_19_1/y:0",
     "dataOffset": 235576,
     "byteLength": 512,
     "dataType": "float32",
@@ -684,9 +739,10 @@
     ]
   },
   "Conv2D_21/filter:0": {
-    "node": "conv__213",
-    "type": "Conv",
+    "nodeName": "conv__213",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_21/filter:0",
     "dataOffset": 236088,
     "byteLength": 16384,
     "dataType": "float32",
@@ -698,9 +754,10 @@
     ]
   },
   "conv2d_20_1/y:0": {
-    "node": "conv__213",
-    "type": "Conv",
+    "nodeName": "conv__213",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_20_1/y:0",
     "dataOffset": 252472,
     "byteLength": 128,
     "dataType": "float32",
@@ -709,9 +766,10 @@
     ]
   },
   "Conv2D_22/filter:0": {
-    "node": "conv__216",
-    "type": "Conv",
+    "nodeName": "conv__216",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_22/filter:0",
     "dataOffset": 252600,
     "byteLength": 12288,
     "dataType": "float32",
@@ -723,9 +781,10 @@
     ]
   },
   "conv2d_21_1/y:0": {
-    "node": "conv__216",
-    "type": "Conv",
+    "nodeName": "conv__216",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_21_1/y:0",
     "dataOffset": 264888,
     "byteLength": 384,
     "dataType": "float32",
@@ -734,9 +793,10 @@
     ]
   },
   "const_fold_opt__395": {
-    "node": "conv__219",
-    "type": "Conv",
+    "nodeName": "conv__219",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "const_fold_opt__395",
     "dataOffset": 265280,
     "byteLength": 9600,
     "dataType": "float32",
@@ -748,9 +808,10 @@
     ]
   },
   "depthwise_conv2d_6/y:0": {
-    "node": "conv__219",
-    "type": "Conv",
+    "nodeName": "conv__219",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "depthwise_conv2d_6/y:0",
     "dataOffset": 274880,
     "byteLength": 384,
     "dataType": "float32",
@@ -759,9 +820,10 @@
     ]
   },
   "Conv2D_23/filter:0": {
-    "node": "conv__222",
-    "type": "Conv",
+    "nodeName": "conv__222",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_23/filter:0",
     "dataOffset": 275272,
     "byteLength": 9216,
     "dataType": "float32",
@@ -773,9 +835,10 @@
     ]
   },
   "conv2d_22_1/y:0": {
-    "node": "conv__222",
-    "type": "Conv",
+    "nodeName": "conv__222",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_22_1/y:0",
     "dataOffset": 284488,
     "byteLength": 96,
     "dataType": "float32",
@@ -784,9 +847,10 @@
     ]
   },
   "Conv2D_24/filter:0": {
-    "node": "conv__223",
-    "type": "Conv",
+    "nodeName": "conv__223",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_24/filter:0",
     "dataOffset": 284584,
     "byteLength": 9216,
     "dataType": "float32",
@@ -798,9 +862,10 @@
     ]
   },
   "conv2d_23_1/y:0": {
-    "node": "conv__223",
-    "type": "Conv",
+    "nodeName": "conv__223",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_23_1/y:0",
     "dataOffset": 293800,
     "byteLength": 384,
     "dataType": "float32",
@@ -809,9 +874,10 @@
     ]
   },
   "Conv2D_25/filter:0": {
-    "node": "conv__224",
-    "type": "Conv",
+    "nodeName": "conv__224",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_25/filter:0",
     "dataOffset": 294184,
     "byteLength": 12288,
     "dataType": "float32",
@@ -823,9 +889,10 @@
     ]
   },
   "conv2d_24_1/y:0": {
-    "node": "conv__224",
-    "type": "Conv",
+    "nodeName": "conv__224",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_24_1/y:0",
     "dataOffset": 306472,
     "byteLength": 128,
     "dataType": "float32",
@@ -834,9 +901,10 @@
     ]
   },
   "Conv2D_26/filter:0": {
-    "node": "conv__227",
-    "type": "Conv",
+    "nodeName": "conv__227",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_26/filter:0",
     "dataOffset": 306600,
     "byteLength": 12288,
     "dataType": "float32",
@@ -848,9 +916,10 @@
     ]
   },
   "conv2d_25_1/y:0": {
-    "node": "conv__227",
-    "type": "Conv",
+    "nodeName": "conv__227",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_25_1/y:0",
     "dataOffset": 318888,
     "byteLength": 384,
     "dataType": "float32",
@@ -859,9 +928,10 @@
     ]
   },
   "const_fold_opt__407": {
-    "node": "conv__230",
-    "type": "Conv",
+    "nodeName": "conv__230",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "const_fold_opt__407",
     "dataOffset": 319280,
     "byteLength": 9600,
     "dataType": "float32",
@@ -873,9 +943,10 @@
     ]
   },
   "depthwise_conv2d_7/y:0": {
-    "node": "conv__230",
-    "type": "Conv",
+    "nodeName": "conv__230",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "depthwise_conv2d_7/y:0",
     "dataOffset": 328880,
     "byteLength": 384,
     "dataType": "float32",
@@ -884,9 +955,10 @@
     ]
   },
   "Conv2D_27/filter:0": {
-    "node": "conv__233",
-    "type": "Conv",
+    "nodeName": "conv__233",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_27/filter:0",
     "dataOffset": 329272,
     "byteLength": 9216,
     "dataType": "float32",
@@ -898,9 +970,10 @@
     ]
   },
   "conv2d_26_1/y:0": {
-    "node": "conv__233",
-    "type": "Conv",
+    "nodeName": "conv__233",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_26_1/y:0",
     "dataOffset": 338488,
     "byteLength": 96,
     "dataType": "float32",
@@ -909,9 +982,10 @@
     ]
   },
   "Conv2D_28/filter:0": {
-    "node": "conv__234",
-    "type": "Conv",
+    "nodeName": "conv__234",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_28/filter:0",
     "dataOffset": 338584,
     "byteLength": 9216,
     "dataType": "float32",
@@ -923,9 +997,10 @@
     ]
   },
   "conv2d_27_1/y:0": {
-    "node": "conv__234",
-    "type": "Conv",
+    "nodeName": "conv__234",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_27_1/y:0",
     "dataOffset": 347800,
     "byteLength": 384,
     "dataType": "float32",
@@ -934,9 +1009,10 @@
     ]
   },
   "Conv2D_29/filter:0": {
-    "node": "conv__235",
-    "type": "Conv",
+    "nodeName": "conv__235",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_29/filter:0",
     "dataOffset": 348184,
     "byteLength": 12288,
     "dataType": "float32",
@@ -948,9 +1024,10 @@
     ]
   },
   "conv2d_28_1/y:0": {
-    "node": "conv__235",
-    "type": "Conv",
+    "nodeName": "conv__235",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_28_1/y:0",
     "dataOffset": 360472,
     "byteLength": 128,
     "dataType": "float32",
@@ -959,9 +1036,10 @@
     ]
   },
   "Conv2D_31/filter:0": {
-    "node": "conv__238",
-    "type": "Conv",
+    "nodeName": "conv__238",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_31/filter:0",
     "dataOffset": 360600,
     "byteLength": 16384,
     "dataType": "float32",
@@ -973,9 +1051,10 @@
     ]
   },
   "conv2d_30_1/y:0": {
-    "node": "conv__238",
-    "type": "Conv",
+    "nodeName": "conv__238",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_30_1/y:0",
     "dataOffset": 376984,
     "byteLength": 512,
     "dataType": "float32",
@@ -984,9 +1063,10 @@
     ]
   },
   "Conv2D_30/filter:0": {
-    "node": "conv__239",
-    "type": "Conv",
+    "nodeName": "conv__239",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_30/filter:0",
     "dataOffset": 377496,
     "byteLength": 16384,
     "dataType": "float32",
@@ -998,9 +1078,10 @@
     ]
   },
   "conv2d_29_1/y:0": {
-    "node": "conv__239",
-    "type": "Conv",
+    "nodeName": "conv__239",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_29_1/y:0",
     "dataOffset": 393880,
     "byteLength": 512,
     "dataType": "float32",
@@ -1009,9 +1090,10 @@
     ]
   },
   "scales__125": {
-    "node": "",
-    "type": "Resize",
+    "nodeName": "",
+    "nodeType": "Resize",
     "input": "scales",
+    "name": "scales__125",
     "dataOffset": 420440,
     "byteLength": 0,
     "dataType": "float32",
@@ -1020,9 +1102,10 @@
     ]
   },
   "Conv2D_32/filter:0": {
-    "node": "conv__240",
-    "type": "Conv",
+    "nodeName": "conv__240",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_32/filter:0",
     "dataOffset": 394392,
     "byteLength": 12288,
     "dataType": "float32",
@@ -1034,9 +1117,10 @@
     ]
   },
   "conv2d_31_1/y:0": {
-    "node": "conv__240",
-    "type": "Conv",
+    "nodeName": "conv__240",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_31_1/y:0",
     "dataOffset": 406680,
     "byteLength": 96,
     "dataType": "float32",
@@ -1045,9 +1129,10 @@
     ]
   },
   "Conv2D_33/filter:0": {
-    "node": "conv__243",
-    "type": "Conv",
+    "nodeName": "conv__243",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_33/filter:0",
     "dataOffset": 406776,
     "byteLength": 2304,
     "dataType": "float32",
@@ -1059,9 +1144,10 @@
     ]
   },
   "conv2d_32_1/y:0": {
-    "node": "conv__243",
-    "type": "Conv",
+    "nodeName": "conv__243",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_32_1/y:0",
     "dataOffset": 409080,
     "byteLength": 96,
     "dataType": "float32",
@@ -1070,9 +1156,10 @@
     ]
   },
   "Conv2D_34/filter:0": {
-    "node": "conv__244",
-    "type": "Conv",
+    "nodeName": "conv__244",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_34/filter:0",
     "dataOffset": 409176,
     "byteLength": 2304,
     "dataType": "float32",
@@ -1084,9 +1171,10 @@
     ]
   },
   "conv2d_33_1/y:0": {
-    "node": "conv__244",
-    "type": "Conv",
+    "nodeName": "conv__244",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_33_1/y:0",
     "dataOffset": 411480,
     "byteLength": 96,
     "dataType": "float32",
@@ -1095,9 +1183,10 @@
     ]
   },
   "Conv2D_35/filter:0": {
-    "node": "conv__245",
-    "type": "Conv",
+    "nodeName": "conv__245",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_35/filter:0",
     "dataOffset": 411576,
     "byteLength": 2304,
     "dataType": "float32",
@@ -1109,9 +1198,10 @@
     ]
   },
   "conv2d_34_1/y:0": {
-    "node": "conv__245",
-    "type": "Conv",
+    "nodeName": "conv__245",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_34_1/y:0",
     "dataOffset": 413880,
     "byteLength": 96,
     "dataType": "float32",
@@ -1120,9 +1210,10 @@
     ]
   },
   "const_fold_opt__394": {
-    "node": "conv__248",
-    "type": "Conv",
+    "nodeName": "conv__248",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "const_fold_opt__394",
     "dataOffset": 413976,
     "byteLength": 864,
     "dataType": "float32",
@@ -1134,9 +1225,10 @@
     ]
   },
   "depthwise_conv2d_8/y:0": {
-    "node": "conv__248",
-    "type": "Conv",
+    "nodeName": "conv__248",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "depthwise_conv2d_8/y:0",
     "dataOffset": 414840,
     "byteLength": 96,
     "dataType": "float32",
@@ -1145,9 +1237,10 @@
     ]
   },
   "Conv2D_36/filter:0": {
-    "node": "conv__249",
-    "type": "Conv",
+    "nodeName": "conv__249",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_36/filter:0",
     "dataOffset": 414936,
     "byteLength": 1536,
     "dataType": "float32",
@@ -1159,9 +1252,10 @@
     ]
   },
   "conv2d_35_1/y:0": {
-    "node": "conv__249",
-    "type": "Conv",
+    "nodeName": "conv__249",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_35_1/y:0",
     "dataOffset": 416472,
     "byteLength": 64,
     "dataType": "float32",
@@ -1170,9 +1264,10 @@
     ]
   },
   "Conv2D_37/filter:0": {
-    "node": "conv__252",
-    "type": "Conv",
+    "nodeName": "conv__252",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_37/filter:0",
     "dataOffset": 416536,
     "byteLength": 1024,
     "dataType": "float32",
@@ -1184,9 +1279,10 @@
     ]
   },
   "conv2d_36_1/y:0": {
-    "node": "conv__252",
-    "type": "Conv",
+    "nodeName": "conv__252",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_36_1/y:0",
     "dataOffset": 417560,
     "byteLength": 64,
     "dataType": "float32",
@@ -1195,9 +1291,10 @@
     ]
   },
   "Conv2D_38/filter:0": {
-    "node": "conv__253",
-    "type": "Conv",
+    "nodeName": "conv__253",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_38/filter:0",
     "dataOffset": 417624,
     "byteLength": 1024,
     "dataType": "float32",
@@ -1209,9 +1306,10 @@
     ]
   },
   "conv2d_37_1/y:0": {
-    "node": "conv__253",
-    "type": "Conv",
+    "nodeName": "conv__253",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_37_1/y:0",
     "dataOffset": 418648,
     "byteLength": 64,
     "dataType": "float32",
@@ -1220,9 +1318,10 @@
     ]
   },
   "Conv2D_39/filter:0": {
-    "node": "conv__254",
-    "type": "Conv",
+    "nodeName": "conv__254",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_39/filter:0",
     "dataOffset": 418712,
     "byteLength": 1024,
     "dataType": "float32",
@@ -1234,9 +1333,10 @@
     ]
   },
   "conv2d_38_1/y:0": {
-    "node": "conv__254",
-    "type": "Conv",
+    "nodeName": "conv__254",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_38_1/y:0",
     "dataOffset": 419736,
     "byteLength": 64,
     "dataType": "float32",
@@ -1245,9 +1345,10 @@
     ]
   },
   "const_fold_opt__391": {
-    "node": "conv__257",
-    "type": "Conv",
+    "nodeName": "conv__257",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "const_fold_opt__391",
     "dataOffset": 419800,
     "byteLength": 576,
     "dataType": "float32",
@@ -1259,9 +1360,10 @@
     ]
   },
   "depthwise_conv2d_9/y:0": {
-    "node": "conv__257",
-    "type": "Conv",
+    "nodeName": "conv__257",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "depthwise_conv2d_9/y:0",
     "dataOffset": 420376,
     "byteLength": 64,
     "dataType": "float32",
@@ -1270,9 +1372,10 @@
     ]
   },
   "Conv2D_40/filter:0": {
-    "node": "conv__258",
-    "type": "Conv",
+    "nodeName": "conv__258",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_40/filter:0",
     "dataOffset": 420440,
     "byteLength": 1024,
     "dataType": "float32",
@@ -1284,9 +1387,10 @@
     ]
   },
   "conv2d_39_1/y:0": {
-    "node": "conv__258",
-    "type": "Conv",
+    "nodeName": "conv__258",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_39_1/y:0",
     "dataOffset": 421464,
     "byteLength": 64,
     "dataType": "float32",
@@ -1295,9 +1399,10 @@
     ]
   },
   "Conv2D_41/filter:0": {
-    "node": "conv__261",
-    "type": "Conv",
+    "nodeName": "conv__261",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_41/filter:0",
     "dataOffset": 421528,
     "byteLength": 1024,
     "dataType": "float32",
@@ -1309,9 +1414,10 @@
     ]
   },
   "conv2d_40_1/y:0": {
-    "node": "conv__261",
-    "type": "Conv",
+    "nodeName": "conv__261",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_40_1/y:0",
     "dataOffset": 422552,
     "byteLength": 64,
     "dataType": "float32",
@@ -1320,9 +1426,10 @@
     ]
   },
   "Conv2D_42/filter:0": {
-    "node": "conv__262",
-    "type": "Conv",
+    "nodeName": "conv__262",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_42/filter:0",
     "dataOffset": 422616,
     "byteLength": 1024,
     "dataType": "float32",
@@ -1334,9 +1441,10 @@
     ]
   },
   "conv2d_41_1/y:0": {
-    "node": "conv__262",
-    "type": "Conv",
+    "nodeName": "conv__262",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_41_1/y:0",
     "dataOffset": 423640,
     "byteLength": 64,
     "dataType": "float32",
@@ -1345,9 +1453,10 @@
     ]
   },
   "Conv2D_43/filter:0": {
-    "node": "conv__263",
-    "type": "Conv",
+    "nodeName": "conv__263",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "Conv2D_43/filter:0",
     "dataOffset": 423704,
     "byteLength": 1024,
     "dataType": "float32",
@@ -1359,9 +1468,10 @@
     ]
   },
   "conv2d_42_1/y:0": {
-    "node": "conv__263",
-    "type": "Conv",
+    "nodeName": "conv__263",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "conv2d_42_1/y:0",
     "dataOffset": 424728,
     "byteLength": 64,
     "dataType": "float32",
@@ -1370,9 +1480,10 @@
     ]
   },
   "const_fold_opt__389": {
-    "node": "conv__266",
-    "type": "Conv",
+    "nodeName": "conv__266",
+    "nodeType": "Conv",
     "input": "W",
+    "name": "const_fold_opt__389",
     "dataOffset": 424792,
     "byteLength": 576,
     "dataType": "float32",
@@ -1384,9 +1495,10 @@
     ]
   },
   "depthwise_conv2d_10/y:0": {
-    "node": "conv__266",
-    "type": "Conv",
+    "nodeName": "conv__266",
+    "nodeType": "Conv",
     "input": "B",
+    "name": "depthwise_conv2d_10/y:0",
     "dataOffset": 425368,
     "byteLength": 64,
     "dataType": "float32",
@@ -1395,9 +1507,10 @@
     ]
   },
   "conv2d_transpose/filter:0": {
-    "node": "conv2d_transpose",
-    "type": "ConvTranspose",
+    "nodeName": "conv2d_transpose",
+    "nodeType": "ConvTranspose",
     "input": "W",
+    "name": "conv2d_transpose/filter:0",
     "dataOffset": 425432,
     "byteLength": 256,
     "dataType": "float32",
@@ -1409,9 +1522,10 @@
     ]
   },
   "const_fold_opt__402": {
-    "node": "conv2d_transpose_add",
-    "type": "Add",
+    "nodeName": "conv2d_transpose_add",
+    "nodeType": "Add",
     "input": "B",
+    "name": "const_fold_opt__402",
     "dataOffset": 425688,
     "byteLength": 4,
     "dataType": "float32",
@@ -1423,9 +1537,10 @@
     ]
   },
   "new_shape__369": {
-    "node": "transpose__272",
-    "type": "Reshape",
+    "nodeName": "transpose__272",
+    "nodeType": "Reshape",
     "input": "shape",
+    "name": "new_shape__369",
     "dataOffset": 425692,
     "byteLength": 32,
     "dataType": "int64",

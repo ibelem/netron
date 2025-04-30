@@ -438,11 +438,12 @@ view.View = class {
         });
     }
 
-    _getJsonObject(node, type, input, dataOffset, byteLength, dataType, shape) {
+    _getJsonObject(nodeName, nodeType, input, name, dataOffset, byteLength, dataType, shape) {
         return {
-            node: node,
-            type: type,
+            nodeName: nodeName,
+            nodeType: nodeType,
             input: input,
+            name: name,
             dataOffset: dataOffset,
             byteLength: byteLength,
             dataType: dataType,
@@ -522,6 +523,7 @@ view.View = class {
                                 node.name.toLowerCase(),
                                 node.type.name,
                                 input.name,
+                                tensor.name,
                                 currentOffset,
                                 byteLength,
                                 tensor.type.dataType,
