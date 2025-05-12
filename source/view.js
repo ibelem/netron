@@ -645,7 +645,7 @@ view.View = class {
                         if (input) {
                             const inputJson = {};
                             input.name ?  inputJson.name = input?.name : null;
-                            input.type ?  inputJson.type = input?.type : null;
+                            input.type ? inputJson.type = input?.type : null;
                             input.description ?  inputJson.description = input?.description : null;
                             inputJson.value = [];
                             for (const value of input.value) {
@@ -717,9 +717,9 @@ view.View = class {
                     for (const attribute of node.attributes) {
                         if (attribute) {
                             const attributeJson = {};
-                            attribute.name ?  attributeJson.name = attribute?.name : null;
-                            attribute.description ?  attributeJson.description = attribute?.description : null;
-                            attribute.type ?  attributeJson.type = attribute?.type : null;
+                            attribute.name ? attributeJson.name = attribute?.name : null;
+                            attribute.description ? attributeJson.description = attribute?.description : null;
+                            attribute.type ? attributeJson.type = attribute?.type : null;
                             attribute.value ? attributeJson.value = attribute.value : null;
                             nodeJson.attributes.push(attributeJson);
                         }
