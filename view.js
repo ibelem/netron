@@ -27,6 +27,8 @@ view.View = class {
         this._modelFactoryService = new view.ModelFactoryService(this._host);
         this._modelFactoryService.import();
         this._worker = this._host.environment('measure') ? null : new view.Worker(this._host);
+        this._webnnNow = new Date().toISOString();
+        this._webnnDatetime = this._webnnNow.replace(/[-:T.Z]/g, '').substring(0, 14);
     }
 
     async start() {
@@ -58,6 +60,9 @@ view.View = class {
             });
             this._element('read-bin-json-button').addEventListener('click', async () => {
                 location.href = './reader.html';
+            });
+            this._element('export-graph-button').addEventListener('click', async () => {
+                await this.exportGraphAsJson();
             });
             this._element('export-npy-zip-button').addEventListener('click', async () => {
                 await this.exportAllTensorsAsZip();
@@ -385,6 +390,351 @@ view.View = class {
         this._toggleWebNN();
     }
 
+    // Function to prepare object for JSON serialization, handling both signed and unsigned BigInts
+    prepareForJson(obj) {
+        if (obj === null || typeof obj !== 'object') {
+            // Handle primitive values (including individual BigInts)
+            if (typeof obj === 'bigint') {
+                // Convert single BigInt to serializable format
+                return { type: 'bigint', value: obj.toString() };
+            }
+            return obj;
+        }
+
+        // Handle BigInt64Array specifically
+        if (obj instanceof BigInt64Array) {
+            return {
+                type: 'BigInt64Array',
+                value: Array.from(obj).map(n => n.toString())
+            };
+        }
+
+        // Handle BigUint64Array specifically
+        if (obj instanceof BigUint64Array) {
+            return {
+                type: 'BigUint64Array',
+                value: Array.from(obj).map(n => n.toString())
+            };
+        }
+
+        // Handle arrays of BigInts
+        if (Array.isArray(obj) && obj.length > 0 && obj.every(item => typeof item === 'bigint')) {
+        return {
+            type: 'bigint[]',
+            value: obj.map(n => n.toString())
+        };
+        }
+
+        // Handle regular arrays
+        if (Array.isArray(obj)) {
+            return obj.map(item => this.prepareForJson(item));
+        }
+
+        // Handle regular objects recursively
+        const result = {};
+        for (const [key, value] of Object.entries(obj)) {
+            result[key] = this.prepareForJson(value);
+        }
+        return result;
+    }
+
+    // Checking for either BigInt64Array or BigUint64Array
+    isBigIntTypedArray(value) {
+        return value instanceof BigInt64Array || value instanceof BigUint64Array;
+    }
+
+    // Specifically check for BigUint64Array
+    isBigUint64Array(value) {
+        return value instanceof BigUint64Array;
+    }
+
+    // Function to restore BigInt values from parsed JSON
+    restoreFromJson(obj) {
+        if (obj === null || typeof obj !== 'object') {
+            return obj;
+        }
+
+        // Check for our special type indicators
+        if (obj.type === 'bigint') {
+            return BigInt(obj.value);
+        }
+
+        if (obj.type === 'bigint[]') {
+        return obj.value.map(str => BigInt(str));
+        }
+
+        if (obj.type === 'BigInt64Array') {
+            return new BigInt64Array(obj.value.map(str => BigInt(str)));
+        }
+
+        // Handle arrays
+        if (Array.isArray(obj)) {
+            return obj.map(item => this.restoreFromJson(item));
+        }
+
+        // Handle regular objects
+        const result = {};
+        for (const [key, value] of Object.entries(obj)) {
+            result[key] = this.restoreFromJson(value);
+        }
+        return result;
+    }
+
+    // Parse JSON and restore BigInt values
+    deserializeWithBigInt(jsonString) {
+        const parsed = JSON.parse(jsonString);
+        return this.restoreFromJson(parsed);
+    }
+
+    async exportGraphAsJson() {
+        const weightBiasButtons = document.querySelectorAll('.action')[0];
+        if (!this._model || !this._model.graphs) {
+            console.warn('No model or graphs available to export tensors.');
+            weightBiasButtons.innerHTML = "No model or graphs available to export tensors.";
+            return;
+        }
+
+        // node {
+        //     input: "input_dequantized"
+        //     input: "475_dequantized"
+        //     input: "476_dequantized"
+        //     output: "474_QuantizeInput"
+        //     name: "Conv_0_quant"
+        //     op_type: "Conv"
+        //     attribute {
+        //       name: "auto_pad"
+        //       s: "NOTSET"
+        //       type: STRING
+        //     }
+        //     attribute {
+        //       name: "group"
+        //       i: 1
+        //       type: INT
+        //     }
+        //     attribute {
+        //       name: "pads"
+        //       ints: 1
+        //       ints: 1
+        //       ints: 1
+        //       ints: 1
+        //       type: INTS
+        //     }
+        //   }
+
+        let modelJson= {}, graphJson = {};
+        let model = this._model;
+
+        model?.identifier ? modelJson.identifier = model.identifier : null;
+        model?.description ? modelJson.description = model.description : null;
+        model?.domain ? modelJson.domain = model.domain : null;
+        model?.format ? modelJson.format = model.format : null;
+        model?.producer ? modelJson.producer = model.producer : null;
+        model?.source ? modelJson.source = model.source : undefined;
+        model?.version ? modelJson.version = model.version : null;
+
+        modelJson.functions = [];
+        for (const func of this._model.functions) {
+            modelJson.functions.push(func);
+        }
+
+        modelJson.imports = [];
+        for (const impo of this._model.imports) {
+            modelJson.imports.push(impo);
+        }
+
+        modelJson.metadata = [];
+        for (const meta of this._model.metadata) {
+            modelJson.metadata.push(meta);
+        }
+
+        modelJson.graph = [];
+        for (const graph of this._model.graphs) {
+            graph?.name ?  graphJson.name = graph?.name : null;
+            graph?.description ? graphJson.description = graph.description : null;
+            graphJson.inputs = [];
+            for (const input of graph.inputs) {
+                if (input) {
+                    const inputJson = {};
+                    input.name ?  inputJson.name = input?.name : null;
+                    input.type ?  inputJson.type = input?.type : null;
+                    input.description ?  inputJson.description = input?.description : null;
+                    inputJson.value = [];
+                    for (const value of input.value) {
+                        const valueJson = {};
+                        if (value) {
+                            value.name ? valueJson.name = value?.name : null;
+                            value.description ? valueJson.description = value?.description : null;
+                            value.initializer ? valueJson.initializer = value?.initializer : null;
+                            value.quantization ? valueJson.quantization = value?.quantization : null;
+                            if(value.type) {
+                                const type = value.type;
+                                const typeJson = {};
+                                type.dataType ? typeJson.dataType = type?.dataType : null;
+                                type.denotation ? typeJson.denotation = type?.denotation : null;
+                                type.layout ? typeJson.layout = type?.layout : null;
+                                if (type.shape) {
+                                    const shape = type.shape;
+                                    const shapeJson = {};
+                                    shape?.dimensions ? shapeJson.dimensions = shape.dimensions : [];
+                                    typeJson.shape = shapeJson;
+                                }
+                                valueJson.type = typeJson;
+                            }
+                        }
+                        inputJson.value.push(valueJson);
+                    }
+                    graphJson.inputs.push(inputJson);
+                }
+            }
+            graphJson.outputs = [];
+            for (const output of graph.outputs) {
+                if (output) {
+                    const outputJson = {};
+                    output.name ?  outputJson.name = output?.name : null;
+                    output.type ?  outputJson.type = output?.type : null;
+                    output.description ?  outputJson.description = output?.description : null;
+                    outputJson.value = [];
+                    for (const value of output.value) {
+                        const valueJson = {};
+                        if (value) {
+                            value.name ? valueJson.name = value?.name : null;
+                            value.description ? valueJson.description = value?.description : null;
+                            value.initializer ? valueJson.initializer = value?.initializer : null;
+                            value.quantization ? valueJson.quantization = value?.quantization : null;
+                            if(value.type) {
+                                const type = value.type;
+                                const typeJson = {};
+                                type.dataType ? typeJson.dataType = type?.dataType : null;
+                                type.denotation ? typeJson.denotation = type?.denotation : null;
+                                type.layout ? typeJson.layout = type?.layout : null;
+                                if (type.shape) {
+                                    const shape = type.shape;
+                                    const shapeJson = {};
+                                    shape?.dimensions ? shapeJson.dimensions = shape.dimensions : [];
+                                    typeJson.shape = shapeJson;
+                                }
+                                valueJson.type = typeJson;
+                            }
+                        }
+                        outputJson.value.push(valueJson);
+                    }
+                    graphJson.outputs.push(outputJson);
+                }
+            }
+            graphJson.nodes = [];
+            for (const node of graph.nodes) {
+                if(node) {
+                    const nodeJson = {};
+                    node.name ?  nodeJson.name = node?.name : null;
+                    node.description ?  nodeJson.description = node?.description : null;
+                    nodeJson.chain = [];
+                    if(node.chain) {
+                        for (const chain of node.chain) {
+                            nodeJson.chain.push(chain);
+                        }
+                    }
+                    nodeJson.metadata = [];
+                    if(node.metadata) {
+                        for (const metadata of node.metadata) {
+                            nodeJson.metadata.push(metadata);
+                        }
+                    }
+
+                    nodeJson.inputs = [];
+                    for (const input of node.inputs) {
+                        if (input) {
+                            const inputJson = {};
+                            input.name ?  inputJson.name = input?.name : null;
+                            input.type ? inputJson.type = input?.type : null;
+                            input.description ?  inputJson.description = input?.description : null;
+                            inputJson.value = [];
+                            for (const value of input.value) {
+                                const valueJson = {};
+                                if (value) {
+                                    value.name ? valueJson.name = value?.name : null;
+                                    value.description ? valueJson.description = value?.description : null;
+                                    // value.initializer includes the Tensor weight and bias data
+                                    // value.initializer ? valueJson.initializer = value?.initializer : null;
+                                    value.quantization ? valueJson.quantization = value?.quantization : null;
+                                    if(value.type) {
+                                        const type = value.type;
+                                        const typeJson = {};
+                                        type.dataType ? typeJson.dataType = type?.dataType : null;
+                                        type.denotation ? typeJson.denotation = type?.denotation : null;
+                                        type.layout ? typeJson.layout = type?.layout : null;
+                                        if (type.shape) {
+                                            const shape = type.shape;
+                                            const shapeJson = {};
+                                            shape?.dimensions ? shapeJson.dimensions = shape.dimensions : [];
+                                            typeJson.shape = shapeJson;
+                                        }
+                                        valueJson.type = typeJson;
+                                    }
+                                }
+                                inputJson.value.push(valueJson);
+                            }
+                            nodeJson.inputs.push(inputJson);
+                        }
+                    }
+                    nodeJson.outputs = [];
+                    for (const output of node.outputs) {
+                        if (output) {
+                            const outputJson = {};
+                            output.name ?  outputJson.name = output?.name : null;
+                            output.type ?  outputJson.type = output?.type : null;
+                            output.description ?  outputJson.description = output?.description : null;
+                            outputJson.value = [];
+                            for (const value of output.value) {
+                                const valueJson = {};
+                                if (value) {
+                                    value.name ? valueJson.name = value?.name : null;
+                                    value.description ? valueJson.description = value?.description : null;
+                                    // value.initializer includes the Tensor weight and bias data
+                                    // value.initializer ? valueJson.initializer = value?.initializer : null;
+                                    value.quantization ? valueJson.quantization = value?.quantization : null;
+                                    if(value.type) {
+                                        const type = value.type;
+                                        const typeJson = {};
+                                        type.dataType ? typeJson.dataType = type?.dataType : null;
+                                        type.denotation ? typeJson.denotation = type?.denotation : null;
+                                        type.layout ? typeJson.layout = type?.layout : null;
+                                        if (type.shape) {
+                                            const shape = type.shape;
+                                            const shapeJson = {};
+                                            shape?.dimensions ? shapeJson.dimensions = shape.dimensions : [];
+                                            typeJson.shape = shapeJson;
+                                        }
+                                        valueJson.type = typeJson;
+                                    }
+                                }
+                                outputJson.value.push(valueJson);
+                            }
+                            nodeJson.outputs.push(outputJson);
+                        }
+                    }
+
+                    nodeJson.attributes = [];
+                    for (const attribute of node.attributes) {
+                        if (attribute) {
+                            const attributeJson = {};
+                            attribute.name ? attributeJson.name = attribute?.name : null;
+                            attribute.description ? attributeJson.description = attribute?.description : null;
+                            attribute.type ? attributeJson.type = attribute?.type : null;
+                            attribute.value ? attributeJson.value = attribute.value : null;
+                            nodeJson.attributes.push(attributeJson);
+                        }
+                    }
+
+                    node.type ? nodeJson.type = node.type : null;
+                    graphJson.nodes.push(nodeJson);
+                }
+            }
+        }
+        modelJson.graph.push(graphJson);
+        const jsonName = `model_graph_node_${this._webnnDatetime}.json`;
+        await this._downloadModelWeightBiasJson(jsonName, this.prepareForJson(modelJson));
+    }
+
     async exportAllTensorsAsZip() {
         const weightBiasButtons = document.querySelectorAll('.action')[0];
         if (!this._model || !this._model.graphs) {
@@ -541,13 +891,9 @@ view.View = class {
             }
         }
     
-        // Generate the current datetime string
-        const now = new Date().toISOString();
-        const datetime = now.replace(/[-:T.Z]/g, '').substring(0, 14);
-    
         // Create filenames
-        const jsonName = `model_${datetime}.json`;
-        const binName = `model_${datetime}.bin`;
+        const jsonName = `model_weights_bias_${this._webnnDatetime}.json`;
+        const binName = `model_${this._webnnDatetime}.bin`;
     
         // Trigger download for the JSON file
         await this._downloadModelWeightBiasJson(jsonName, modelWeightBias);
