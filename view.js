@@ -654,7 +654,24 @@ view.View = class {
                                     value.name ? valueJson.name = value?.name : null;
                                     value.description ? valueJson.description = value?.description : null;
                                     // value.initializer includes the Tensor weight and bias data
-                                    // value.initializer ? valueJson.initializer = value?.initializer : null;
+                                    if(value.initializer) {
+                                        const initializerJson = {};
+                                        const initializer = value.initializer;
+                                        initializer.name ? initializerJson.name =  initializer.name : null;
+                                        initializer.category ? initializerJson.category =  initializer.category : null;
+                                        initializer.encoding ? initializerJson.encoding =  initializer.encoding : null;
+                                        initializer.indices ? initializerJson.indices =  initializer.indices : null;
+                                        initializer.location ? initializerJson.location =  initializer.location : null;
+                                        if (initializer.type) {
+                                            initializerJson.type = {}
+                                            initializer.type.dataType ? initializerJson.type.dataType = initializer.type.dataType : null;
+                                            if(initializer.type.shape) {
+                                                initializerJson.type.shape = {}
+                                                initializer.type.shape.dimensions ? initializerJson.type.shape.dimensions = initializer.type.shape.dimensions : null;
+                                            }
+                                        }
+                                        valueJson.initializer = initializerJson;
+                                    }
                                     value.quantization ? valueJson.quantization = value?.quantization : null;
                                     if(value.type) {
                                         const type = value.type;
@@ -690,13 +707,30 @@ view.View = class {
                                     value.name ? valueJson.name = value?.name : null;
                                     value.description ? valueJson.description = value?.description : null;
                                     // value.initializer includes the Tensor weight and bias data
-                                    // value.initializer ? valueJson.initializer = value?.initializer : null;
+                                    if(value.initializer) {
+                                        const initializerJson = {};
+                                        const initializer = value.initializer;
+                                        initializer.name ? initializerJson.name =  initializer.name : null;
+                                        initializer.category ? initializerJson.category =  initializer.category : null;
+                                        initializer.encoding ? initializerJson.encoding =  initializer.encoding : null;
+                                        initializer.indices ? initializerJson.indices =  initializer.indices : null;
+                                        initializer.location ? initializerJson.location =  initializer.location : null;
+                                        if (initializer.type) {
+                                            initializerJson.type = {}
+                                            initializer.type.dataType ? initializerJson.type.dataType = initializer.type.dataType : null;
+                                            if(initializer.type.shape) {
+                                                initializerJson.type.shape = {}
+                                                initializer.type.shape.dimensions ? initializerJson.type.shape.dimensions = initializer.type.shape.dimensions : null;
+                                            }
+                                        }
+                                        valueJson.initializer = initializerJson;
+                                    }
                                     value.quantization ? valueJson.quantization = value?.quantization : null;
                                     if(value.type) {
                                         const type = value.type;
                                         const typeJson = {};
-                                        type.dataType ? typeJson.dataType = type?.dataType : null;
-                                        type.denotation ? typeJson.denotation = type?.denotation : null;
+                                        type.dataType ? typeJson.dataType = type.dataType : null;
+                                        type.denotation ? typeJson.denotation = type.denotation : null;
                                         type.layout ? typeJson.layout = type?.layout : null;
                                         if (type.shape) {
                                             const shape = type.shape;
