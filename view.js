@@ -526,29 +526,34 @@ view.View = class {
 
         model?.identifier ? modelJson.identifier = model.identifier : null;
         model?.description ? modelJson.description = model.description : null;
+        model?.name ? modelJson.name = model.name : null;
         model?.domain ? modelJson.domain = model.domain : null;
         model?.format ? modelJson.format = model.format : null;
         model?.producer ? modelJson.producer = model.producer : null;
         model?.source ? modelJson.source = model.source : undefined;
         model?.version ? modelJson.version = model.version : null;
 
-        modelJson.functions = [];
-        for (const func of this._model.functions) {
-            modelJson.functions.push(func);
+        if (model.functions) {
+            modelJson.functions = [];
+            for (const func of model.functions) {
+                modelJson.functions.push(func);
+            }
         }
 
-        modelJson.imports = [];
-        for (const impo of this._model.imports) {
-            modelJson.imports.push(impo);
+        if (model.imports) {
+            modelJson.imports = [];
+            for (const impo of model.imports) {
+                modelJson.imports.push(impo);
+            }
         }
 
         modelJson.metadata = [];
-        for (const meta of this._model.metadata) {
+        for (const meta of model.metadata) {
             modelJson.metadata.push(meta);
         }
 
         modelJson.graph = [];
-        for (const graph of this._model.graphs) {
+        for (const graph of model.graphs) {
             graph?.name ?  graphJson.name = graph?.name : null;
             graph?.description ? graphJson.description = graph.description : null;
             graphJson.inputs = [];
