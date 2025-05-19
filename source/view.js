@@ -667,6 +667,7 @@ view.View = class {
                                         initializer.encoding ? initializerJson.encoding =  initializer.encoding : null;
                                         initializer.indices ? initializerJson.indices =  initializer.indices : null;
                                         initializer.location ? initializerJson.location =  initializer.location : null;
+                                        initializer.values ? initializerJson.values = initializer.values : [];
                                         if (initializer.type) {
                                             initializerJson.type = {}
                                             initializer.type.dataType ? initializerJson.type.dataType = initializer.type.dataType : null;
