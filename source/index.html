@@ -405,6 +405,26 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
     height: auto !important;
     padding: 0.2rem 1rem;
 }
+.external-links {
+    margin-top: -1px;
+    background-color: #ffffff;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    padding: 5px 0;
+    justify-items: center;
+    align-items: center;
+    border: 1px solid rgba(27, 31, 35, 0.05);
+}
+
+.external-links a {
+    color: rgba(0, 123, 255, 1);
+    text-decoration: none;
+}
+.external-links a:hover {
+    color: rgba(255, 0, 129, 1);
+    text-decoration: dashed;
+}
 </style>
 </head>
 <body class="welcome spinner">
@@ -418,6 +438,11 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
                 <button id="export-graph-button" class="logo-button export-graph-button" title="Export graph and nodes">Graph · Nodes</button>
                 <button id="read-bin-json-button" class="logo-button read-bin-button" title="Read weights and biases in .bin and JSON format">Reader</button>
                 <button id="export-npy-zip-button" class="logo-button export-npy-zip-button" title="Export weights and biases in .npy format (compressed as ZIP)">.npy</button>
+            </div>
+        </div>
+        <div class="external-links">
+            <div>
+                <a href="https://ibelem.github.io/webnn-code-generator/" title="WebNN Code Generator">WebNN Code Generator</a> · <a href="https://github.com/huningxin/onnx2json/tree/webnn_js" title="Create WebNN JavaScript code for ONNX model">ONNX -&gt; JSON -&gt; WebNN</a>
             </div>
         </div>
     </div>
