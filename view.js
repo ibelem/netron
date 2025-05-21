@@ -493,44 +493,17 @@ view.View = class {
             return;
         }
 
-        // node {
-        //     input: "input_dequantized"
-        //     input: "475_dequantized"
-        //     input: "476_dequantized"
-        //     output: "474_QuantizeInput"
-        //     name: "Conv_0_quant"
-        //     op_type: "Conv"
-        //     attribute {
-        //       name: "auto_pad"
-        //       s: "NOTSET"
-        //       type: STRING
-        //     }
-        //     attribute {
-        //       name: "group"
-        //       i: 1
-        //       type: INT
-        //     }
-        //     attribute {
-        //       name: "pads"
-        //       ints: 1
-        //       ints: 1
-        //       ints: 1
-        //       ints: 1
-        //       type: INTS
-        //     }
-        //   }
-
         let modelJson= {}, graphJson = {};
         let model = this._model;
 
-        model?.identifier ? modelJson.identifier = model.identifier.replaceAll('\n', '') : null;
-        model?.description ? modelJson.description = model.description : null;
-        model?.name ? modelJson.name = model.name.replaceAll('\n', '') : null;
-        model?.domain ? modelJson.domain = model.domain : null;
-        model?.format ? modelJson.format = model.format : null;
-        model?.producer ? modelJson.producer = model.producer : null;
-        model?.source ? modelJson.source = model.source : undefined;
-        model?.version ? modelJson.version = model.version : null;
+        model?.identifier ? modelJson.identifier = model.identifier : null;
+        model.description ? modelJson.description = model.description : null;
+        model.name ? modelJson.name = model.name : null;
+        model.domain ? modelJson.domain = model.domain : null;
+        model.format ? modelJson.format = model.format : null;
+        model.producer ? modelJson.producer = model.producer : null;
+        model.source ? modelJson.source = model.source : undefined;
+        model.version ? modelJson.version = model.version : null;
 
         if (model.functions) {
             modelJson.functions = [];
@@ -555,29 +528,32 @@ view.View = class {
 
         modelJson.graph = [];
         for (const graph of model.graphs) {
-            graph?.name ?  graphJson.name = graph?.name.replaceAll('\n', '') : null;
-            // graph?.description ? graphJson.description = graph.description : null;
+            graph?.name ? graphJson.name = graph.name : null;
+            graph.identifier ? graphJson.identifier = graph.identifier : null;
+            // graph.description ? graphJson.description = graph.description : null;
             graphJson.inputs = [];
             for (const input of graph.inputs) {
                 if (input) {
                     const inputJson = {};
-                    input.name ?  inputJson.name = input?.name.replaceAll('\n', '') : null;
-                    input.type ?  inputJson.type = input?.type : null;
-                    // input.description ?  inputJson.description = input?.description : null;
+                    input.name ? inputJson.name = input.name : null;
+                    input.identifier ? inputJson.identifier = input.identifier : null;
+                    input.type ? inputJson.type = input?.type : null;
+                    // input.description ? inputJson.description = input.description : null;
                     inputJson.value = [];
                     for (const value of input.value) {
                         const valueJson = {};
                         if (value) {
-                            value.name ? valueJson.name = value?.name.replaceAll('\n', '') : null;
-                            // value.description ? valueJson.description = value?.description : null;
-                            value.initializer ? valueJson.initializer = value?.initializer : null;
-                            value.quantization ? valueJson.quantization = value?.quantization : null;
+                            value.name ? valueJson.name = value.name : null;
+                            value.identifier ? valueJson.identifier = value.identifier : null;
+                            // value.description ? valueJson.description = value.description : null;
+                            value.initializer ? valueJson.initializer = value.initializer : null;
+                            value.quantization ? valueJson.quantization = value.quantization : null;
                             if(value.type) {
                                 const type = value.type;
                                 const typeJson = {};
-                                type.dataType ? typeJson.dataType = type?.dataType : null;
-                                type.denotation ? typeJson.denotation = type?.denotation : null;
-                                type.layout ? typeJson.layout = type?.layout : null;
+                                type.dataType ? typeJson.dataType = type.dataType : null;
+                                type.denotation ? typeJson.denotation = type.denotation : null;
+                                type.layout ? typeJson.layout = type.layout : null;
                                 if (type.shape) {
                                     const shape = type.shape;
                                     const shapeJson = {};
@@ -596,23 +572,25 @@ view.View = class {
             for (const output of graph.outputs) {
                 if (output) {
                     const outputJson = {};
-                    output.name ?  outputJson.name = output?.name.replaceAll('\n', '') : null;
-                    output.type ?  outputJson.type = output?.type : null;
-                    // output.description ?  outputJson.description = output?.description : null;
+                    output.name ? outputJson.name = output.name : null;
+                    output.identifier ? outputJson.identifier = output.identifier : null;
+                    output.type ? outputJson.type = output.type : null;
+                    // output.description ? outputJson.description = output.description : null;
                     outputJson.value = [];
                     for (const value of output.value) {
                         const valueJson = {};
                         if (value) {
-                            value.name ? valueJson.name = value?.name.replaceAll('\n', '') : null;
-                            // value.description ? valueJson.description = value?.description : null;
-                            value.initializer ? valueJson.initializer = value?.initializer : null;
-                            value.quantization ? valueJson.quantization = value?.quantization : null;
+                            value.name ? valueJson.name = value.name : null;
+                            value.identifier ? valueJson.identifier = value.identifier : null;
+                            // value.description ? valueJson.description = value.description : null;
+                            value.initializer ? valueJson.initializer = value.initializer : null;
+                            value.quantization ? valueJson.quantization = value.quantization : null;
                             if(value.type) {
                                 const type = value.type;
                                 const typeJson = {};
-                                type.dataType ? typeJson.dataType = type?.dataType : null;
-                                type.denotation ? typeJson.denotation = type?.denotation : null;
-                                type.layout ? typeJson.layout = type?.layout : null;
+                                type.dataType ? typeJson.dataType = type.dataType : null;
+                                type.denotation ? typeJson.denotation = type.denotation : null;
+                                type.layout ? typeJson.layout = type.layout : null;
                                 if (type.shape) {
                                     const shape = type.shape;
                                     const shapeJson = {};
@@ -631,8 +609,9 @@ view.View = class {
             for (const node of graph.nodes) {
                 if(node) {
                     const nodeJson = {};
-                    node.name ?  nodeJson.name = node?.name.replaceAll('\n', '') : null;
-                    // node.description ?  nodeJson.description = node?.description : null;
+                    node.name ? nodeJson.name = node.name : null;
+                    node.identifier ? nodeJson.identifier = node.identifier : null;
+                    // node.description ?  nodeJson.description = node.description : null;
                     nodeJson.chain = [];
                     if(node.chain) {
                         for (const chain of node.chain) {
@@ -650,24 +629,27 @@ view.View = class {
                     for (const input of node.inputs) {
                         if (input) {
                             const inputJson = {};
-                            input.name ?  inputJson.name = input?.name.replaceAll('\n', '') : null;
-                            input.type ? inputJson.type = input?.type : null;
-                            // input.description ?  inputJson.description = input?.description : null;
+                            input.name ? inputJson.name = input.name : null;
+                            input.identifier ? inputJson.identifier = input.identifier : null;
+                            input.type ? inputJson.type = input.type : null;
+                            // input.description ? inputJson.description = input.description : null;
                             inputJson.value = [];
                             for (const value of input.value) {
                                 const valueJson = {};
                                 if (value) {
-                                    value.name ? valueJson.name = value?.name.replaceAll('\n', '') : null;
-                                    // value.description ? valueJson.description = value?.description : null;
+                                    value.name ? valueJson.name = value.name : null;
+                                    value.identifier ? valueJson.identifier = value.identifier : null;
+                                    // value.description ? valueJson.description = value.description : null;
                                     // value.initializer includes the Tensor weight and bias data
                                     if(value.initializer) {
                                         const initializerJson = {};
                                         const initializer = value.initializer;
-                                        initializer.name ? initializerJson.name =  initializer.name.replaceAll('\n', '') : null;
-                                        initializer.category ? initializerJson.category =  initializer.category : null;
-                                        initializer.encoding ? initializerJson.encoding =  initializer.encoding : null;
-                                        initializer.indices ? initializerJson.indices =  initializer.indices : null;
-                                        initializer.location ? initializerJson.location =  initializer.location : null;
+                                        initializer.name ? initializerJson.name = initializer.name : null;
+                                        initializer.identifier ? initializerJson.identifier = initializer.identifier : null;
+                                        initializer.category ? initializerJson.category = initializer.category : null;
+                                        initializer.encoding ? initializerJson.encoding = initializer.encoding : null;
+                                        initializer.indices ? initializerJson.indices = initializer.indices : null;
+                                        initializer.location ? initializerJson.location = initializer.location : null;
                                         if (initializer.type) {
                                             initializerJson.type = {}
                                             initializer.type.dataType ? initializerJson.type.dataType = initializer.type.dataType : null;
@@ -686,9 +668,9 @@ view.View = class {
                                     if(value.type) {
                                         const type = value.type;
                                         const typeJson = {};
-                                        type.dataType ? typeJson.dataType = type?.dataType : null;
-                                        type.denotation ? typeJson.denotation = type?.denotation : null;
-                                        type.layout ? typeJson.layout = type?.layout : null;
+                                        type.dataType ? typeJson.dataType = type.dataType : null;
+                                        type.denotation ? typeJson.denotation = type.denotation : null;
+                                        type.layout ? typeJson.layout = type.layout : null;
                                         if (type.shape) {
                                             const shape = type.shape;
                                             const shapeJson = {};
@@ -707,24 +689,26 @@ view.View = class {
                     for (const output of node.outputs) {
                         if (output) {
                             const outputJson = {};
-                            output.name ?  outputJson.name = output?.name.replaceAll('\n', '') : null;
-                            output.type ?  outputJson.type = output?.type : null;
-                            // output.description ?  outputJson.description = output?.description : null;
+                            output.name ? outputJson.name = output.name : null;
+                            output.identifier ? outputJson.identifier = output.identifier : null;
+                            output.type ? outputJson.type = output.type : null;
+                            // output.description ? outputJson.description = output.description : null;
                             outputJson.value = [];
                             for (const value of output.value) {
                                 const valueJson = {};
                                 if (value) {
-                                    value.name ? valueJson.name = value?.name.replaceAll('\n', '') : null;
+                                    value.name ? valueJson.name = value?.name : null;
                                     // value.description ? valueJson.description = value?.description : null;
                                     // value.initializer includes the Tensor weight and bias data
                                     if(value.initializer) {
                                         const initializerJson = {};
                                         const initializer = value.initializer;
-                                        initializer.name ? initializerJson.name =  initializer.name.replaceAll('\n', '') : null;
-                                        initializer.category ? initializerJson.category =  initializer.category : null;
-                                        initializer.encoding ? initializerJson.encoding =  initializer.encoding : null;
-                                        initializer.indices ? initializerJson.indices =  initializer.indices : null;
-                                        initializer.location ? initializerJson.location =  initializer.location : null;
+                                        initializer.name ? initializerJson.name = initializer.name : null;
+                                        initializer.identifier ? initializerJson.identifier = initializer.identifier : null;
+                                        initializer.category ? initializerJson.category = initializer.category : null;
+                                        initializer.encoding ? initializerJson.encoding = initializer.encoding : null;
+                                        initializer.indices ? initializerJson.indices = initializer.indices : null;
+                                        initializer.location ? initializerJson.location = initializer.location : null;
                                         if (initializer.type) {
                                             initializerJson.type = {}
                                             initializer.type.dataType ? initializerJson.type.dataType = initializer.type.dataType : null;
@@ -735,13 +719,13 @@ view.View = class {
                                         }
                                         valueJson.initializer = initializerJson;
                                     }
-                                    value.quantization ? valueJson.quantization = value?.quantization : null;
+                                    value.quantization ? valueJson.quantization = value.quantization : null;
                                     if(value.type) {
                                         const type = value.type;
                                         const typeJson = {};
                                         type.dataType ? typeJson.dataType = type.dataType : null;
                                         type.denotation ? typeJson.denotation = type.denotation : null;
-                                        type.layout ? typeJson.layout = type?.layout : null;
+                                        type.layout ? typeJson.layout = type.layout : null;
                                         if (type.shape) {
                                             const shape = type.shape;
                                             const shapeJson = {};
@@ -761,9 +745,10 @@ view.View = class {
                     for (const attribute of node.attributes) {
                         if (attribute) {
                             const attributeJson = {};
-                            attribute.name ? attributeJson.name = attribute?.name.replaceAll('\n', '') : null;
-                            // attribute.description ? attributeJson.description = attribute?.description : null;
-                            attribute.type ? attributeJson.type = attribute?.type : null;
+                            attribute.name ? attributeJson.name = attribute.name : null;
+                            attribute.identifier ? attributeJson.identifier = attribute.identifier : null;
+                            // attribute.description ? attributeJson.description = attribute.description : null;
+                            attribute.type ? attributeJson.type = attribute.type : null;
                             attribute.value ? attributeJson.value = attribute.value : null;
                             nodeJson.attributes.push(attributeJson);
                         }
@@ -795,7 +780,7 @@ view.View = class {
                         if (value && value.initializer) {
                             const tensor = new base.Tensor(value.initializer);
                             const defaultPath = tensor.name
-                                ? tensor.name.split('/').join('_').split(':').join('_').split('.').join('_').replaceAll('\n', '')
+                                ? tensor.name.split('/').join('_').split(':').join('_').split('.').join('_')
                                 : 'tensor';
                             let weightsBiasName = '';
                             if (input.name.toLowerCase() === 'w') {
@@ -832,12 +817,14 @@ view.View = class {
         });
     }
 
-    _getJsonObject(nodeName, nodeType, input, name, dataOffset, byteLength, dataType, shape) {
+    _getJsonObject(nodeName, nodeIdentifier, nodeType, inputName, tensorName, tensorIdentifier, dataOffset, byteLength, dataType, shape) {
         return {
             nodeName: nodeName,
+            nodeIdentifier: nodeIdentifier,
             nodeType: nodeType,
-            input: input,
-            name: name,
+            input: inputName,
+            name: tensorName,
+            identifier: tensorIdentifier,
             dataOffset: dataOffset,
             byteLength: byteLength,
             dataType: dataType,
@@ -912,29 +899,36 @@ view.View = class {
                             binaryData.push(tensorBuffer);
 
                             // TFLite case, no name value but identifier value
-                            let nodeName;
+                            let nodeName = '';
                             if (node.name) {
-                                nodeName = node.name.replaceAll('\n', '');
-                            } else if (node.identifier) {
-                                nodeName = node.identifier.replaceAll('\n', '');
+                                nodeName = node.name;
+                            } 
+                            let nodeIdentifier = '';
+                            if (node.identifier) {
+                                nodeIdentifier = node.identifier;
                             }
 
                             // TFLite case, no name value but identifier value
-                            let tensorName;
+                            let tensorName = '';
                             if (tensor.name) {
-                                tensorName = tensor.name.replaceAll('\n', '');
+                                tensorName = tensor.name;
                             } else if (value.name) {
-                                tensorName = value.name.replaceAll('\n', '');
-                            } else if (value.identifier) {
-                                tensorName = value.identifier.replaceAll('\n', '');
+                                tensorName = value.name;
+                            } 
+                            
+                            let tensorIdentifier = '';
+                            if (value.identifier) {
+                                tensorIdentifier = value.identifier;
                             }
     
                             // Create the JSON object and update the dataOffset
                             const jsonObject = this._getJsonObject(
                                 nodeName,
+                                nodeIdentifier,
                                 node.type.name,
                                 input.name,
                                 tensorName,
+                                tensorIdentifier,
                                 currentOffset,
                                 byteLength,
                                 tensor.type.dataType,
@@ -942,7 +936,12 @@ view.View = class {
                             );
     
                             // Use the tensor name as the key in the JSON object
-                            modelWeightBias[tensorName] = jsonObject;
+                            // Use identifier for TFLite model
+                            if (model.format && model.format.toLowerCase().indexOf('tensorflow') > -1) {
+                                modelWeightBias[tensorIdentifier] = jsonObject;
+                            } else {
+                                modelWeightBias[tensorName] = jsonObject;
+                            }
     
                             // Update the current offset
                             currentOffset += byteLength;
