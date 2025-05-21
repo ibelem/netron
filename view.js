@@ -897,7 +897,7 @@ view.View = class {
     
         let binaryData = [];
         let currentOffset = 0;
-    
+        let tempId = 0;
         for (const graph of this._model.graphs) {
             for (const node of graph.nodes) {
                 for (const input of node.inputs) {
@@ -909,13 +909,35 @@ view.View = class {
                             // Get the tensor data as an ArrayBuffer
                             const tensorBuffer = tensor.data?.buffer || new ArrayBuffer(0);
                             binaryData.push(tensorBuffer);
+
+                            // TFLite case, no name value but identifier value
+                            let nodeName;
+                            if (node.name) {
+                                nodeName = node.name.toLowerCase();
+                            } else if (node.identifier) {
+                                nodeName = node.identifier;
+                            } else {
+                                nodeName = `_node_${tempId}`;
+                            }
+
+                            // TFLite case, no name value but identifier value
+                            let tensorName;
+                            if (tensor.name) {
+                                tensorName = tensor.name.toLowerCase();
+                            } else if (tensor.identifier) {
+                                tensorName = tensor.identifier;
+                            } else {
+                                tensorName = `_tensor_${tempId}`;
+                            }
+
+                            tempId++;
     
                             // Create the JSON object and update the dataOffset
                             const jsonObject = this._getJsonObject(
-                                node.name.toLowerCase(),
+                                nodeName,
                                 node.type.name,
                                 input.name,
-                                tensor.name,
+                                tensorName,
                                 currentOffset,
                                 byteLength,
                                 tensor.type.dataType,
@@ -923,7 +945,7 @@ view.View = class {
                             );
     
                             // Use the tensor name as the key in the JSON object
-                            modelWeightBias[tensor.name] = jsonObject;
+                            modelWeightBias[tensorName] = jsonObject;
     
                             // Update the current offset
                             currentOffset += byteLength;
