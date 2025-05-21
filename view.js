@@ -937,7 +937,7 @@ view.View = class {
     
                             // Use the tensor name as the key in the JSON object
                             // Use identifier for TFLite model
-                            if (model.format && model.format.toLowerCase().indexOf('tensorflow') > -1) {
+                            if (this._model.format && this._model.format.toLowerCase().indexOf('tensorflow') > -1) {
                                 modelWeightBias[tensorIdentifier] = jsonObject;
                             } else {
                                 modelWeightBias[tensorName] = jsonObject;

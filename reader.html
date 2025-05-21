@@ -310,8 +310,14 @@
       keyList.innerHTML = '';
       Object.keys(jsonData).forEach(key => {
         const li = document.createElement('li');
-        li.textContent = `${key}`;
-        li.title = `${jsonData[key].node} · ${jsonData[key].input}`;
+        if(jsonData[key].identifier) {
+          li.textContent = `${key} · ${jsonData[key].input}`;
+          li.title = `${jsonData[key].identifier} · ${jsonData[key].input}`;
+        } else {
+          li.textContent = `${jsonData[key].name} · ${jsonData[key].input}`;
+          li.title = `${jsonData[key].name} · ${jsonData[key].input}`;
+        }
+        
         li.addEventListener('click', () => {
           // Remove the 'selected' class from all list items
           document.querySelectorAll('#key-list li').forEach(item => item.classList.remove('selected'));
