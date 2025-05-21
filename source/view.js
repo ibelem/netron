@@ -28,7 +28,6 @@ view.View = class {
         this._modelFactoryService.import();
         this._worker = this._host.environment('measure') ? null : new view.Worker(this._host);
         this._webnnNow = new Date().toISOString();
-        this._webnnDatetime = this._webnnNow.replace(/[-:T.Z]/g, '').substring(0, 14);
     }
 
     async start() {
@@ -774,7 +773,7 @@ view.View = class {
             }
         }
         modelJson.graph.push(graphJson);
-        const jsonName = `model_graph_node_${this._webnnDatetime}.json`;
+        const jsonName = `graph.json`;
         await this._downloadModelWeightBiasJson(jsonName, this.prepareForJson(modelJson));
     }
 
@@ -935,8 +934,8 @@ view.View = class {
         }
     
         // Create filenames
-        const jsonName = `model_weights_bias_${this._webnnDatetime}.json`;
-        const binName = `model_${this._webnnDatetime}.bin`;
+        const jsonName = `weights.json`;
+        const binName = `weights.bin`;
     
         // Trigger download for the JSON file
         await this._downloadModelWeightBiasJson(jsonName, modelWeightBias);
