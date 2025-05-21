@@ -546,9 +546,11 @@ view.View = class {
             }
         }
 
-        modelJson.metadata = [];
-        for (const meta of model.metadata) {
-            modelJson.metadata.push(meta);
+        if (model.metadata) {
+            modelJson.metadata = [];
+            for (const meta of model.metadata) {
+                modelJson.metadata.push(meta);
+            }
         }
 
         modelJson.graph = [];
