@@ -311,11 +311,13 @@
       Object.keys(jsonData).forEach(key => {
         const li = document.createElement('li');
         if(jsonData[key].identifier) {
-          li.textContent = `${key} · ${jsonData[key].input}`;
-          li.title = `${jsonData[key].identifier} · ${jsonData[key].input}`;
+          const content = `${key} · ${jsonData[key].name} · ${jsonData[key].nodeIdentifier}`;
+          li.textContent = content;
+          li.title = content;
         } else {
-          li.textContent = `${jsonData[key].name} · ${jsonData[key].input}`;
-          li.title = `${jsonData[key].name} · ${jsonData[key].input}`;
+          const content = `${jsonData[key].name} · ${jsonData[key].input} · ${jsonData[key].nodeName}`;
+          li.textContent = content;
+          li.title = content;
         }
         
         li.addEventListener('click', () => {
