@@ -67,6 +67,9 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
 .logo-message { display: none; height: 0px; }
 .logo-github { display: none; }
 .open-file-button { top: 170px; left: 0px; width: 10.5em; }
+.logo-link { top: 260px; left: 0; font-size: 12px; line-height: 1.25; text-align: center; vertical-align: middle; min-width: 5em; height: 1.25em; transition: 0.1s; user-select: none; -webkit-user-select: none; -moz-user-select: none; }
+.logo-link a { color: #444444; text-decoration: none; font-weight: bold; }
+.logo-link a:hover { text-decoration: underline; }
 .progress { top: 120px; height: 2px; width: 400px; }
 .progress-bar { height: 100%; width: 0%; background-color: #444444; }
 .notification .logo-name { display: none; }
@@ -412,6 +415,7 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
     grid-template-columns: 1fr;
     grid-template-rows: 1fr;
     padding: 5px 0;
+    font-weight: bold;
     justify-items: center;
     align-items: center;
     border: 1px solid rgba(27, 31, 35, 0.05);
@@ -437,12 +441,12 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
                 <button id="export-graph-button" class="logo-button export-graph-button" title="Export graph and nodes">Graph</button>
                 <button id="export-bin-json-button" class="logo-button export-bin-button" title="Export weights and biases in .bin and JSON format">Weights</button>
                 <button id="read-bin-json-button" class="logo-button read-bin-button" title="Read weights and biases in .bin and JSON format">Weights Reader</button>
-                <button id="export-npy-zip-button" class="logo-button export-npy-zip-button" title="Export weights and biases in .npy format (compressed as ZIP)">.npy</button>
+                <!-- <button id="export-npy-zip-button" class="logo-button export-npy-zip-button" title="Export weights and biases in .npy format (compressed as ZIP)">.npy</button> -->
             </div>
         </div>
         <div class="external-links">
             <div>
-                <a href="https://ibelem.github.io/webnn-code-generator/" title="WebNN Code Generator">WebNN Code Generator</a> · <a href="https://github.com/huningxin/onnx2json/tree/webnn_js" title="Create WebNN JavaScript code for ONNX model">WebNN ONNX2JSON</a>
+                <a href="https://github.com/huningxin/onnx2webnn" title="Exports the ONNX file to a WebNN JavaScript file and a bin file containing weights.">ONNX2WebNN</a> · <a href="https://ibelem.github.io/webnn-code-generator/" title="Generate WebNN API code in vanilla JavaScript from ONNX, TensorFlow Lite, or other model formats.">WebNN Code Generator</a> 
             </div>
         </div>
     </div>
@@ -701,6 +705,11 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
         </svg>
     </a>
     <button id="open-file-button" class="center logo-button open-file-button" tabindex="0">Open Model&hellip;</button>
+    <div class="center logo-link">
+        Enhanced Netron for WebNN ·
+        <a id="onnx-to-webnn-button" href="https://github.com/huningxin/onnx2webnn" tabindex="1" title="Exports the ONNX file to a WebNN JavaScript file and a bin file containing weights.">ONNX2WebNN</a>
+        · <a id="webnn-code-generator-button" href="https://ibelem.github.io/webnn-code-generator" tabindex="2" title="Generate WebNN API code in vanilla JavaScript from ONNX, TensorFlow Lite, or other model formats.">WebNN Code Generator</a>
+    </div>
     <div class="center progress">
         <div id="progress-bar" class="progress-bar"></div>
     </div>

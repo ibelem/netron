@@ -63,9 +63,9 @@ view.View = class {
             this._element('export-graph-button').addEventListener('click', async () => {
                 await this.exportGraphAsJson();
             });
-            this._element('export-npy-zip-button').addEventListener('click', async () => {
-                await this.exportAllTensorsAsZip();
-            });
+            // this._element('export-npy-zip-button').addEventListener('click', async () => {
+            //     await this.exportAllTensorsAsZip();
+            // });
             this._element('webnn-closebutton').addEventListener('click', () => {
                 this.toggleWebnn();
             });
