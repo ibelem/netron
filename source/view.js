@@ -892,10 +892,13 @@ view.View = class {
                     for (const value of input.value) {
                         if (value && value.initializer) {
                             const tensor = new base.Tensor(value.initializer);
-                            const byteLength = tensor.data?.byteLength || 0;
-    
+                            let byteLength = tensor.data?.byteLength || 0;
                             // Get the tensor data as an ArrayBuffer
-                            const tensorBuffer = tensor.data?.buffer || new ArrayBuffer(0);
+                            let tensorBuffer = tensor.data?.buffer || new ArrayBuffer(0);
+                            if (tensor.encoding === "|") {
+                                byteLength = tensor.values.byteLength || 0;
+                                tensorBuffer = tensor.values.buffer;
+                            }
                             binaryData.push(tensorBuffer);
 
                             // TFLite case, no name value but identifier value
