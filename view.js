@@ -648,6 +648,9 @@ view.View = class {
                                         initializer.identifier ? initializerJson.identifier = initializer.identifier : null;
                                         initializer.category ? initializerJson.category = initializer.category : null;
                                         initializer.encoding ? initializerJson.encoding = initializer.encoding : null;
+                                        if(initializer.encoding === '|') {
+                                            initializer.values ? initializerJson.values = initializer.values : [];
+                                        }
                                         initializer.indices ? initializerJson.indices = initializer.indices : null;
                                         initializer.location ? initializerJson.location = initializer.location : null;
                                         if (initializer.type) {
