@@ -668,7 +668,7 @@ browser.Host = class {
                 count = ops_data_json.count;
                 percentage = ops_data_json.percentage;
 
-                tr = `<tr><td>${index}</td><td>${i}</td><td>${count}</td><td>${percentage}</td><td>${tflite}</td><td>${windowsml}</td><td>${dml}</td><td>${coreml}</td><td>${alias}</td></tr>`;
+                tr = `<tr><td>${index}</td><td>${i}</td><td>${count}</td><td>${percentage}</td><td>${tflite}</td><td>${windowsml}</td><td>${dml}</td><td>${coreml}</td><td class="alias" title="${alias}">${alias}</td></tr>`;
                 trs += tr;
                 index += 1;
             }
