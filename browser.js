@@ -446,7 +446,7 @@ browser.Host = class {
     }
 
     async _getWebnnOps() {
-        const response = await fetch("https://webmachinelearning.github.io/assets/json/webnn_status.json");
+        const response = await fetch("https://ibelem.github.io/netron/json/webnn_status.json");
         // const response = await fetch("https://ibelem.github.io/webnn_status.json");
         const data = await response.json();
         const status = data.impl_status;
@@ -457,6 +457,8 @@ browser.Host = class {
                 "alias": [],
                 "tflite": 0,
                 "tflite_chromium_version_added": '',
+                "windowsml": 0,
+                "windowsml_chromium_version_added": '',
                 "dml": 0,
                 "dml_chromium_version_added": '',
                 "coreml": 0,
@@ -471,6 +473,10 @@ browser.Host = class {
                 if (o) alias.push(o);
             }
             item.tflite_chromium_version_added = s.tflite_chromium_version_added;
+            for (const o of s.windowsml_op) {
+                if (o) alias.push(o);
+            }
+            item.windowsml_chromium_version_added = s.windowsml_chromium_version_added;
             for (let o of s.dml_op) {
                 if (typeof (o) === 'object') {
                     o = o[0];
@@ -501,6 +507,11 @@ browser.Host = class {
                 item.tflite = 4;
             } else if (s.tflite_progress === 3) {
                 item.tflite = 3;
+            }
+            if (s.windowsml_progress === 4) {
+                item.windowsml = 4;
+            } else if (s.windowsml_progress === 3) {
+                item.windowsml = 3;
             }
             if (s.dml_progress === 4) {
                 item.dml = 4;
@@ -593,6 +604,7 @@ browser.Host = class {
                 let spec = '';
                 let alias = '';
                 let tflite = 'No';
+                let windowsml = 'No';
                 let dml = 'No';
                 let coreml = 'No';
                 let ops_data_json;
@@ -606,6 +618,11 @@ browser.Host = class {
                             tflite = `Yes, ${v.tflite_chromium_version_added}`;
                         } else if (v.tflite === 3) {
                             tflite = 'WIP';
+                        }
+                        if (v.windowsml === 4) {
+                            windowsml = `Yes, ${v.windowsml_chromium_version_added}`;
+                        } else if (v.coreml === 3) {
+                            windowsml = 'WIP';
                         }
                         if (v.dml === 4) {
                             dml = `Yes, ${v.dml_chromium_version_added}`;
@@ -627,6 +644,11 @@ browser.Host = class {
                                 } else if (v.tflite === 3) {
                                     tflite = 'WIP';
                                 }
+                                if (v.windowsml === 4) {
+                                    windowsml = `Yes, ${v.windowsml_chromium_version_added}`;
+                                } else if (v.windowsml === 3) {
+                                    windowsml = 'WIP';
+                                }
                                 if (v.dml === 4) {
                                     dml = `Yes, ${v.dml_chromium_version_added}`;
                                 } else if (v.dml === 3) {
@@ -646,7 +668,7 @@ browser.Host = class {
                 count = ops_data_json.count;
                 percentage = ops_data_json.percentage;
 
-                tr = `<tr><td>${index}</td><td>${i}</td><td>${count}</td><td>${percentage}</td><td>${tflite}</td><td>${dml}</td><td>${coreml}</td><td>${alias}</td></tr>`;
+                tr = `<tr><td>${index}</td><td>${i}</td><td>${count}</td><td>${percentage}</td><td>${tflite}</td><td>${windowsml}</td><td>${dml}</td><td>${coreml}</td><td>${alias}</td></tr>`;
                 trs += tr;
                 index += 1;
             }
@@ -654,7 +676,7 @@ browser.Host = class {
             const ops_data_json = ops_data.find(item => item.op.toLowerCase() === 'total');
             const count = ops_data_json.count;
 
-            trs += `<tr><td></td><td></td><td>${count}</td><td>100%</td><td></td><td></td><td></td><td></td></tr>`;
+            trs += `<tr><td></td><td></td><td>${count}</td><td>100%</td><td></td><td></td><td></td><td></td><td></td></tr>`;
 
             const table = `
             <table>
@@ -662,13 +684,14 @@ browser.Host = class {
                     <tr>
                         <th rowspan="2">Index</th>
                         <th colspan="3">Model Operations</th>
-                        <th colspan="5">WebNN API Support Status in Chromium</th>
+                        <th colspan="6">WebNN API Support Status in Chromium</th>
                     </tr>
                     <tr>
                         <th>WebNN Spec</th>
                         <th>Count</th>
                         <th>Percentage</th>
                         <th>TensorFlow Lite</th>
+                        <th>Windows ML</th>
                         <th>DirectML</th>
                         <th>Core ML</th>
                         <th>Alias</th>

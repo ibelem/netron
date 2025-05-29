@@ -1,0 +1,3333 @@
+{
+  "impl_status": [
+    {
+      "op": "argMax",
+      "op_id": "argminmax",
+      "version": "",
+      "wpt": "arg_min_max",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "ARG_MAX"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "REDUCE_FUNCTION_ARGMAX"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M122",
+      "coreml_op": [
+        "reduce_argmax"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M128",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "ArgMax"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "argMin",
+      "op_id": "argminmax",
+      "version": "",
+      "wpt": "arg_min_max",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "ARG_MIN"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "REDUCE_FUNCTION_ARGMIN"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M122",
+      "coreml_op": [
+        "reduce_argmin"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M128",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "ArgMin"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "batchNormalization",
+      "op_id": "batchnorm",
+      "version": "",
+      "wpt": "batch_normalization",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated with Scale * ((Input - Mean) / sqrt(Variance + Epsilon)) + Bias"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M127",
+      "dml_op": [
+        "BATCH_NORMALIZATION"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M122",
+      "coreml_op": [
+        "batch_norm"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "BatchNormalization"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "cast",
+      "op_id": "cast",
+      "version": "",
+      "wpt": "cast",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "CAST"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "CAST"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M122",
+      "coreml_op": [
+        "cast"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M124",
+      "windowsml_op": ["Cast"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Cast"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "clamp",
+      "op_id": "clamp",
+      "version": "",
+      "wpt": "clamp",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "RELU_N1_TO_1",
+        "RELU6",
+        "RELU"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M112",
+      "dml_op": [
+        "ELEMENT_WISE_CLIP"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M119",
+      "coreml_op": [
+        "clip"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M125",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "ReluN1To1"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Clip"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "concat",
+      "op_id": "concat",
+      "version": "",
+      "wpt": "concat",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "CONCATENATION"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M113",
+      "dml_op": [
+        "JOIN"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M120",
+      "coreml_op": [
+        "concat"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M125",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "Concatenation"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Concat"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "conv2d",
+      "op_id": "conv2d",
+      "version": "",
+      "wpt": "conv2d",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "CONV_2D",
+        "DEPTHWISE_CONV_2D"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M112",
+      "dml_op": [
+        "CONVOLUTION"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M119",
+      "coreml_op": [
+        "conv"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M125",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "Conv2d",
+        "DepthwiseConv2d"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Conv"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "convTranspose2d",
+      "op_id": "convtranspose2d",
+      "version": "",
+      "wpt": "conv_transpose2d",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "TRANSPOSE_CONV"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M128",
+      "dml_op": [
+        "CONVOLUTION"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "conv_transpose"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "TransposeConv",
+        "Convolution2DTransposeBias"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "ConvTranspose"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "cumulativeSum",
+      "op_id": "cumulativesum",
+      "version": "",
+      "wpt": "cumulative_sum",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "CUMSUM"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M132",
+      "dml_op": [
+        "CUMULATIVE_SUMMATION"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M131",
+      "coreml_op": [
+        "cumsum"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M132",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "CumSum"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.21.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "dequantizeLinear",
+      "op_id": "dequantizelinear",
+      "version": "",
+      "wpt": "dequantizeLinear",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "QUANTIZE"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M132",
+      "dml_op": [
+        "ELEMENT_WISE_DEQUANTIZE_LINEAR"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M132",
+      "coreml_op": [
+        "dequantize_linear"
+      ],
+      "coreml_progress": 3,
+      "coreml_chromium_version_added": "M133",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "DequantizeLinear"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.20.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "element-wise binary / add",
+      "op_id": "binary",
+      "version": "",
+      "wpt": "add",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "ADD"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M112",
+      "dml_op": [
+        "ELEMENT_WISE_ADD"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M119",
+      "windowsml_op": ["Add"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "coreml_op": [
+        "add"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M122",
+      "fw_tflite_op": [
+        "Add"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Add"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise binary / div",
+      "op_id": "binary",
+      "version": "",
+      "wpt": "div",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "DIV"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M112",
+      "dml_op": [
+        "ELEMENT_WISE_DIVIDE"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M119",
+      "coreml_op": [
+        "real_div"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M124",
+      "windowsml_op": ["Div"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        "Div"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Div"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise binary / max",
+      "op_id": "binary",
+      "version": "",
+      "wpt": "max",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "MAXIMUM"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M112",
+      "dml_op": [
+        "ELEMENT_WISE_MAX"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M119",
+      "coreml_op": [
+        "maximum"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M124",
+      "windowsml_op": ["Max"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        "Maximum"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Max"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise binary / min",
+      "op_id": "binary",
+      "version": "",
+      "wpt": "min",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "MINIMUM"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M112",
+      "dml_op": [
+        "ELEMENT_WISE_MIN"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M119",
+      "coreml_op": [
+        "minimum"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M124",
+      "windowsml_op": ["Min"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        "Minimum"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Min"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise binary / mul",
+      "op_id": "binary",
+      "version": "",
+      "wpt": "mul",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "MUL"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M112",
+      "dml_op": [
+        "ELEMENT_WISE_MULTIPLY"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M119",
+      "coreml_op": [
+        "mul"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M124",
+      "windowsml_op": ["Mul"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        "Mul"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Mul"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise binary / notEqual",
+      "op_id": "binary",
+      "version": "",
+      "wpt": "not_equal",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "NotEqual"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M134",
+      "dml_op": [
+        "Emulated with ELEMENT_WISE_LOGICAL_EQUALS and ELEMENT_WISE_LOGICAL_NOT"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M134",
+      "coreml_op": [
+        "not_equal"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M134",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "NotEqual"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Not Equal"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.21.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "element-wise binary / pow",
+      "op_id": "binary",
+      "version": "",
+      "wpt": "pow",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "POW"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M122",
+      "dml_op": [
+        "ELEMENT_WISE_POW"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M119",
+      "coreml_op": [
+        "pow"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M124",
+      "windowsml_op": ["Pow"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        "Sqrt",
+        "Square"
+      ],
+      "fw_tflite_progress": 1,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Pow"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": "XNNPACK: Pow will be replaced by Sqrt. square/square_root"
+    },
+    {
+      "op": "element-wise binary / sub",
+      "op_id": "binary",
+      "version": "",
+      "wpt": "sub",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "SUB"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M112",
+      "dml_op": [
+        "ELEMENT_WISE_SUBTRACT"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M119",
+      "coreml_op": [
+        "sub"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M124",
+      "windowsml_op": ["Sub"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        "Sub"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Sub"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise logical / equal",
+      "op_id": "logical",
+      "version": "",
+      "wpt": "equal",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "EQUAL"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "ELEMENT_WISE_LOGICAL_EQUALS"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M122",
+      "coreml_op": [
+        "equal"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M125",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Equal"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise logical / greater",
+      "op_id": "logical",
+      "version": "",
+      "wpt": "greater",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "GREATER"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "ELEMENT_WISE_LOGICAL_GREATER_THAN"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M122",
+      "coreml_op": [
+        "greater"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M125",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Greater"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise logical / greaterOrEqual",
+      "op_id": "logical",
+      "version": "",
+      "wpt": "greater_or_equal",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "GREATER_EQUAL"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "ELEMENT_WISE_LOGICAL_GREATER_THAN_OR_EQUAL"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M122",
+      "coreml_op": [
+        "greater_equal"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M125",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "GreaterOrEqual"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise logical / lesser",
+      "op_id": "logical",
+      "version": "",
+      "wpt": "lesser",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "LESS"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "ELEMENT_WISE_LOGICAL_LESS_THAN"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M122",
+      "coreml_op": [
+        "less"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M125",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Less"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise logical / lesserOrEqual",
+      "op_id": "logical",
+      "version": "",
+      "wpt": "lesser_or_equal",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "LESS_EQUAL"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "ELEMENT_WISE_LOGICAL_LESS_THAN_OR_EQUAL"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M122",
+      "coreml_op": [
+        "less_equal"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M125",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "LessOrEqual"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise logical / logicalAnd",
+      "op_id": "logicaland",
+      "version": "",
+      "wpt": "logical_and",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "LOGICAL_AND"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M132",
+      "dml_op": [
+        "ELEMENT_WISE_LOGICAL_AND"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M131",
+      "coreml_op": [
+        "logical_and"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M132",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "And"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.21.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "element-wise logical / logicalOr",
+      "op_id": "logicalor",
+      "version": "",
+      "wpt": "logical_or",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "LOGICAL_OR"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M132",
+      "dml_op": [
+        "ELEMENT_WISE_LOGICAL_OR"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M131",
+      "coreml_op": [
+        "logical_or"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M132",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Or"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.21.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "element-wise logical / logicalXor",
+      "op_id": "logicalxor",
+      "version": "",
+      "wpt": "logical_xor",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "NOT_EQUAL"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M132",
+      "dml_op": [
+        "ELEMENT_WISE_LOGICAL_XOR"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M131",
+      "coreml_op": [
+        "logical_xor"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M132",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Xor"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.21.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "element-wise logical / not",
+      "op_id": "logical",
+      "version": "",
+      "wpt": "logical_not",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "LOGICAL_NOT"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "ELEMENT_WISE_LOGICAL_NOT"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "logical_not"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M128",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Not"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise unary / abs",
+      "op_id": "unary",
+      "version": "",
+      "wpt": "abs",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "ABS"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M116",
+      "dml_op": [
+        "ELEMENT_WISE_ABS"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "abs"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": ["Abs"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        "Abs"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Abs"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise unary / ceil",
+      "op_id": "unary",
+      "version": "",
+      "wpt": "ceil",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "CEIL"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M116",
+      "dml_op": [
+        "ELEMENT_WISE_CEIL"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "ceil"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": ["Ceil"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        "Ceil"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Ceil"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise unary / identity",
+      "op_id": "unary",
+      "version": "",
+      "wpt": "identity",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "RESHAPE"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "ELEMENT_WISE_IDENTITY"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "identity"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": ["Identity"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Identity"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise unary / cos",
+      "op_id": "unary",
+      "version": "",
+      "wpt": "cos",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "COS"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M123",
+      "dml_op": [
+        "ELEMENT_WISE_COS"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "cos"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": ["Cos"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Cos"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise unary / erf",
+      "op_id": "unary",
+      "version": "",
+      "wpt": "erf",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "SIGN"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M128",
+      "dml_op": [
+        "ELEMENT_WISE_ERF"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "erf"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": ["Erf"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Erf"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise unary / exp",
+      "op_id": "unary",
+      "version": "",
+      "wpt": "exp",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "EXP"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M123",
+      "dml_op": [
+        "ELEMENT_WISE_EXP"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "exp"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": ["Exp"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Exp"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise unary / floor",
+      "op_id": "unary",
+      "version": "",
+      "wpt": "floor",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "FLOOR"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M116",
+      "dml_op": [
+        "ELEMENT_WISE_FLOOR"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "floor"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": ["Floor"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        "Floor"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Floor"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise unary / log",
+      "op_id": "unary",
+      "version": "",
+      "wpt": "log",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "LOG"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M123",
+      "dml_op": [
+        "ELEMENT_WISE_LOG"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "log"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": ["Log"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Log"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise unary / neg",
+      "op_id": "unary",
+      "version": "",
+      "wpt": "neg",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "NEG"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M116",
+      "dml_op": [
+        "ELEMENT_WISE_NEGATE"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "Emulated with mul(a, -1)"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M127",
+      "windowsml_op": ["Neg"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        "Neg"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Neg"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise unary / reciprocal",
+      "op_id": "unary",
+      "version": "",
+      "wpt": "reciprocal",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated with 1/x"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M127",
+      "dml_op": [
+        "ELEMENT_WISE_RECIP"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "inverse"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": ["Reciprocal"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Reciprocal"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise unary / sin",
+      "op_id": "unary",
+      "version": "",
+      "wpt": "sin",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "SIN"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M123",
+      "dml_op": [
+        "ELEMENT_WISE_SIN"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "sin"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": ["Sin"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Sin"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise unary / sqrt",
+      "op_id": "unary",
+      "version": "",
+      "wpt": "sqrt",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "SQRT"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M122",
+      "dml_op": [
+        "ELEMENT_WISE_SQRT"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "sqrt"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": ["Sqrt"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Sqrt"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise unary / tan",
+      "op_id": "unary",
+      "version": "",
+      "wpt": "tan",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated with sin(x)/cos(x)"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "ELEMENT_WISE_TAN"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "tan"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": ["Tan"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Tan"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "elu",
+      "op_id": "elu",
+      "version": "",
+      "wpt": "elu",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "ELU"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M115",
+      "dml_op": [
+        "ACTIVATION_ELU"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "elu"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "Elu"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Elu"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "expand",
+      "op_id": "expand",
+      "version": "",
+      "wpt": "expand",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "BROADCAST_TO"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M128",
+      "dml_op": [
+        "ELEMENT_WISE_IDENTITY"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "tile"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M128",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Expand"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": "Use identity to implement the expand operation with broadcasting strides"
+    },
+    {
+      "op": "gather",
+      "op_id": "gather",
+      "version": "",
+      "wpt": "gather",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "GATHER"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M122",
+      "dml_op": [
+        "GATHER"
+      ],
+      "coreml_op": [
+        "gather"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Gather"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "gatherElements",
+      "op_id": "gatherelements",
+      "version": "",
+      "wpt": "gatherElements",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated with GATHER_ND"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M133",
+      "dml_op": [
+        "GATHER_ELEMENTS"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M130",
+      "coreml_op": [
+        "gather_along_axis"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M132",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "GatherElements"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.20.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "gatherND",
+      "op_id": "gathernd",
+      "version": "",
+      "wpt": "gatherND",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "GATHER_ND"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M132",
+      "dml_op": [
+        "GATHER_ND"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M131",
+      "coreml_op": [
+        "gather_nd"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M132",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "GatherND"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.20.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "gelu",
+      "op_id": "gelu",
+      "version": "",
+      "wpt": "gelu",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "GELU"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M128",
+      "dml_op": [
+        "ACTIVATION_GELU"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M126",
+      "coreml_op": [
+        "gelu"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M132",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Gelu"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "gemm",
+      "op_id": "gemm",
+      "version": "",
+      "wpt": "gemm",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "FULLY_CONNECTED"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M112",
+      "dml_op": [
+        "GEMM"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M119",
+      "coreml_op": [
+        "Emulated with add(mul(alpha, matmul(A, B)), mul(beta, C))"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "FullyConnected"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Gemm"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "gru",
+      "op_id": "gru",
+      "version": "",
+      "wpt": "gru",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M129",
+      "dml_op": [
+        "GRU"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M125",
+      "coreml_op": [
+        "gru"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M133",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Gru"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.20.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "gruCell",
+      "op_id": "grucell",
+      "version": "",
+      "wpt": "gru_cell",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M129",
+      "dml_op": [
+        "GRU"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M125",
+      "coreml_op": [
+        "gru"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M133",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "GRU"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.20.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "hardSigmoid",
+      "op_id": "hard-sigmoid",
+      "version": "",
+      "wpt": "hard_sigmoid",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated with y = max(0, min(1, alpha * // x + beta))"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "ACTIVATION_HARD_SIGMOID"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M123",
+      "coreml_op": [
+        "sigmoid_hard"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "HardSigmoid"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "hardSwish",
+      "op_id": "hard-swish",
+      "version": "",
+      "wpt": "hard_swish",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "HARD_SWISH"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M112",
+      "dml_op": [
+        "Map to other op"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M123",
+      "coreml_op": [
+        "Emulated by mul(x, hardsigmoid(x, alpha=1.0/6, beta=0.5))"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "HardSwish"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "HardSwish"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "instanceNormalization",
+      "op_id": "instancenorm",
+      "version": "",
+      "wpt": "instance_normalization",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated with Scale * ((Input - Mean) / sqrt(Variance + Epsilon)) + Bias"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M127",
+      "dml_op": [
+        "MEAN_VARIANCE_NORMALIZATION1"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M122",
+      "coreml_op": [
+        "instance_norm"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "InstanceNormalization"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "layerNormalization",
+      "op_id": "layernorm",
+      "version": "",
+      "wpt": "layer_normalization",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M127",
+      "dml_op": [
+        "MEAN_VARIANCE_NORMALIZATION1"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M122",
+      "coreml_op": [
+        "layer_norm"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M129",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "LayerNormalization"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "leakyRelu",
+      "op_id": "leakyrelu",
+      "version": "",
+      "wpt": "leaky_relu",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "LEAKY_RELU"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M113",
+      "dml_op": [
+        "ACTIVATION_LEAKY_RELU"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "leaky_relu"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "LeakyRelu"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "LeakyRelu"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "linear",
+      "op_id": "linear",
+      "version": "",
+      "wpt": "linear",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated with alpha  * x + beta"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "ACTIVATION_LINEAR"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M122",
+      "coreml_op": [
+        "Emulated with add(mul(alpha, a), beta)"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "N/A"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "lstm",
+      "op_id": "lstm",
+      "version": "",
+      "wpt": "lstm",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M129",
+      "dml_op": [
+        "LSTM"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M125",
+      "coreml_op": [
+        "lstm"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M133",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "LSTM"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.20.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "lstmCell",
+      "op_id": "lstmcell",
+      "version": "",
+      "wpt": "lstm_cell",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M129",
+      "dml_op": [
+        "LSTM"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M125",
+      "coreml_op": [
+        "lstm"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M133",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "LSTM"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.20.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "matmul",
+      "op_id": "matmul",
+      "version": "",
+      "wpt": "matmul",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "BATCH_MATMUL"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "GEMM"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "matmul"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "MatMul"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "pad",
+      "op_id": "pad",
+      "version": "",
+      "wpt": "pad",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "PAD"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M114",
+      "dml_op": [
+        "PADDING"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M120",
+      "coreml_op": [
+        "pad"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M129",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "Pad"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Pad"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "pooling / averagePool2d",
+      "op_id": "pool2d",
+      "version": "",
+      "wpt": "pooling",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "AVERAGE_POOL_2D"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M112",
+      "dml_op": [
+        "AVERAGE_POOLING"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M119",
+      "coreml_op": [
+        "avg_pool"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "AveragePool2d",
+        "Mean"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "AveragePool",
+        "GlobalAveragePool"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "pooling / l2Pool2d",
+      "op_id": "pool2d",
+      "version": "",
+      "wpt": "pooling",
+      "wpt_progress": 4,
+      "tflite_op": [
+        ""
+      ],
+      "tflite_progress": 2,
+      "tflite_chromium_version_added": "",
+      "dml_op": [
+        "LP_POOLING"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M123",
+      "coreml_op": [
+        "l2_pool"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "LpPool",
+        "GlobalLpPool"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "pooling / maxPool2d",
+      "op_id": "pool2d",
+      "version": "",
+      "wpt": "pooling",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "MAX_POOL_2D"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M112",
+      "dml_op": [
+        "MAX_POOLING2"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M119",
+      "coreml_op": [
+        "max_pool"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "MaxPool2d"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "GlobalMaxPool",
+        "MaxPool"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "prelu",
+      "op_id": "prelu",
+      "version": "",
+      "wpt": "prelu",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "PRELU"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M115",
+      "dml_op": [
+        "ACTIVATION_PARAMETERIZED_RELU"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M120",
+      "coreml_op": [
+        "prelu"
+      ],
+      "coreml_progress": 3,
+      "coreml_chromium_version_added": "",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "Prelu"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "PRelu"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "quantizeLinear",
+      "op_id": "quantizelinear",
+      "version": "",
+      "wpt": "quantizeLinear",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "QUANTIZE"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M132",
+      "dml_op": [
+        "ELEMENT_WISE_QUANTIZE_LINEAR"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M132",
+      "coreml_op": [
+        "quantize_linear"
+      ],
+      "coreml_progress": 3,
+      "coreml_chromium_version_added": "M133",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "QuantizeLinear"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.20.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "reduction / reduceL1",
+      "op_id": "reduce",
+      "version": "",
+      "wpt": "reduction",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated with adding abs operation before reduceSum"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M128",
+      "dml_op": [
+        "REDUCE_FUNCTION_L1"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "reduce_l1_norm"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "ReduceL1"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "reduction / reduceL2",
+      "op_id": "reduce",
+      "version": "",
+      "wpt": "reduction",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated with appending pow(x, 0.5) after reduceSumSquare"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M128",
+      "dml_op": [
+        "REDUCE_FUNCTION_L2"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "reduce_l2_norm"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "ReduceL2"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "reduction / reduceLogSum",
+      "op_id": "reduce",
+      "version": "",
+      "wpt": "reduction",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated with log and reduceSum"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M127",
+      "dml_op": [
+        "REDUCE_FUNCTION_LOG_SUM"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "reduce_log_sum"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "ReduceLogSum"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "reduction / reduceLogSumExp",
+      "op_id": "reduce",
+      "version": "",
+      "wpt": "reduction",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated with log, reduceSum and exp"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M127",
+      "dml_op": [
+        "REDUCE_FUNCTION_LOG_SUM_EXP"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "reduce_log_sum_exp"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "ReduceLogSumExp"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "reduction / reduceMax",
+      "op_id": "reduce",
+      "version": "",
+      "wpt": "reduction",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "REDUCE_MAX"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "REDUCE_FUNCTION_MAX"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "reduce_max"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "ReduceMax"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "reduction / reduceMean",
+      "op_id": "reduce",
+      "version": "",
+      "wpt": "reduction",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "MEAN"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M120",
+      "dml_op": [
+        "REDUCE_FUNCTION_AVERAGE"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "reduce_mean"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "ReduceMean"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "reduction / reduceMin",
+      "op_id": "reduce",
+      "version": "",
+      "wpt": "reduction",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "REDUCE_MIN"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "REDUCE_FUNCTION_MIN"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "reduce_min"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "ReduceMin"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "reduction / reduceProduct",
+      "op_id": "reduce",
+      "version": "",
+      "wpt": "reduction",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "REDUCE_PROD"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "REDUCE_FUNCTION_MULTIPLY"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "reduce_prod"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "ReduceProd"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "reduction / reduceSum",
+      "op_id": "reduce",
+      "version": "",
+      "wpt": "reduction",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "SUM"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "REDUCE_FUNCTION_SUM"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "reduce_sum"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "ReduceSum"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "reduction / reduceSumSquare",
+      "op_id": "reduce",
+      "version": "",
+      "wpt": "reduction",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated with reduceSum and square"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M127",
+      "dml_op": [
+        "REDUCE_FUNCTION_SUM_SQUARE"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "reduce_sum_square"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "ReduceSumSquare"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "relu",
+      "op_id": "relu",
+      "version": "",
+      "wpt": "relu",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "RELU"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M112",
+      "dml_op": [
+        "ACTIVATION_RELU"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M119",
+      "coreml_op": [
+        "relu"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M125",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "Relu"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Relu"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "resample2d",
+      "op_id": "resample2d",
+      "version": "",
+      "wpt": "resample2d",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "RESIZE_BILINEAR",
+        "RESIZE_NEAREST_NEIGHBOR"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M112",
+      "dml_op": [
+        "RESAMPLE"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "upsample_bilinear",
+        "upsample_nearest_neighbor"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "ResizeBilinear"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Resize"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "reshape",
+      "op_id": "reshape",
+      "version": "",
+      "wpt": "reshape",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "RESHAPE"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M112",
+      "dml_op": [
+        "Supported by tensor strides"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M119",
+      "coreml_op": [
+        "reshape"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "Reshape"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Unsqueeze",
+        "Squeeze",
+        "Reshape",
+        "Flatten"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "reverse",
+      "op_id": "reverse",
+      "version": "",
+      "wpt": "reverse",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "REVERSE"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M133",
+      "dml_op": [
+        "SLICE1 Reverse"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M133",
+      "coreml_op": [
+        "reverse"
+      ],
+      "coreml_progress": 2,
+      "coreml_chromium_version_added": "",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Slice"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.21.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "scatterElements",
+      "op_id": "scatterelements",
+      "version": "",
+      "wpt": "scatterElements",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated with SCATTER_ND and WHERE"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M133",
+      "dml_op": [
+        "SCATTER_ELEMENTS"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M132",
+      "coreml_op": [
+        "scatter_along_axis"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M132",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "ScatterElements"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.20.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "scatterND",
+      "op_id": "scatternd",
+      "version": "",
+      "wpt": "scatterND",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "SCATTER_ND"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M132",
+      "dml_op": [
+        "SCATTER_ND"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M131",
+      "coreml_op": [
+        "scatter_nd"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M132",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "ScatterND"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.20.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "sigmoid",
+      "op_id": "sigmoid",
+      "version": "",
+      "wpt": "sigmoid",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "LOGISTIC"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M112",
+      "dml_op": [
+        "ACTIVATION_SIGMOID"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "sigmoid"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "Logistic"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Sigmoid"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "sign",
+      "op_id": "unary",
+      "version": "",
+      "wpt": "sign",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "SIGN"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M130",
+      "dml_op": [
+        "ELEMENT_WISE_SIGN"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M130",
+      "coreml_op": [
+        ""
+      ],
+      "coreml_progress": 2,
+      "coreml_chromium_version_added": "",
+      "windowsml_op": ["Sign"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Sign"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.21.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "slice",
+      "op_id": "slice",
+      "version": "",
+      "wpt": "slice",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "SLICE"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M116",
+      "dml_op": [
+        "SLICE"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M120",
+      "coreml_op": [
+        "slice_by_size"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "Slice",
+        "StridedSlice"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Slice",
+        "Shape"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "softmax",
+      "op_id": "softmax",
+      "version": "",
+      "wpt": "softmax",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "SOFTMAX"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M112",
+      "dml_op": [
+        "ACTIVATION_SOFTMAX"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M119",
+      "coreml_op": [
+        "softmax"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M127",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "Softmax"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Softmax"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "softplus",
+      "op_id": "softplus",
+      "version": "",
+      "wpt": "softplus",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated with ln(1 + exp(x))"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "ACTIVATION_SOFTPLUS"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M122",
+      "coreml_op": [
+        "softplus"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Softplus"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "softsign",
+      "op_id": "softsign",
+      "version": "",
+      "wpt": "softsign",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated with x / (1 + |x|)"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M127",
+      "dml_op": [
+        "ACTIVATION_SOFTSIGN"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M123",
+      "coreml_op": [
+        "softsign"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M125",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Softsign"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "split",
+      "op_id": "split",
+      "version": "",
+      "wpt": "split",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "SPLIT_V"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M116",
+      "dml_op": [
+        "SPLIT"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M120",
+      "coreml_op": [
+        "split"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M130",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "Split"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Split"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "tanh",
+      "op_id": "tanh",
+      "version": "",
+      "wpt": "tanh",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "TANH"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M116",
+      "dml_op": [
+        "ACTIVATION_TANH"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M121",
+      "coreml_op": [
+        "tanh"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Tanh"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "tile",
+      "op_id": "tile",
+      "version": "",
+      "wpt": "tile",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "TILE"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M131",
+      "dml_op": [
+        "TILE"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M130",
+      "coreml_op": [
+        "tile"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M131",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Tile"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.20.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "transpose",
+      "op_id": "transpose",
+      "version": "",
+      "wpt": "transpose",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "TRANSPOSE"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M113",
+      "dml_op": [
+        "Supported by tensor strides"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M120",
+      "coreml_op": [
+        "transpose"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M125",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        "Transpose"
+      ],
+      "fw_tflite_progress": 3,
+      "fw_tflite_version_added": "Fork",
+      "fw_ort_op": [
+        "Transpose"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": "Transpose is not a real DirectML operator. As for implementation, the input tensor is remapped for reading elements following the strides after the permutation, and an identity operator is appended to consume the remapped strides."
+    },
+    {
+      "op": "triangular",
+      "op_id": "triangular",
+      "version": "",
+      "wpt": "triangular",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulated"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M128",
+      "dml_op": [
+        "Supported by combined operations"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M126",
+      "coreml_op": [
+        "band_part"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M132",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Trilu"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.20.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "where",
+      "op_id": "where",
+      "version": "",
+      "wpt": "where",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "SELECT_V2"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M126",
+      "dml_op": [
+        "ELEMENT_WISE_IF"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M122",
+      "coreml_op": [
+        "select"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M126",
+      "windowsml_op": [],
+      "windowsml_progress": 2,
+      "windowsml_chromium_version_added": "",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Where"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    }
+  ]
+}
