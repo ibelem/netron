@@ -346,6 +346,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -353,9 +356,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -378,6 +378,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -385,9 +388,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -760,6 +760,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -767,9 +770,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -792,6 +792,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -799,9 +802,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -1427,6 +1427,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -1434,9 +1437,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -1459,6 +1459,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -1466,9 +1469,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -1841,6 +1841,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -1848,9 +1851,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -1873,6 +1873,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -1880,9 +1883,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -2508,6 +2508,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -2515,9 +2518,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -2540,6 +2540,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -2547,9 +2550,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -2922,6 +2922,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -2929,9 +2932,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -2954,6 +2954,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -2961,9 +2964,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -3677,6 +3677,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -3684,9 +3687,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -3709,6 +3709,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -3716,9 +3719,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -4091,6 +4091,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -4098,9 +4101,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -4123,6 +4123,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -4130,9 +4133,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -4758,6 +4758,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -4765,9 +4768,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -4790,6 +4790,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -4797,9 +4800,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -5172,6 +5172,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -5179,9 +5182,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -5204,6 +5204,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -5211,9 +5214,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -5927,6 +5927,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -5934,9 +5937,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -5959,6 +5959,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -5966,9 +5969,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -6341,6 +6341,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -6348,9 +6351,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -6373,6 +6373,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -6380,9 +6383,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -7096,6 +7096,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -7103,9 +7106,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -7128,6 +7128,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -7135,9 +7138,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -7510,6 +7510,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -7517,9 +7520,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -7542,6 +7542,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -7549,9 +7552,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -8177,6 +8177,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -8184,9 +8187,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -8209,6 +8209,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -8216,9 +8219,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -8591,6 +8591,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -8598,9 +8601,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -8623,6 +8623,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -8630,9 +8633,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -9346,6 +9346,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -9353,9 +9356,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -9378,6 +9378,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -9385,9 +9388,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -9760,6 +9760,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -9767,9 +9770,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -9792,6 +9792,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -9799,9 +9802,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -10515,6 +10515,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -10522,9 +10525,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -10547,6 +10547,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -10554,9 +10557,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -10929,6 +10929,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -10936,9 +10939,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -10961,6 +10961,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -10968,9 +10971,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -11684,6 +11684,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -11691,9 +11694,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -11716,6 +11716,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -11723,9 +11726,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -12098,6 +12098,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -12105,9 +12108,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -12130,6 +12130,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -12137,9 +12140,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -12765,6 +12765,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -12772,9 +12775,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -12797,6 +12797,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -12804,9 +12807,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -13179,6 +13179,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -13186,9 +13189,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -13211,6 +13211,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -13218,9 +13221,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -13934,6 +13934,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -13941,9 +13944,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -13966,6 +13966,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -13973,9 +13976,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -14348,6 +14348,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -14355,9 +14358,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -14380,6 +14380,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -14387,9 +14390,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -15103,6 +15103,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -15110,9 +15113,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -15135,6 +15135,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -15142,9 +15145,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -15517,6 +15517,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -15524,9 +15527,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -15549,6 +15549,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -15556,9 +15559,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -16184,6 +16184,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -16191,9 +16194,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -16216,6 +16216,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -16223,9 +16226,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -16598,6 +16598,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -16605,9 +16608,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -16630,6 +16630,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -16637,9 +16640,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -17353,6 +17353,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -17360,9 +17363,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -17385,6 +17385,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -17392,9 +17395,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -17767,6 +17767,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -17774,9 +17777,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -17799,6 +17799,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -17806,9 +17809,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -18522,6 +18522,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -18529,9 +18532,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -18554,6 +18554,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -18561,9 +18564,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -18936,6 +18936,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -18943,9 +18946,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -18968,6 +18968,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -18975,9 +18978,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
@@ -19603,6 +19603,9 @@
                     "name": "Clip_3min",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 0
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -19610,9 +19613,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 0
                     }
                   },
                   "type": {
@@ -19635,6 +19635,9 @@
                     "name": "Clip_19max",
                     "category": "Initializer",
                     "encoding": "|",
+                    "values": {
+                      "0": 6
+                    },
                     "type": {
                       "dataType": "float32",
                       "shape": {
@@ -19642,9 +19645,6 @@
                           1
                         ]
                       }
-                    },
-                    "values": {
-                      "0": 6
                     }
                   },
                   "type": {
