@@ -857,13 +857,34 @@ view.View = class {
     }
 
     async _downloadModelWeightBiasBin(fileName, binaryData) {
-        // Concatenate all ArrayBuffers into a single binary file
-        const totalLength = binaryData.reduce((sum, buffer) => sum + buffer.byteLength, 0);
+        // Calculate total length including potential padding bytes
+        let totalLength = 0;
+        for (const buffer of binaryData) {
+            // Add padding to ensure proper alignment for next tensor
+            totalLength += buffer.byteLength;
+            // Add padding to align to 8 bytes (largest TypedArray alignment requirement)
+            const padding = (8 - (totalLength % 8)) % 8;
+            totalLength += padding;
+        }
+
+        // Create concatenated buffer with alignment padding
         const concatenatedBuffer = new Uint8Array(totalLength);
         let offset = 0;
+
+        // Track tensor offsets for JSON file
+        const tensorOffsets = [];
+
         for (const buffer of binaryData) {
+            // Store current offset for this tensor in the JSON
+            tensorOffsets.push(offset);
+
+            // Copy current buffer data
             concatenatedBuffer.set(new Uint8Array(buffer), offset);
             offset += buffer.byteLength;
+
+            // Add padding bytes to ensure next tensor starts at aligned offset
+            const padding = (8 - (offset % 8)) % 8;
+            offset += padding;
         }
 
         // Create a Blob from the concatenated binary data
@@ -875,20 +896,25 @@ view.View = class {
         } else {
             console.error("Host export method is not available.");
         }
+
+        // Return the offsets so they can be used in the JSON file
+        return tensorOffsets;
     }
 
     async exportAllTensorsAsBinAndJson() {
         let modelWeightBias = {}; // Change to an object instead of an array
         const weightBiasButtons = document.querySelectorAll('.action')[0];
-    
+
         if (!this._model || !this._model.graphs) {
             console.warn('No model or graphs available to export tensors.');
             weightBiasButtons.innerHTML = "No model or graphs available to export tensors.";
             return;
         }
-    
+
         let binaryData = [];
-        let currentOffset = 0;
+        let tensorMetadata = [];
+
+        // First pass - collect all tensor data
         for (const graph of this._model.graphs) {
             for (const node of graph.nodes) {
                 for (const input of node.inputs) {
@@ -902,71 +928,72 @@ view.View = class {
                                 byteLength = tensor.values.byteLength || 0;
                                 tensorBuffer = tensor.values.buffer;
                             }
-                            binaryData.push(tensorBuffer);
-
-                            // TFLite case, no name value but identifier value
-                            let nodeName = '';
-                            if (node.name) {
-                                nodeName = node.name;
-                            } 
-                            let nodeIdentifier = '';
-                            if (node.identifier) {
-                                nodeIdentifier = node.identifier;
-                            }
-
-                            // TFLite case, no name value but identifier value
-                            let tensorName = '';
-                            if (tensor.name) {
-                                tensorName = tensor.name;
-                            } else if (value.name) {
-                                tensorName = value.name;
-                            } 
                             
-                            let tensorIdentifier = '';
-                            if (value.identifier) {
-                                tensorIdentifier = value.identifier;
+                            if (byteLength > 0) {
+                                binaryData.push(tensorBuffer);
+
+                                // TFLite case, no name value but identifier value
+                                let nodeName = node.name || '';
+                                let nodeIdentifier = node.identifier || '';
+
+                                // TFLite case, no name value but identifier value
+                                let tensorName = tensor.name || value.name || '';
+                                let tensorIdentifier = value.identifier || '';
+
+                                // Record tensor metadata for later
+                                tensorMetadata.push({
+                                    nodeName,
+                                    nodeIdentifier,
+                                    nodeType: node.type.name,
+                                    inputName: input.name,
+                                    tensorName,
+                                    tensorIdentifier,
+                                    byteLength,
+                                    dataType: tensor.type.dataType,
+                                    shape: tensor.type.shape.dimensions
+                                });
                             }
-    
-                            // Create the JSON object and update the dataOffset
-                            const jsonObject = this._getJsonObject(
-                                nodeName,
-                                nodeIdentifier,
-                                node.type.name,
-                                input.name,
-                                tensorName,
-                                tensorIdentifier,
-                                currentOffset,
-                                byteLength,
-                                tensor.type.dataType,
-                                tensor.type.shape.dimensions
-                            );
-    
-                            // Use the tensor name as the key in the JSON object
-                            // Use identifier for TFLite model
-                            if (this._model.format && this._model.format.toLowerCase().indexOf('tensorflow') > -1) {
-                                modelWeightBias[tensorIdentifier] = jsonObject;
-                            } else {
-                                modelWeightBias[tensorName] = jsonObject;
-                            }
-    
-                            // Update the current offset
-                            currentOffset += byteLength;
                         }
                     }
                 }
             }
         }
-    
+
         // Create filenames
         const jsonName = `weights.json`;
         const binName = `weights.bin`;
-    
+
+        // Write the binary file with alignment padding and get offsets
+        const tensorOffsets = await this._downloadModelWeightBiasBin(binName, binaryData);
+
+        // Create JSON with proper offsets
+        for (let i = 0; i < tensorMetadata.length; i++) {
+            const metadata = tensorMetadata[i];
+            const jsonObject = this._getJsonObject(
+                metadata.nodeName,
+                metadata.nodeIdentifier,
+                metadata.nodeType,
+                metadata.inputName,
+                metadata.tensorName,
+                metadata.tensorIdentifier,
+                tensorOffsets[i],  // Use aligned offset
+                metadata.byteLength,
+                metadata.dataType,
+                metadata.shape
+            );
+
+            // Use the tensor name as the key in the JSON object
+            // Use identifier for TFLite model
+            if (this._model.format && this._model.format.toLowerCase().indexOf('tensorflow') > -1) {
+                modelWeightBias[metadata.tensorIdentifier] = jsonObject;
+            } else {
+                modelWeightBias[metadata.tensorName] = jsonObject;
+            }
+        }
+
         // Trigger download for the JSON file
         await this._downloadModelWeightBiasJson(jsonName, modelWeightBias);
-    
-        // Trigger download for the binary file
-        await this._downloadModelWeightBiasBin(binName, binaryData);
-    
+
         console.log(`Downloaded: ${jsonName} and ${binName}`);
     }
 
