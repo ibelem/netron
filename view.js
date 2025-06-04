@@ -901,8 +901,196 @@ view.View = class {
         return tensorOffsets;
     }
 
+    transposeNHWCtoNCHW(tensorData, shape) {
+        if (!tensorData || !Array.isArray(shape) || shape.length !== 4) {
+            throw new Error('Invalid tensor data or shape for NHWC to NCHW transpose');
+        }
+
+        // Get dimensions
+        const N = shape[0];
+        const H = shape[1];
+        const W = shape[2];
+        const C = shape[3];
+        
+        // Verify that the input tensor size matches the expected size
+        const expectedSize = N * H * W * C;
+        if (tensorData.length !== expectedSize) {
+            console.warn(`Tensor size mismatch: expected ${expectedSize}, got ${tensorData.length}`);
+            console.warn(`Shape: [${shape.join(', ')}], Input type: ${tensorData.constructor.name}`);
+        }
+
+        // Determine data type and element size
+        let dataType, elementSize;
+        if (tensorData instanceof Float32Array) {
+            dataType = Float32Array;
+            elementSize = 4;
+        } else if (tensorData instanceof Float64Array) {
+            dataType = Float64Array;
+            elementSize = 8;
+        } else if (tensorData instanceof Uint16Array) {
+            dataType = Uint16Array;
+            elementSize = 2;
+        } else if (tensorData instanceof Int16Array) {
+            dataType = Int16Array;
+            elementSize = 2;
+        } else if (tensorData instanceof Int32Array) {
+            dataType = Int32Array;
+            elementSize = 4;
+        } else if (tensorData instanceof Uint32Array) {
+            dataType = Uint32Array;
+            elementSize = 4;
+        } else if (tensorData instanceof Int8Array) {
+            dataType = Int8Array;
+            elementSize = 1;
+        } else if (tensorData instanceof Uint8Array) {
+            dataType = Uint8Array;
+            elementSize = 1;
+        } else if (tensorData instanceof BigInt64Array) {
+            dataType = BigInt64Array;
+            elementSize = 8;
+        } else if (tensorData instanceof BigUint64Array) {
+            dataType = BigUint64Array;
+            elementSize = 8;
+        } else {
+            // Handle other types
+            dataType = tensorData.constructor;
+            elementSize = typeof tensorData.BYTES_PER_ELEMENT !== 'undefined' ? 
+                        tensorData.BYTES_PER_ELEMENT : 4;
+        }
+
+        // Create output array with same type and same total number of elements
+        const totalElements = tensorData.length;
+        const nchwData = new dataType(totalElements);
+        
+        console.log(`Transpose: Input ${tensorData.constructor.name}(${tensorData.length}) -> Output ${dataType.name}(${totalElements})`);
+        console.log(`Shape: [${shape.join(', ')}] -> [${N}, ${C}, ${H}, ${W}]`);
+
+        // Transpose from NHWC to NCHW format
+        // NHWC: index = ((n * H + h) * W + w) * C + c
+        // NCHW: index = ((n * C + c) * H + h) * W + w
+
+        for (let n = 0; n < N; n++) {
+            for (let c = 0; c < C; c++) {
+                for (let h = 0; h < H; h++) {
+                    for (let w = 0; w < W; w++) {
+                        // Source index (NHWC) - index in the input tensor
+                        const srcIdx = ((n * H + h) * W + w) * C + c;
+                        
+                        // Target index (NCHW) - index in the output tensor
+                        const dstIdx = ((n * C + c) * H + h) * W + w;
+                        
+                        // Bounds checking
+                        if (srcIdx >= tensorData.length || dstIdx >= nchwData.length) {
+                            console.error(`Index out of bounds: srcIdx=${srcIdx}, dstIdx=${dstIdx}, inputLen=${tensorData.length}, outputLen=${nchwData.length}`);
+                            continue;
+                        }
+                        
+                        // Copy value
+                        nchwData[dstIdx] = tensorData[srcIdx];
+                    }
+                }
+            }
+        }
+        
+        // Return both the data and element size for consistent byte length calculation
+        return { data: nchwData, elementSize: elementSize };
+    }
+
+    transposeNCHWtoNHWC(tensorData, shape) {
+        if (!tensorData || !Array.isArray(shape) || shape.length !== 4) {
+            throw new Error('Invalid tensor data or shape for NCHW to NHWC transpose');
+        }
+
+        // Get dimensions
+        const N = shape[0];
+        const C = shape[1];
+        const H = shape[2];
+        const W = shape[3];
+        
+        // Verify that the input tensor size matches the expected size
+        const expectedSize = N * C * H * W;
+        if (tensorData.length !== expectedSize) {
+            console.warn(`Tensor size mismatch: expected ${expectedSize}, got ${tensorData.length}`);
+            console.warn(`Shape: [${shape.join(', ')}], Input type: ${tensorData.constructor.name}`);
+        }
+
+        // Determine data type and element size
+        let dataType, elementSize;
+        if (tensorData instanceof Float32Array) {
+            dataType = Float32Array;
+            elementSize = 4;
+        } else if (tensorData instanceof Float64Array) {
+            dataType = Float64Array;
+            elementSize = 8;
+        } else if (tensorData instanceof Uint16Array) {
+            dataType = Uint16Array;
+            elementSize = 2;
+        } else if (tensorData instanceof Int16Array) {
+            dataType = Int16Array;
+            elementSize = 2;
+        } else if (tensorData instanceof Int32Array) {
+            dataType = Int32Array;
+            elementSize = 4;
+        } else if (tensorData instanceof Uint32Array) {
+            dataType = Uint32Array;
+            elementSize = 4;
+        } else if (tensorData instanceof Int8Array) {
+            dataType = Int8Array;
+            elementSize = 1;
+        } else if (tensorData instanceof Uint8Array) {
+            dataType = Uint8Array;
+            elementSize = 1;
+        } else if (tensorData instanceof BigInt64Array) {
+            dataType = BigInt64Array;
+            elementSize = 8;
+        } else if (tensorData instanceof BigUint64Array) {
+            dataType = BigUint64Array;
+            elementSize = 8;
+        } else {
+            // Handle Float16Array and other types
+            dataType = tensorData.constructor;
+            elementSize = typeof tensorData.BYTES_PER_ELEMENT !== 'undefined' ? 
+                        tensorData.BYTES_PER_ELEMENT : 4;
+        }
+
+        // Create output array with same type and same total number of elements
+        const totalElements = tensorData.length; // Use actual input length
+        const nhwcData = new dataType(totalElements);
+        
+        console.log(`Transpose: Input ${tensorData.constructor.name}(${tensorData.length}) -> Output ${dataType.name}(${totalElements})`);
+        console.log(`Shape: [${shape.join(', ')}] -> [${N}, ${H}, ${W}, ${C}]`);
+
+        // Transpose from NCHW to NHWC format
+        // NCHW: index = ((n * C + c) * H + h) * W + w
+        // NHWC: index = ((n * H + h) * W + w) * C + c
+        for (let n = 0; n < N; n++) {
+            for (let c = 0; c < C; c++) {
+                for (let h = 0; h < H; h++) {
+                    for (let w = 0; w < W; w++) {
+                        // Source index (NCHW)
+                        const srcIdx = ((n * C + c) * H + h) * W + w;
+                        
+                        // Target index (NHWC)
+                        const dstIdx = ((n * H + h) * W + w) * C + c;
+                        
+                        // Bounds checking
+                        if (srcIdx >= tensorData.length || dstIdx >= nhwcData.length) {
+                            console.error(`Index out of bounds: srcIdx=${srcIdx}, dstIdx=${dstIdx}, inputLen=${tensorData.length}, outputLen=${nhwcData.length}`);
+                            continue;
+                        }
+                        
+                        // Copy value
+                        nhwcData[dstIdx] = tensorData[srcIdx];
+                    }
+                }
+            }
+        }
+        
+        // Return both the data and element size for consistent byte length calculation
+        return { data: nhwcData, elementSize: elementSize };
+    }
+
     async exportAllTensorsAsBinAndJson() {
-        let modelWeightBias = {}; // Change to an object instead of an array
         const weightBiasButtons = document.querySelectorAll('.action')[0];
 
         if (!this._model || !this._model.graphs) {
@@ -911,47 +1099,103 @@ view.View = class {
             return;
         }
 
-        let binaryData = [];
-        let tensorMetadata = [];
+        let binaryData_nchw = [];
+        let binaryData_nhwc = [];
+        let tensorMetadata_nchw = [];
+        let tensorMetadata_nhwc = [];
 
-        // First pass - collect all tensor data
+        // Detect model format and default layout
+        let format = (this._model.format || '').toLowerCase();
+        let defaultLayout = 'nchw'; // ONNX and most others
+        if (format.includes('tflite') || format.includes('tensorflow lite')) {
+            defaultLayout = 'nhwc';
+        }
+
+        // Collect all tensor data
         for (const graph of this._model.graphs) {
             for (const node of graph.nodes) {
                 for (const input of node.inputs) {
                     for (const value of input.value) {
                         if (value && value.initializer) {
                             const tensor = new base.Tensor(value.initializer);
-                            let byteLength = tensor.data?.byteLength || 0;
-                            // Get the tensor data as an ArrayBuffer
-                            let tensorBuffer = tensor.data?.buffer || new ArrayBuffer(0);
-                            if (tensor.encoding === "|") {
-                                byteLength = tensor.values.byteLength || 0;
-                                tensorBuffer = tensor.values.buffer;
+                            const shape = tensor.type.shape.dimensions;
+                            let byteLength = 0;
+                            let tensorBuffer = null;
+
+                            if (tensor.data) {
+                                byteLength = tensor.data.byteLength;
+                                tensorBuffer = tensor.data.buffer.slice(tensor.data.byteOffset, tensor.data.byteOffset + byteLength);
+                            } else if (tensor.encoding === '|' && tensor.values) {
+                                byteLength = tensor.values.byteLength;
+                                tensorBuffer = tensor.values.buffer.slice(tensor.values.byteOffset, tensor.values.byteOffset + byteLength);
                             }
-                            
-                            if (byteLength > 0) {
-                                binaryData.push(tensorBuffer);
 
-                                // TFLite case, no name value but identifier value
-                                let nodeName = node.name || '';
-                                let nodeIdentifier = node.identifier || '';
+                            if (byteLength > 0 && tensorBuffer) {
+                                const nodeName = node.name || '';
+                                const nodeIdentifier = node.identifier || '';
+                                const tensorName = tensor.name || value.name || '';
+                                const tensorIdentifier = value.identifier || '';
 
-                                // TFLite case, no name value but identifier value
-                                let tensorName = tensor.name || value.name || '';
-                                let tensorIdentifier = value.identifier || '';
+                                // --- ONNX or other NCHW-default models ---
+                                if (defaultLayout === 'nchw') {
+                                    // NCHW: store as-is
+                                    binaryData_nchw.push(tensorBuffer);
+                                    tensorMetadata_nchw.push({
+                                        nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
+                                        tensorName, tensorIdentifier, byteLength, dataType: tensor.type.dataType, shape
+                                    });
 
-                                // Record tensor metadata for later
-                                tensorMetadata.push({
-                                    nodeName,
-                                    nodeIdentifier,
-                                    nodeType: node.type.name,
-                                    inputName: input.name,
-                                    tensorName,
-                                    tensorIdentifier,
-                                    byteLength,
-                                    dataType: tensor.type.dataType,
-                                    shape: tensor.type.shape.dimensions
-                                });
+                                    // NHWC: transpose if 4D, else as-is
+                                    if (tensor.data && Array.isArray(shape) && shape.length === 4) {
+                                        const transposed = this.transposeNCHWtoNHWC(tensor.data, shape);
+                                        const nhwcArray = transposed.data;
+                                        const elementSize = transposed.elementSize;
+                                        const nhwcByteLength = nhwcArray.length * elementSize;
+                                        const nhwcBuffer = nhwcArray.buffer.slice(nhwcArray.byteOffset, nhwcArray.byteOffset + nhwcByteLength);
+                                        binaryData_nhwc.push(nhwcBuffer);
+                                        tensorMetadata_nhwc.push({
+                                            nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
+                                            tensorName, tensorIdentifier, byteLength: nhwcByteLength, dataType: tensor.type.dataType,
+                                            shape: [shape[0], shape[2], shape[3], shape[1]] // NHWC
+                                        });
+                                    } else {
+                                        binaryData_nhwc.push(tensorBuffer);
+                                        tensorMetadata_nhwc.push({
+                                            nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
+                                            tensorName, tensorIdentifier, byteLength, dataType: tensor.type.dataType, shape
+                                        });
+                                    }
+                                }
+                                // --- TFLite or other NHWC-default models ---
+                                else if (defaultLayout === 'nhwc') {
+                                    // NHWC: store as-is
+                                    binaryData_nhwc.push(tensorBuffer);
+                                    tensorMetadata_nhwc.push({
+                                        nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
+                                        tensorName, tensorIdentifier, byteLength, dataType: tensor.type.dataType, shape
+                                    });
+
+                                    // NCHW: transpose if 4D, else as-is
+                                    if (tensor.data && Array.isArray(shape) && shape.length === 4) {
+                                        const transposed = this.transposeNHWCtoNCHW(tensor.data, shape);
+                                        const nchwArray = transposed.data;
+                                        const elementSize = transposed.elementSize;
+                                        const nchwByteLength = nchwArray.length * elementSize;
+                                        const nchwBuffer = nchwArray.buffer.slice(nchwArray.byteOffset, nchwArray.byteOffset + nchwByteLength);
+                                        binaryData_nchw.push(nchwBuffer);
+                                        tensorMetadata_nchw.push({
+                                            nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
+                                            tensorName, tensorIdentifier, byteLength: nchwByteLength, dataType: tensor.type.dataType,
+                                            shape: [shape[0], shape[3], shape[1], shape[2]] // NCHW
+                                        });
+                                    } else {
+                                        binaryData_nchw.push(tensorBuffer);
+                                        tensorMetadata_nchw.push({
+                                            nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
+                                            tensorName, tensorIdentifier, byteLength, dataType: tensor.type.dataType, shape
+                                        });
+                                    }
+                                }
                             }
                         }
                     }
@@ -959,42 +1203,43 @@ view.View = class {
             }
         }
 
-        // Create filenames
-        const jsonName = `weights.json`;
-        const binName = `weights.bin`;
-
-        // Write the binary file with alignment padding and get offsets
-        const tensorOffsets = await this._downloadModelWeightBiasBin(binName, binaryData);
-
-        // Create JSON with proper offsets
-        for (let i = 0; i < tensorMetadata.length; i++) {
-            const metadata = tensorMetadata[i];
+        // Write NCHW binary file and get offsets
+        const offsets_nchw = await this._downloadModelWeightBiasBin("weights_nchw.bin", binaryData_nchw);
+        let modelWeightBias_nchw = {};
+        for (let i = 0; i < tensorMetadata_nchw.length; i++) {
+            const metadata = tensorMetadata_nchw[i];
             const jsonObject = this._getJsonObject(
-                metadata.nodeName,
-                metadata.nodeIdentifier,
-                metadata.nodeType,
-                metadata.inputName,
-                metadata.tensorName,
-                metadata.tensorIdentifier,
-                tensorOffsets[i],  // Use aligned offset
-                metadata.byteLength,
-                metadata.dataType,
-                metadata.shape
+                metadata.nodeName, metadata.nodeIdentifier, metadata.nodeType, metadata.inputName,
+                metadata.tensorName, metadata.tensorIdentifier, offsets_nchw[i], metadata.byteLength,
+                metadata.dataType, metadata.shape
             );
-
-            // Use the tensor name as the key in the JSON object
-            // Use identifier for TFLite model
             if (this._model.format && this._model.format.toLowerCase().indexOf('tensorflow') > -1) {
-                modelWeightBias[metadata.tensorIdentifier] = jsonObject;
+                modelWeightBias_nchw[metadata.tensorIdentifier] = jsonObject;
             } else {
-                modelWeightBias[metadata.tensorName] = jsonObject;
+                modelWeightBias_nchw[metadata.tensorName] = jsonObject;
             }
         }
+        await this._downloadModelWeightBiasJson("weights_nchw.json", modelWeightBias_nchw);
 
-        // Trigger download for the JSON file
-        await this._downloadModelWeightBiasJson(jsonName, modelWeightBias);
+        // Write NHWC binary file and get offsets
+        const offsets_nhwc = await this._downloadModelWeightBiasBin("weights_nhwc.bin", binaryData_nhwc);
+        let modelWeightBias_nhwc = {};
+        for (let i = 0; i < tensorMetadata_nhwc.length; i++) {
+            const metadata = tensorMetadata_nhwc[i];
+            const jsonObject = this._getJsonObject(
+                metadata.nodeName, metadata.nodeIdentifier, metadata.nodeType, metadata.inputName,
+                metadata.tensorName, metadata.tensorIdentifier, offsets_nhwc[i], metadata.byteLength,
+                metadata.dataType, metadata.shape
+            );
+            if (this._model.format && this._model.format.toLowerCase().indexOf('tensorflow') > -1) {
+                modelWeightBias_nhwc[metadata.tensorIdentifier] = jsonObject;
+            } else {
+                modelWeightBias_nhwc[metadata.tensorName] = jsonObject;
+            }
+        }
+        await this._downloadModelWeightBiasJson("weights_nhwc.json", modelWeightBias_nhwc);
 
-        console.log(`Downloaded: ${jsonName} and ${binName}`);
+        console.log(`Downloaded: weights_nchw.bin/json and weights_nhwc.bin/json`);
     }
 
     async _getTensorAsNpy(tensor) {
