@@ -1020,6 +1020,20 @@ view.View = class {
         return { data: out, elementSize, shape: newShape };
     }
 
+    getKernelLayout(node, shape, layout) {
+        if (!Array.isArray(shape) || shape.length !== 4) return "";
+        if (layout === 'nchw') {
+            // All NCHW weights are OIHW (or IOHW for ConvTranspose)
+            if (node && this.isConvTranspose(node)) return "IOHW";
+            return "OIHW";
+        } else if (layout === 'nhwc') {
+            if (node && this.isDepthwiseConv(node, shape)) return "IHWO";
+            if (node && this.isConvTranspose(node)) return "HWIO";
+            return "OHWI";
+        }
+        return "";
+    }
+
     async exportAllTensorsAsBinAndJson() {
         const weightBiasButtons = document.querySelectorAll('.action')[0];
 
@@ -1093,10 +1107,10 @@ view.View = class {
                                         const nhwcArray = transposed.data;
                                         const elementSize = transposed.elementSize;
                                         nhwcByteLength = nhwcArray.length * elementSize;
-                                        const nhwcBuffer = new ArrayBuffer(nhwcByteLength);
-                                        new Uint8Array(nhwcBuffer).set(new Uint8Array(nhwcArray.buffer, nhwcArray.byteOffset, nhwcByteLength));
+                                        const nhwcBufferTmp = new ArrayBuffer(nhwcByteLength);
+                                        new Uint8Array(nhwcBufferTmp).set(new Uint8Array(nhwcArray.buffer, nhwcArray.byteOffset, nhwcByteLength));
+                                        nhwcBuffer = nhwcBufferTmp;
                                     }
-                                    // Always push, even if not 4D or not transposed
                                     binaryData_nhwc.push(nhwcBuffer);
                                     tensorMetadata_nhwc.push({
                                         nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
@@ -1132,10 +1146,10 @@ view.View = class {
                                         const nchwArray = transposed.data;
                                         const elementSize = transposed.elementSize;
                                         nchwByteLength = nchwArray.length * elementSize;
-                                        const nchwBuffer = new ArrayBuffer(nchwByteLength);
-                                        new Uint8Array(nchwBuffer).set(new Uint8Array(nchwArray.buffer, nchwArray.byteOffset, nchwByteLength));
+                                        const nchwBufferTmp = new ArrayBuffer(nchwByteLength);
+                                        new Uint8Array(nchwBufferTmp).set(new Uint8Array(nchwArray.buffer, nchwArray.byteOffset, nchwByteLength));
+                                        nchwBuffer = nchwBufferTmp;
                                     }
-                                    // Always push, even if not 4D or not transposed
                                     binaryData_nchw.push(nchwBuffer);
                                     tensorMetadata_nchw.push({
                                         nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
@@ -1152,41 +1166,38 @@ view.View = class {
 
         // Write NCHW binary file and get offsets
         const offsets_nchw = await this._downloadModelWeightBiasBin("weights_nchw.bin", binaryData_nchw);
-        let modelWeightBias_nchw = {};
-        for (let i = 0; i < tensorMetadata_nchw.length; i++) {
-            const metadata = tensorMetadata_nchw[i];
-            const jsonObject = this._getJsonObject(
-                metadata.nodeName, metadata.nodeIdentifier, metadata.nodeType, metadata.inputName,
-                metadata.tensorName, metadata.tensorIdentifier, offsets_nchw[i], metadata.byteLength,
-                metadata.dataType, metadata.shape
-            );
-            if (this._model.format && this._model.format.toLowerCase().indexOf('tensorflow') > -1) {
-                modelWeightBias_nchw[metadata.tensorIdentifier] = jsonObject;
-            } else {
-                modelWeightBias_nchw[metadata.tensorName] = jsonObject;
-            }
-        }
-        await this._downloadModelWeightBiasJson("weights_nchw.json", modelWeightBias_nchw);
-
         // Write NHWC binary file and get offsets
-        const offsets_nhwc = await this._downloadModelWeightBiasBin("weights_nhwc.bin", binaryData_nhwc);
-        let modelWeightBias_nhwc = {};
-        for (let i = 0; i < tensorMetadata_nhwc.length; i++) {
-            const metadata = tensorMetadata_nhwc[i];
-            const jsonObject = this._getJsonObject(
-                metadata.nodeName, metadata.nodeIdentifier, metadata.nodeType, metadata.inputName,
-                metadata.tensorName, metadata.tensorIdentifier, offsets_nhwc[i], metadata.byteLength,
-                metadata.dataType, metadata.shape
-            );
-            if (this._model.format && this._model.format.toLowerCase().indexOf('tensorflow') > -1) {
-                modelWeightBias_nhwc[metadata.tensorIdentifier] = jsonObject;
-            } else {
-                modelWeightBias_nhwc[metadata.tensorName] = jsonObject;
-            }
+        // const offsets_nhwc = await this._downloadModelWeightBiasBin("weights_nhwc.bin", binaryData_nhwc);
+        await this._downloadModelWeightBiasBin("weights_nhwc.bin", binaryData_nhwc);
+        // Combine metadata into a single JSON
+        let combinedWeightBias = {};
+        for (let i = 0; i < tensorMetadata_nchw.length; i++) {
+            const nchw = tensorMetadata_nchw[i];
+            const nhwc = tensorMetadata_nhwc[i];
+            const key = nchw.tensorIdentifier || nchw.tensorName;
+            combinedWeightBias[key] = {
+                nodeName: nchw.nodeName,
+                nodeIdentifier: nchw.nodeIdentifier,
+                nodeType: nchw.nodeType,
+                input: nchw.inputName,
+                name: nchw.tensorName,
+                identifier: nchw.tensorIdentifier,
+                dataType: nchw.dataType,
+                dataOffset: offsets_nchw[i], // or offsets_nhwc[i], they are the same
+                byteLength: nchw.byteLength, // or nhwc.byteLength, they are the same
+                nchw: {
+                    shape: nchw.shape,
+                    kernel_layout: this.getKernelLayout(nchw.node, nchw.shape, 'nchw')
+                },
+                nhwc: {
+                    shape: nhwc.shape,
+                    kernel_layout: this.getKernelLayout(nhwc.node, nhwc.shape, 'nhwc')
+                }
+            };
         }
-        await this._downloadModelWeightBiasJson("weights_nhwc.json", modelWeightBias_nhwc);
+        await this._downloadModelWeightBiasJson("weights.json", combinedWeightBias);
 
-        console.log(`Downloaded: weights_nchw.bin/json and weights_nhwc.bin/json`);
+        console.log(`Downloaded: weights_nchw.bin, weights_nhwc.bin, and weights.json`);
     }
 
     async _getTensorAsNpy(tensor) {
