@@ -463,34 +463,58 @@
       `;
 
       // Helper to interpret data
+
       function interpretBuffer(buffer, dtype) {
         if (!buffer) return [];
-        switch (String(dtype).toUpperCase()) {
-          case 'FLOAT':
-          case 'FLOAT32':
-          case '1':
-            return new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4);
-          case 'UINT8':
-          case '2':
-            return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-          case 'INT8':
-          case '3':
-            return new Int8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-          case 'UINT16':
-          case '4':
-            return new Uint16Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 2);
-          case 'INT16':
-          case '5':
-            return new Int16Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 2);
-          case 'INT32':
-          case '6':
-            return new Int32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4);
-          case 'FLOAT64':
-          case 'DOUBLE':
-          case '11':
-            return new Float64Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 8);
-          default:
-            return Array.from(buffer);
+        const type = String(dtype).toUpperCase();
+        try {
+          switch (type) {
+            case 'FLOAT':
+            case 'FLOAT32':
+            case '1':
+              return new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4);
+            case 'UINT8':
+            case '2':
+              return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+            case 'INT8':
+            case '3':
+              return new Int8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+            case 'UINT16':
+            case '4':
+              return new Uint16Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 2);
+            case 'INT16':
+            case '5':
+              return new Int16Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 2);
+            case 'INT32':
+            case '6':
+              return new Int32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4);
+            case 'FLOAT64':
+            case 'DOUBLE':
+            case '11':
+              return new Float64Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 8);
+            case 'UINT32':
+              return new Uint32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4);
+            case 'BIGINT64':
+            case 'INT64':
+            case '7':
+              return new BigInt64Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 8);
+            case 'BIGUINT64':
+            case 'UINT64':
+              return new BigUint64Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 8);
+            case 'FLOAT16':
+            case '10':
+              return new Float16Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 2);
+            case 'STRING':
+            case '8':
+              return [new TextDecoder().decode(buffer)];
+            case 'BOOL':
+            case '9':
+              return Array.from(buffer).map(value => Boolean(value));
+            default:
+              return Array.from(buffer);
+          }
+        } catch (e) {
+          return ["Error interpreting buffer: " + e];
         }
       }
 
