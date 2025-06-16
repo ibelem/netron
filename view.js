@@ -928,9 +928,16 @@ view.View = class {
             }
         }
         // 3. TFLite/TF: filter shape [H, W, in_channels, channel_multiplier]
-        if (shape.length === 4 && shape[3] === 1) {
+        // THIS IS THE PROBLEMATIC PART - need more specific checks for TFLite depthwise conv
+        // A shape with just shape[3] === 1 is NOT sufficient to identify depthwise conv
+        // For TFLite depthwise, we need to check if node.type.name includes 'depthwise'
+        // or if there are specific attributes indicating depthwise
+        if (node && node.type && shape.length === 4 &&
+            (node.type.name.toLowerCase().includes('depthwiseconv') ||
+            (node.attributes && node.attributes.find(a => a.name === 'is_depthwise' || a.name === 'depthwise')))) {
             return true;
         }
+
         return false;
     }
 
