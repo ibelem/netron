@@ -762,9 +762,25 @@ view.View = class {
                 }
             }
         }
+
+        function removeExamplesAndDescriptions(obj) {
+            if (Array.isArray(obj)) {
+                return obj.map(removeExamplesAndDescriptions);
+            } else if (obj && typeof obj === 'object') {
+                const result = {};
+                for (const [key, value] of Object.entries(obj)) {
+                    if (key === 'examples' || key === 'description') continue; // Skip these keys
+                    result[key] = removeExamplesAndDescriptions(value);
+                }
+                return result;
+            }
+            return obj;
+        }
+
         modelJson.graph.push(graphJson);
+        const cleanedModelJson = removeExamplesAndDescriptions(this.prepareForJson(modelJson));
         const jsonName = `graph.json`;
-        await this._downloadModelWeightBiasJson(jsonName, this.prepareForJson(modelJson));
+        await this._downloadModelWeightBiasJson(jsonName, cleanedModelJson);
     }
 
     async exportAllTensorsAsZip() {
