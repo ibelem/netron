@@ -167,9 +167,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M125",
-      "windowsml_op": [],
-      "windowsml_progress": 2,
-      "windowsml_chromium_version_added": "",
+      "windowsml_op": ["Clip"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
         "ReluN1To1"
       ],
@@ -240,9 +240,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M125",
-      "windowsml_op": [],
-      "windowsml_progress": 2,
-      "windowsml_chromium_version_added": "",
+      "windowsml_op": ["Conv"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
         "Conv2d",
         "DepthwiseConv2d"
@@ -277,9 +277,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": [],
-      "windowsml_progress": 2,
-      "windowsml_chromium_version_added": "",
+      "windowsml_op": ["ConvTranspose"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
         "TransposeConv",
         "Convolution2DTransposeBias"
@@ -1647,9 +1647,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M132",
-      "windowsml_op": [],
-      "windowsml_progress": 2,
-      "windowsml_chromium_version_added": "",
+      "windowsml_op": ["Gelu"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
         ""
       ],
@@ -1683,9 +1683,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": [],
-      "windowsml_progress": 2,
-      "windowsml_chromium_version_added": "",
+      "windowsml_op": ["Gemm"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
         "FullyConnected"
       ],
@@ -1827,9 +1827,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": [],
-      "windowsml_progress": 2,
-      "windowsml_chromium_version_added": "",
+      "windowsml_op": ["HardSwish"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
         "HardSwish"
       ],
@@ -2151,9 +2151,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": [],
-      "windowsml_progress": 2,
-      "windowsml_chromium_version_added": "",
+      "windowsml_op": ["AveragePool"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
         "AveragePool2d",
         "Mean"
@@ -2189,9 +2189,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": [],
-      "windowsml_progress": 2,
-      "windowsml_chromium_version_added": "",
+      "windowsml_op": ["LpPool"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
         ""
       ],
@@ -2226,9 +2226,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": [],
-      "windowsml_progress": 2,
-      "windowsml_chromium_version_added": "",
+      "windowsml_op": ["MaxPool"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
         "MaxPool2d"
       ],
@@ -2695,9 +2695,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M125",
-      "windowsml_op": [],
-      "windowsml_progress": 2,
-      "windowsml_chromium_version_added": "",
+      "windowsml_op": ["Relu"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
         "Relu"
       ],
@@ -2769,9 +2769,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": [],
-      "windowsml_progress": 2,
-      "windowsml_chromium_version_added": "",
+      "windowsml_op": ["Reshape"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
         "Reshape"
       ],
@@ -2916,9 +2916,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": [],
-      "windowsml_progress": 2,
-      "windowsml_chromium_version_added": "",
+      "windowsml_op": ["Sigmoid"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
         "Logistic"
       ],
@@ -3026,9 +3026,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M127",
-      "windowsml_op": [],
-      "windowsml_progress": 2,
-      "windowsml_chromium_version_added": "",
+      "windowsml_op": ["Softmax"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
         "Softmax"
       ],
@@ -3098,9 +3098,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M125",
-      "windowsml_op": [],
-      "windowsml_progress": 2,
-      "windowsml_chromium_version_added": "",
+      "windowsml_op": ["Softsign"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
         ""
       ],
@@ -3170,9 +3170,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": [],
-      "windowsml_progress": 2,
-      "windowsml_chromium_version_added": "",
+      "windowsml_op": ["Tanh"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
         ""
       ],
@@ -3242,9 +3242,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M125",
-      "windowsml_op": [],
-      "windowsml_progress": 2,
-      "windowsml_chromium_version_added": "",
+      "windowsml_op": ["Transpose"],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
         "Transpose"
       ],
