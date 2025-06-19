@@ -485,6 +485,40 @@ view.View = class {
         return this.restoreFromJson(parsed);
     }
 
+    collapseShortArrays(json, maxLength = 512) {
+        // First pass: collapse arrays of numbers/strings/short objects to one line if short enough
+        let result = json.replace(
+            /(\[\s+)((?:(?:-?\d+(?:\.\d+)?|"[^"]*"|true|false|null)\s*,\s*){1,20}(?:-?\d+(?:\.\d+)?|"[^"]*"|true|false|null)\s*)\s+\]/g,
+            (match, open, arr) => {
+                const oneLine = `[${arr.replace(/\s+/g, ' ')}]`;
+                return oneLine.length <= maxLength ? oneLine : match;
+            }
+        );
+        
+        // Second pass: collapse single-element arrays that are on multiple lines
+        result = result.replace(
+            /\[\s+(\d+|"[^"]*"|true|false|null)\s+\]/g,
+            (match, value) => `[${value}]`
+        );
+        
+        // Third pass: clean up any remaining space between last element and closing bracket
+        result = result.replace(/(\d+|"[^"]*"|true|false|null)\s+\]/g, '$1]');
+
+        // Fourth pass: collapse small objects (like "values" objects) to one line
+        result = result.replace(
+            /(\{\s+)((?:(?:"[^"]*"\s*:\s*(?:-?\d+(?:\.\d+)?|"[^"]*"|true|false|null))\s*,\s*){0,20}(?:"[^"]*"\s*:\s*(?:-?\d+(?:\.\d+)?|"[^"]*"|true|false|null))\s*)\s+\}/g,
+            (match, open, content) => {
+                const oneLine = `{${content.replace(/\s+/g, ' ')}}`;
+                return oneLine.length <= maxLength ? oneLine : match;
+            }
+        );
+        
+        // Fifth pass: clean up any remaining space between last key-value and closing brace
+        result = result.replace(/((?:-?\d+(?:\.\d+)?|"[^"]*"|true|false|null))\s+\}/g, '$1}');
+
+        return result;
+    }
+
     async exportGraphAsJson() {
         const weightBiasButtons = document.querySelectorAll('.action')[0];
         if (!this._model || !this._model.graphs) {
@@ -853,7 +887,9 @@ view.View = class {
 
     async _downloadModelWeightBiasJson(fileName, modelWeightBias) {
         // Convert the JSON object to a string
-        const jsonString = JSON.stringify(modelWeightBias, null, 2);
+        let jsonString = JSON.stringify(modelWeightBias, null, 2);
+
+        jsonString = this.collapseShortArrays(jsonString);
 
         // Create a Blob from the JSON string
         const blob = new Blob([jsonString], { type: "application/json" });
@@ -917,41 +953,44 @@ view.View = class {
         return tensorOffsets;
     }
 
-    isDepthwiseConv(node, shape) {
-        // 1. Node type name contains 'depthwise'
-        if (node && node.type && node.type.name && node.type.name.toLowerCase().includes('depthwise')) {
+    isDepthwiseConv(node) {
+        if (!node) return false;
+
+        // TFLite/TF: type name or attribute indicates depthwise
+        if (
+            node.type &&
+            typeof node.type.name === 'string' &&
+            node.type.name.toLowerCase().includes('depthwise')
+        ) {
             return true;
         }
-        // 2. ONNX/PyTorch: groups == in_channels (and possibly out_channels == in_channels * multiplier)
-        if (node && node.attributes && shape.length === 4) {
-            const groupsAttr = node.attributes.find(a => a.name === 'group' || a.name === 'groups');
-            if (groupsAttr) {
-                let groups = groupsAttr.value;
-                // Convert to number if needed
-                if (typeof groups === 'bigint') {
-                    groups = Number(groups);
-                } else if (Array.isArray(groups) && groups.length === 1) {
-                    groups = Number(groups[0]);
-                }
-                const outChannels = shape[0];
-                const inChannels = shape[1];
-                if (groups === inChannels && groups === outChannels) {
-                    return true;
-                }
-                if (groups === inChannels && outChannels % inChannels === 0) {
-                    return true;
-                }
+        if (
+            node.attributes &&
+            node.attributes.some(a =>
+                a.name === 'is_depthwise' ||
+                a.name === 'depthwise'
+            )
+        ) {
+            return true;
+        }
+
+        // ONNX/standard: group == inChannels && group > 1
+        const groupAttr = node.attributes && node.attributes.find(a => a.name === 'group' || a.name === 'groups');
+        if (groupAttr && node.inputs && node.inputs.length > 0) {
+            let groups = Number(Array.isArray(groupAttr.value) ? groupAttr.value[0] : groupAttr.value);
+            let inChannels = null;
+            const input = node.inputs[0];
+            if (
+                input && input.value && input.value[0] &&
+                input.value[0].type && input.value[0].type.shape &&
+                input.value[0].type.shape.dimensions
+            ) {
+                inChannels = input.value[0].type.shape.dimensions[1]; // NCHW: [N, C, H, W]
             }
-        }
-        // 3. TFLite/TF: filter shape [H, W, in_channels, channel_multiplier]
-        // THIS IS THE PROBLEMATIC PART - need more specific checks for TFLite depthwise conv
-        // A shape with just shape[3] === 1 is NOT sufficient to identify depthwise conv
-        // For TFLite depthwise, we need to check if node.type.name includes 'depthwise'
-        // or if there are specific attributes indicating depthwise
-        if (node && node.type && shape.length === 4 &&
-            (node.type.name.toLowerCase().includes('depthwiseconv') ||
-            (node.attributes && node.attributes.find(a => a.name === 'is_depthwise' || a.name === 'depthwise')))) {
-            return true;
+            if (inChannels != null && groups === inChannels && groups > 1) {
+                console.log(`${node.name}: depthwise conv`);
+                return true;
+            }
         }
 
         return false;
@@ -1043,18 +1082,23 @@ view.View = class {
         return { data: out, elementSize, shape: newShape };
     }
 
-    getKernelLayout(node, shape, layout) {
-        if (!Array.isArray(shape) || shape.length !== 4) return "";
-        if (layout === 'nchw') {
-            // All NCHW weights are OIHW (or IOHW for ConvTranspose)
-            if (node && this.isConvTranspose(node)) return "IOHW";
-            return "OIHW";
-        } else if (layout === 'nhwc') {
-            if (node && this.isDepthwiseConv(node, shape)) return "IHWO";
-            if (node && this.isConvTranspose(node)) return "HWIO";
-            return "OHWI";
+    getInitialKernelLayout(node, layout = 'nchw') {
+        // layout: 'nchw' or 'nhwc'
+        if (!node) return '';
+
+        // Depthwise Conv
+        if (this.isDepthwiseConv(node)) {
+            return layout === 'nhwc' ? 'IHWO' : 'OIHW';
         }
-        return "";
+        // ConvTranspose
+        if (this.isConvTranspose(node)) {
+            return layout === 'nhwc' ? 'HWIO' : 'OIHW';
+        }
+        // Regular Conv
+        if (node.type && node.type.name && node.type.name.toLowerCase().includes('conv')) {
+            return layout === 'nhwc' ? 'OHWI' : 'OIHW';
+        }
+        return '';
     }
 
     async exportAllTensorsAsBinAndJson() {
@@ -1102,13 +1146,16 @@ view.View = class {
                                 const tensorName = tensor.name || value.name || '';
                                 const tensorIdentifier = value.identifier || '';
 
+                                let kernel_layout = this.getInitialKernelLayout(node, 'nchw');
+                                let nhwc_kernel_layout = this.getInitialKernelLayout(node, 'nhwc');
+
                                 // --- ONNX or other NCHW-default models ---
                                 if (defaultLayout === 'nchw') {
                                     // NCHW: store as-is
                                     binaryData_nchw.push(tensorBuffer);
                                     tensorMetadata_nchw.push({
                                         nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
-                                        tensorName, tensorIdentifier, byteLength, dataType: tensor.type.dataType, shape
+                                        tensorName, tensorIdentifier, byteLength, dataType: tensor.type.dataType, shape, kernel_layout
                                     });
 
                                     // NHWC: always push, transposed if 4D, else as-is
@@ -1118,14 +1165,16 @@ view.View = class {
                                     if (tensor.data && Array.isArray(shape) && shape.length === 4) {
                                         let transposed;
                                         const typedArray = this.getTypedArray(tensor.data, tensor.type.dataType);
-                                        if (this.isDepthwiseConv(node, shape) || this.isConvTranspose(node)) {
-                                            // Depthwise and ConvTranspose: OIHW -> IHWO
+                                        if (this.isDepthwiseConv(node) || this.isConvTranspose(node)) {
+                                            // Depthwise Conv: OIHW -> IHWO
                                             transposed = this.transpose4D(typedArray, shape, [1, 2, 3, 0]);
                                             nhwcShape = [shape[1], shape[2], shape[3], shape[0]];
+                                            nhwc_kernel_layout = 'IHWO';
                                         } else {
                                             // Regular Conv: OIHW -> OHWI
                                             transposed = this.transpose4D(typedArray, shape, [0, 2, 3, 1]);
                                             nhwcShape = [shape[0], shape[2], shape[3], shape[1]];
+                                            nhwc_kernel_layout = 'OHWI';
                                         }
                                         const nhwcArray = transposed.data;
                                         const elementSize = transposed.elementSize;
@@ -1138,7 +1187,7 @@ view.View = class {
                                     tensorMetadata_nhwc.push({
                                         nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
                                         tensorName, tensorIdentifier, byteLength: nhwcByteLength, dataType: tensor.type.dataType,
-                                        shape: nhwcShape
+                                        shape: nhwcShape, kernel_layout: nhwc_kernel_layout
                                     });
                                 }
                                 // --- TFLite or other NHWC-default models ---
@@ -1147,7 +1196,7 @@ view.View = class {
                                     binaryData_nhwc.push(tensorBuffer);
                                     tensorMetadata_nhwc.push({
                                         nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
-                                        tensorName, tensorIdentifier, byteLength, dataType: tensor.type.dataType, shape
+                                        tensorName, tensorIdentifier, byteLength, dataType: tensor.type.dataType, shape, kernel_layout
                                     });
 
                                     // NCHW: always push, transposed if 4D, else as-is
@@ -1157,14 +1206,16 @@ view.View = class {
                                     if (tensor.data && Array.isArray(shape) && shape.length === 4) {
                                         let transposed;
                                         const typedArray = this.getTypedArray(tensor.data, tensor.type.dataType);
-                                        if (this.isDepthwiseConv(node, shape) || this.isConvTranspose(node)) {
-                                            // Depthwise / ConvTranspose: IHWO -> OIHW
+                                        if (this.isDepthwiseConv(node) || this.isConvTranspose(node)) {
+                                            // Depthwise Conv: IHWO -> OIHW
                                             transposed = this.transpose4D(typedArray, shape, [3, 0, 1, 2]);
                                             nchwShape = [shape[3], shape[0], shape[1], shape[2]];
+                                            kernel_layout = 'OIHW';
                                         } else {
                                             // Regular Conv: OHWI -> OIHW
                                             transposed = this.transpose4D(typedArray, shape, [0, 3, 1, 2]);
                                             nchwShape = [shape[0], shape[3], shape[1], shape[2]];
+                                            kernel_layout = 'OIHW';
                                         }
                                         const nchwArray = transposed.data;
                                         const elementSize = transposed.elementSize;
@@ -1177,7 +1228,7 @@ view.View = class {
                                     tensorMetadata_nchw.push({
                                         nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
                                         tensorName, tensorIdentifier, byteLength: nchwByteLength, dataType: tensor.type.dataType,
-                                        shape: nchwShape
+                                        shape: nchwShape, kernel_layout: kernel_layout
                                     });
                                 }
                             }
@@ -1210,11 +1261,11 @@ view.View = class {
                 byteLength: nchw.byteLength, // or nhwc.byteLength, they are the same
                 nchw: {
                     shape: nchw.shape,
-                    kernel_layout: this.getKernelLayout(nchw.node, nchw.shape, 'nchw')
+                    kernel_layout: nchw.kernel_layout
                 },
                 nhwc: {
                     shape: nhwc.shape,
-                    kernel_layout: this.getKernelLayout(nhwc.node, nhwc.shape, 'nhwc')
+                    kernel_layout: nhwc.kernel_layout
                 }
             };
         }
