@@ -1103,14 +1103,11 @@ view.View = class {
         // layout: 'nchw' or 'nhwc'
         if (!node) return '';
 
-        // Depthwise Conv
-        if (this.isDepthwiseConv(node)) {
+        // Depthwise Conv || ConvTranspose
+        if (this.isDepthwiseConv(node) || this.isConvTranspose(node)) {
             return layout === 'nhwc' ? 'IHWO' : 'OIHW';
         }
-        // ConvTranspose
-        if (this.isConvTranspose(node)) {
-            return layout === 'nhwc' ? 'HWIO' : 'OIHW';
-        }
+
         // Regular Conv
         if (node.type && node.type.name && node.type.name.toLowerCase().includes('conv')) {
             return layout === 'nhwc' ? 'OHWI' : 'OIHW';
@@ -1186,16 +1183,11 @@ view.View = class {
                                     if (tensor.data && Array.isArray(shape) && shape.length === 4) {
                                         let transposed;
                                         const typedArray = this.getTypedArray(tensor.data, tensor.type.dataType);
-                                        if (this.isDepthwiseConv(node)) {
+                                        if (this.isDepthwiseConv(node) || this.isConvTranspose(node)) {
                                             // Depthwise Conv: OIHW -> IHWO
                                             transposed = this.transpose4D(typedArray, shape, [1, 2, 3, 0]);
                                             nhwcShape = [shape[1], shape[2], shape[3], shape[0]];
                                             nhwc_kernel_layout = 'IHWO';
-                                        } else if (this.isConvTranspose(node)) {
-                                            // ConvTranspose: OIHW -> HWIO
-                                            transposed = this.transpose4D(typedArray, shape, [2, 3, 1, 0]);
-                                            nhwcShape = [shape[2], shape[3], shape[1], shape[0]];
-                                            nhwc_kernel_layout = 'HWIO';
                                         } else {
                                             // Regular Conv: OIHW -> OHWI
                                             transposed = this.transpose4D(typedArray, shape, [0, 2, 3, 1]);
@@ -1233,15 +1225,10 @@ view.View = class {
                                     if (tensor.data && Array.isArray(shape) && shape.length === 4) {
                                         let transposed;
                                         const typedArray = this.getTypedArray(tensor.data, tensor.type.dataType);
-                                        if (this.isDepthwiseConv(node)) {
+                                        if (this.isDepthwiseConv(node) || this.isConvTranspose(node)) {
                                             // Depthwise Conv: IHWO -> OIHW
                                             transposed = this.transpose4D(typedArray, shape, [3, 0, 1, 2]);
                                             nchwShape = [shape[3], shape[0], shape[1], shape[2]];
-                                            kernel_layout = 'OIHW';
-                                        } else if (this.isConvTranspose(node)) {
-                                            // ConvTranspose: HWIO -> OIHW
-                                            transposed = this.transpose4D(typedArray, shape, [3, 2, 0, 1]);
-                                            nchwShape = [shape[3], shape[2], shape[0], shape[1]];
                                             kernel_layout = 'OIHW';
                                         } else {
                                             // Regular Conv: OHWI -> OIHW
