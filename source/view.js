@@ -54,15 +54,18 @@ view.View = class {
             this._element('webnn-button').addEventListener('click', () => {
                 this.toggleWebnn();
             });
-            this._element('export-bin-json-button').addEventListener('click', async () => {
-                await this.exportAllTensorsAsBinAndJson();
+            // this._element('export-bin-json-button').addEventListener('click', async () => {
+            //     await this.exportAllTensorsAsBinAndJson();
+            // });
+            this._element('export-button').addEventListener('click', async () => {
+                await this.exportGraphAndWeights();
             });
             this._element('read-bin-json-button').addEventListener('click', async () => {
                 location.href = './reader.html';
             });
-            this._element('export-graph-button').addEventListener('click', async () => {
-                await this.exportGraphAsJson();
-            });
+            // this._element('export-graph-button').addEventListener('click', async () => {
+            //     await this.exportGraphAsJson();
+            // });
             // this._element('export-npy-zip-button').addEventListener('click', async () => {
             //     await this.exportAllTensorsAsZip();
             // });
@@ -564,7 +567,6 @@ view.View = class {
         for (const graph of model.graphs) {
             graph?.name ? graphJson.name = graph.name : null;
             graph.identifier ? graphJson.identifier = graph.identifier : null;
-            // graph.description ? graphJson.description = graph.description : null;
             graphJson.inputs = [];
             for (const input of graph.inputs) {
                 if (input) {
@@ -572,14 +574,12 @@ view.View = class {
                     input.name ? inputJson.name = input.name : null;
                     input.identifier ? inputJson.identifier = input.identifier : null;
                     input.type ? inputJson.type = input?.type : null;
-                    // input.description ? inputJson.description = input.description : null;
                     inputJson.value = [];
                     for (const value of input.value) {
                         const valueJson = {};
                         if (value) {
                             value.name ? valueJson.name = value.name : null;
                             value.identifier ? valueJson.identifier = value.identifier : null;
-                            // value.description ? valueJson.description = value.description : null;
                             value.initializer ? valueJson.initializer = value.initializer : null;
                             value.quantization ? valueJson.quantization = value.quantization : null;
                             if (value.type) {
@@ -609,14 +609,12 @@ view.View = class {
                     output.name ? outputJson.name = output.name : null;
                     output.identifier ? outputJson.identifier = output.identifier : null;
                     output.type ? outputJson.type = output.type : null;
-                    // output.description ? outputJson.description = output.description : null;
                     outputJson.value = [];
                     for (const value of output.value) {
                         const valueJson = {};
                         if (value) {
                             value.name ? valueJson.name = value.name : null;
                             value.identifier ? valueJson.identifier = value.identifier : null;
-                            // value.description ? valueJson.description = value.description : null;
                             value.initializer ? valueJson.initializer = value.initializer : null;
                             value.quantization ? valueJson.quantization = value.quantization : null;
                             if (value.type) {
@@ -645,7 +643,6 @@ view.View = class {
                     const nodeJson = {};
                     node.name ? nodeJson.name = node.name : null;
                     node.identifier ? nodeJson.identifier = node.identifier : null;
-                    // node.description ?  nodeJson.description = node.description : null;
                     nodeJson.chain = [];
                     if (node.chain) {
                         for (const chain of node.chain) {
@@ -666,14 +663,12 @@ view.View = class {
                             input.name ? inputJson.name = input.name : null;
                             input.identifier ? inputJson.identifier = input.identifier : null;
                             input.type ? inputJson.type = input.type : null;
-                            // input.description ? inputJson.description = input.description : null;
                             inputJson.value = [];
                             for (const value of input.value) {
                                 const valueJson = {};
                                 if (value) {
                                     value.name ? valueJson.name = value.name : null;
                                     value.identifier ? valueJson.identifier = value.identifier : null;
-                                    // value.description ? valueJson.description = value.description : null;
                                     // value.initializer includes the Tensor weight and bias data
                                     if (value.initializer) {
                                         const initializerJson = {};
@@ -682,11 +677,22 @@ view.View = class {
                                         initializer.identifier ? initializerJson.identifier = initializer.identifier : null;
                                         initializer.category ? initializerJson.category = initializer.category : null;
                                         initializer.encoding ? initializerJson.encoding = initializer.encoding : null;
+
+                                        // Inject tensor metadata into initializer
+                                        if (this._tensorMetaMap &&
+                                            (this._tensorMetaMap[initializer.name] || this._tensorMetaMap[value.name])) {
+                                            const meta = this._tensorMetaMap[initializer.name] || this._tensorMetaMap[value.name];
+                                            initializerJson.dataType = meta.dataType;
+                                            initializerJson.dataOffset = meta.dataOffset;
+                                            initializerJson.byteLength = meta.byteLength;
+                                        }
+
                                         if (initializer.encoding === '|') {
                                             initializer.values ? initializerJson.values = initializer.values : [];
                                         }
                                         initializer.indices ? initializerJson.indices = initializer.indices : null;
                                         initializer.location ? initializerJson.location = initializer.location : null;
+
                                         if (initializer.type) {
                                             initializerJson.type = {}
                                             initializer.type.dataType ? initializerJson.type.dataType = initializer.type.dataType : null;
@@ -697,6 +703,20 @@ view.View = class {
                                                 }
                                                 initializerJson.type.shape = {}
                                                 initializer.type.shape.dimensions ? initializerJson.type.shape.dimensions = initializer.type.shape.dimensions : null;
+
+                                                // Inject NCHW/NHWC shape and kernel layout information
+                                                if (this._tensorMetaMap &&
+                                                    (this._tensorMetaMap[initializer.name] || this._tensorMetaMap[value.name])) {
+                                                    const meta = this._tensorMetaMap[initializer.name] || this._tensorMetaMap[value.name];
+
+                                                    // Put nchw and nhwc at same level as shape
+                                                    if (meta.nchw) {
+                                                        initializerJson.type.nchw = meta.nchw;
+                                                    }
+                                                    if (meta.nhwc) {
+                                                        initializerJson.type.nhwc = meta.nhwc;
+                                                    }
+                                                }
                                             }
                                         }
                                         valueJson.initializer = initializerJson;
@@ -729,13 +749,11 @@ view.View = class {
                             output.name ? outputJson.name = output.name : null;
                             output.identifier ? outputJson.identifier = output.identifier : null;
                             output.type ? outputJson.type = output.type : null;
-                            // output.description ? outputJson.description = output.description : null;
                             outputJson.value = [];
                             for (const value of output.value) {
                                 const valueJson = {};
                                 if (value) {
                                     value.name ? valueJson.name = value?.name : null;
-                                    // value.description ? valueJson.description = value?.description : null;
                                     // value.initializer includes the Tensor weight and bias data
                                     if (value.initializer) {
                                         const initializerJson = {};
@@ -784,7 +802,6 @@ view.View = class {
                             const attributeJson = {};
                             attribute.name ? attributeJson.name = attribute.name : null;
                             attribute.identifier ? attributeJson.identifier = attribute.identifier : null;
-                            // attribute.description ? attributeJson.description = attribute.description : null;
                             attribute.type ? attributeJson.type = attribute.type : null;
                             attribute.value ? attributeJson.value = attribute.value : null;
                             nodeJson.attributes.push(attributeJson);
@@ -1115,6 +1132,9 @@ view.View = class {
         let tensorMetadata_nchw = [];
         let tensorMetadata_nhwc = [];
 
+        // Create map to store tensor metadata for injecting into graph.json later
+        const tensorMetaMap = {};
+
         // Detect model format and default layout
         let format = (this._model.format || '').toLowerCase();
         let defaultLayout = 'nchw'; // ONNX and most others
@@ -1155,7 +1175,8 @@ view.View = class {
                                     binaryData_nchw.push(tensorBuffer);
                                     tensorMetadata_nchw.push({
                                         nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
-                                        tensorName, tensorIdentifier, byteLength, dataType: tensor.type.dataType, shape, kernel_layout
+                                        tensorName, tensorIdentifier, byteLength, dataType: tensor.type.dataType, 
+                                        shape, kernel_layout
                                     });
 
                                     // NHWC: always push, transposed if 4D, else as-is
@@ -1165,11 +1186,16 @@ view.View = class {
                                     if (tensor.data && Array.isArray(shape) && shape.length === 4) {
                                         let transposed;
                                         const typedArray = this.getTypedArray(tensor.data, tensor.type.dataType);
-                                        if (this.isDepthwiseConv(node) || this.isConvTranspose(node)) {
+                                        if (this.isDepthwiseConv(node)) {
                                             // Depthwise Conv: OIHW -> IHWO
                                             transposed = this.transpose4D(typedArray, shape, [1, 2, 3, 0]);
                                             nhwcShape = [shape[1], shape[2], shape[3], shape[0]];
                                             nhwc_kernel_layout = 'IHWO';
+                                        } else if (this.isConvTranspose(node)) {
+                                            // ConvTranspose: OIHW -> HWIO
+                                            transposed = this.transpose4D(typedArray, shape, [2, 3, 1, 0]);
+                                            nhwcShape = [shape[2], shape[3], shape[1], shape[0]];
+                                            nhwc_kernel_layout = 'HWIO';
                                         } else {
                                             // Regular Conv: OIHW -> OHWI
                                             transposed = this.transpose4D(typedArray, shape, [0, 2, 3, 1]);
@@ -1196,7 +1222,8 @@ view.View = class {
                                     binaryData_nhwc.push(tensorBuffer);
                                     tensorMetadata_nhwc.push({
                                         nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
-                                        tensorName, tensorIdentifier, byteLength, dataType: tensor.type.dataType, shape, kernel_layout
+                                        tensorName, tensorIdentifier, byteLength, dataType: tensor.type.dataType, 
+                                        shape, kernel_layout: nhwc_kernel_layout
                                     });
 
                                     // NCHW: always push, transposed if 4D, else as-is
@@ -1206,10 +1233,15 @@ view.View = class {
                                     if (tensor.data && Array.isArray(shape) && shape.length === 4) {
                                         let transposed;
                                         const typedArray = this.getTypedArray(tensor.data, tensor.type.dataType);
-                                        if (this.isDepthwiseConv(node) || this.isConvTranspose(node)) {
+                                        if (this.isDepthwiseConv(node)) {
                                             // Depthwise Conv: IHWO -> OIHW
                                             transposed = this.transpose4D(typedArray, shape, [3, 0, 1, 2]);
                                             nchwShape = [shape[3], shape[0], shape[1], shape[2]];
+                                            kernel_layout = 'OIHW';
+                                        } else if (this.isConvTranspose(node)) {
+                                            // ConvTranspose: HWIO -> OIHW
+                                            transposed = this.transpose4D(typedArray, shape, [3, 2, 0, 1]);
+                                            nchwShape = [shape[3], shape[2], shape[0], shape[1]];
                                             kernel_layout = 'OIHW';
                                         } else {
                                             // Regular Conv: OHWI -> OIHW
@@ -1228,9 +1260,30 @@ view.View = class {
                                     tensorMetadata_nchw.push({
                                         nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
                                         tensorName, tensorIdentifier, byteLength: nchwByteLength, dataType: tensor.type.dataType,
-                                        shape: nchwShape, kernel_layout: kernel_layout
+                                        shape: nchwShape, kernel_layout
                                     });
                                 }
+
+                                // Add tensor metadata to map
+                                const key = tensorIdentifier || tensorName;
+                                tensorMetaMap[key] = {
+                                    nodeName,
+                                    nodeIdentifier,
+                                    nodeType: node.type.name,
+                                    input: input.name,
+                                    name: tensorName,
+                                    identifier: tensorIdentifier,
+                                    dataType: tensor.type.dataType,
+                                    byteLength: byteLength,
+                                    nchw: {
+                                        dimensions: tensorMetadata_nchw[tensorMetadata_nchw.length - 1].shape,
+                                        kernel_layout: tensorMetadata_nchw[tensorMetadata_nchw.length - 1].kernel_layout
+                                    },
+                                    nhwc: {
+                                        dimensions: tensorMetadata_nhwc[tensorMetadata_nhwc.length - 1].shape,
+                                        kernel_layout: tensorMetadata_nhwc[tensorMetadata_nhwc.length - 1].kernel_layout
+                                    }
+                                };
                             }
                         }
                     }
@@ -1238,40 +1291,23 @@ view.View = class {
             }
         }
 
-        // Write NCHW binary file and get offsets
         const offsets_nchw = await this._downloadModelWeightBiasBin("weights_nchw.bin", binaryData_nchw);
-        // Write NHWC binary file and get offsets
-        // const offsets_nhwc = await this._downloadModelWeightBiasBin("weights_nhwc.bin", binaryData_nhwc);
+        // Write NHWC binary file
         await this._downloadModelWeightBiasBin("weights_nhwc.bin", binaryData_nhwc);
-        // Combine metadata into a single JSON
-        let combinedWeightBias = {};
-        for (let i = 0; i < tensorMetadata_nchw.length; i++) {
-            const nchw = tensorMetadata_nchw[i];
-            const nhwc = tensorMetadata_nhwc[i];
-            const key = nchw.tensorIdentifier || nchw.tensorName;
-            combinedWeightBias[key] = {
-                nodeName: nchw.nodeName,
-                nodeIdentifier: nchw.nodeIdentifier,
-                nodeType: nchw.nodeType,
-                input: nchw.inputName,
-                name: nchw.tensorName,
-                identifier: nchw.tensorIdentifier,
-                dataType: nchw.dataType,
-                dataOffset: offsets_nchw[i], // or offsets_nhwc[i], they are the same
-                byteLength: nchw.byteLength, // or nhwc.byteLength, they are the same
-                nchw: {
-                    shape: nchw.shape,
-                    kernel_layout: nchw.kernel_layout
-                },
-                nhwc: {
-                    shape: nhwc.shape,
-                    kernel_layout: nhwc.kernel_layout
-                }
-            };
-        }
-        await this._downloadModelWeightBiasJson("weights.json", combinedWeightBias);
 
-        console.log(`Downloaded: weights_nchw.bin, weights_nhwc.bin, and weights.json`);
+        // Update both NCHW and NHWC offsets in tensor metadata map
+        for (let i = 0; i < tensorMetadata_nchw.length; i++) {
+            const key = tensorMetadata_nchw[i].tensorIdentifier || tensorMetadata_nchw[i].tensorName;
+            if (tensorMetaMap[key]) {
+                tensorMetaMap[key].dataOffset = offsets_nchw[i]; // For NCHW
+            }
+        }
+
+        // Save tensorMetaMap for later use in exportGraphAsJson
+        this._tensorMetaMap = tensorMetaMap;
+
+        console.log(`Downloaded: weights_nchw.bin and weights_nhwc.bin`);
+
     }
 
     async _getTensorAsNpy(tensor) {
@@ -1284,6 +1320,11 @@ view.View = class {
         execution.invoke('numpy.save', [bytes, array]);
         bytes.seek(0);
         return bytes.read(); // Return the binary data of the .npy file
+    }
+
+    async exportGraphAndWeights() {
+        await this.exportAllTensorsAsBinAndJson();
+        await this.exportGraphAsJson();
     }
 
     resetZoom() {

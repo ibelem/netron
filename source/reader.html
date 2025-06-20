@@ -247,7 +247,7 @@
     </div>
     <div class="upload-container">
       <div class="file-input-group">
-        <label for="json-upload" class="file-input-label">Choose Weights JSON</label>
+        <label for="json-upload" class="file-input-label">Choose Graph JSON</label>
         <input type="file" id="json-upload" accept=".json">
         <span class="file-name" id="json-file-name">No file selected</span>
       </div>
@@ -299,7 +299,7 @@
       <div id="footer">&copy;2025 <a href="https://ibelem.github.io/netron/">WebNN Netron</a> · <a
           href="https://github.com/ibelem/netron/issues">GitHub Issues</a> · 
           <a href="https://ibelem.github.io/webnn-code-generator/">WebNN Code Generator</a> · <a
-          href="https://ibelem.github.io/netron/reader.html?json=https://ibelem.github.io/netron/model/mobilenetv2-12-static/weights.json&bin_nchw=https://ibelem.github.io/netron/model/mobilenetv2-12-static/weights_nchw.bin&&bin_nhwc=https://ibelem.github.io/netron/model/mobilenetv2-12-static/weights_nhwc.bin">Example</a>
+          href="https://ibelem.github.io/netron/reader.html?json=https://ibelem.github.io/netron/model/mobilenetv2-12-static/graph.json&bin_nchw=https://ibelem.github.io/netron/model/mobilenetv2-12-static/weights_nchw.bin&&bin_nhwc=https://ibelem.github.io/netron/model/mobilenetv2-12-static/weights_nhwc.bin">Example</a>
       </div>
     </div>
   </div>
@@ -342,7 +342,7 @@
         try {
           const response = await fetch(jsonUrl);
           const jsonResponse = await response.json();
-          jsonData = jsonResponse;
+          jsonData = extractTensorMetadataFromGraphJson(jsonResponse);
           const size = response.headers.get('content-length');
           $('#json-file-name').textContent = jsonUrl.split('/').pop() + (size ? ` (${formatFileSize(Number(size))})` : '');
         } catch (error) {
@@ -370,6 +370,39 @@
         }
       }
       if (jsonData) populateSidebar();
+    }
+
+    function extractTensorMetadataFromGraphJson(graphJson) {
+        const tensorMap = {};
+        const graphs = Array.isArray(graphJson.graph) ? graphJson.graph : [graphJson.graph];
+        for (const graph of graphs) {
+            if (!graph || !graph.nodes) continue;
+            for (const node of graph.nodes) {
+                if (!node.inputs) continue;
+                for (const input of node.inputs) {
+                    if (!input.value) continue;
+                    for (const value of input.value) {
+                        if (value && value.initializer) {
+                            const init = value.initializer;
+                            tensorMap[init.name] = {
+                                nodeName: node.name || "",
+                                nodeIdentifier: node.identifier || "",
+                                nodeType: node.type && node.type.name ? node.type.name : "",
+                                input: input.name || "",
+                                name: init.name || "",
+                                identifier: value.identifier || "",
+                                dataType: init.dataType || (init.type && init.type.dataType) || "",
+                                dataOffset: init.dataOffset,
+                                byteLength: init.byteLength,
+                                nchw: init.type && init.type.nchw ? init.type.nchw : undefined,
+                                nhwc: init.type && init.type.nhwc ? init.type.nhwc : undefined
+                            };
+                        }
+                    }
+                }
+            }
+        }
+        return tensorMap;
     }
 
     // Function to populate the sidebar with JSON keys
@@ -436,16 +469,16 @@
       const info = jsonData[key];
       details.textContent = collapseSinglePropObjects(formatJsonWithSingleLineArrays(info));
 
-      // Use new format: info.nchw.shape and info.nhwc.shape
+      // Use new format: info.nchw.dimension and info.nhwc.dimension
       const dataOffset = info.dataOffset;
       const byteLength = info.byteLength;
       const dataType = info.dataType;
 
       // NCHW
-      const shapeNchw = info.nchw?.shape;
+      const shapeNchw = info.nchw?.dimensions;
       const kernelLayoutNchw = info.nchw?.kernel_layout;
       // NHWC
-      const shapeNhwc = info.nhwc?.shape;
+      const shapeNhwc = info.nhwc?.dimensions;
       const kernelLayoutNhwc = info.nhwc?.kernel_layout;
 
       // Display raw buffer data
@@ -585,6 +618,7 @@
       const file = event.target.files[0];
       if (file && file.type === 'application/json') {
         jsonData = await file.text().then(JSON.parse);
+        jsonData = extractTensorMetadataFromGraphJson(jsonData);
         $('#json-file-name').textContent = file.name + ` (${formatFileSize(file.size)})`;
         populateSidebar();
       } else {
