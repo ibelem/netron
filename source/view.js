@@ -638,6 +638,8 @@ view.View = class {
                 }
             }
             graphJson.nodes = [];
+            let lastDataOffset = 0;
+            let lastByteLength = 0;
             for (const node of graph.nodes) {
                 if (node) {
                     const nodeJson = {};
@@ -678,17 +680,75 @@ view.View = class {
                                         initializer.category ? initializerJson.category = initializer.category : null;
                                         initializer.encoding ? initializerJson.encoding = initializer.encoding : null;
 
+                                        let meta;
                                         // Inject tensor metadata into initializer
                                         if (this._tensorMetaMap &&
                                             (this._tensorMetaMap[initializer.name] || this._tensorMetaMap[value.name])) {
-                                            const meta = this._tensorMetaMap[initializer.name] || this._tensorMetaMap[value.name];
+                                            meta = this._tensorMetaMap[initializer.name] || this._tensorMetaMap[value.name];
                                             initializerJson.dataType = meta.dataType;
-                                            initializerJson.dataOffset = meta.dataOffset;
-                                            initializerJson.byteLength = meta.byteLength;
+                                            if (meta) {
+                                                initializerJson.dataOffset = meta.dataOffset;
+                                                initializerJson.byteLength = meta.byteLength;
+                                                lastDataOffset = meta.dataOffset;
+                                                lastByteLength = meta.byteLength;
+                                            }
+                                        }
+
+                                        if(!meta) {
+                                            if (initializer.type) {
+                                                initializer.type.dataType ? initializerJson.dataType = initializer.type.dataType : null;
+                                            }
+
+                                            const initializerValues = initializer.values;
+                                            if (initializerValues && Array.isArray(initializerValues)) {
+                                                // Determine element size in bytes
+                                                let elementSize = 0;
+                                                switch (initializerJson.dataType) {
+                                                    case 'float32':
+                                                    case 'int32':
+                                                    case 'uint32':
+                                                        elementSize = 4;
+                                                        break;
+                                                    case 'float64':
+                                                    case 'int64':
+                                                    case 'uint64':
+                                                        elementSize = 8;
+                                                        break;
+                                                    case 'float16':
+                                                    case 'int16':
+                                                    case 'uint16':
+                                                        elementSize = 2;
+                                                        break;
+                                                    case 'int8':
+                                                    case 'uint8':
+                                                    case 'bool':
+                                                        elementSize = 1;
+                                                        break;
+                                                    default:
+                                                        elementSize = 0;
+                                                }
+                                                initializerJson.byteLength = elementSize * initializerValues.length;
+                                            } else {
+                                                initializerJson.byteLength = '';
+                                            }
+
+                                            if (typeof lastDataOffset === 'number' && typeof lastByteLength === 'number' && initializerJson.byteLength) {
+                                                initializerJson.dataOffset = lastDataOffset + lastByteLength;
+                                                lastDataOffset = initializerJson.dataOffset;
+                                                lastByteLength = initializerJson.byteLength;
+                                            } else {
+                                                initializerJson.dataOffset = '';
+                                            }
                                         }
 
                                         if (initializer.encoding === '|') {
-                                            initializer.values ? initializerJson.values = initializer.values : [];
+                                            // Only store initializer.values with byteLength less than 128
+                                            if (initializerJson.byteLength < 128) {
+                                                initializer.values ? initializerJson.values = initializer.values : [];
+                                            } else {
+                                                initializerJson.values = {};
+                                                initializerJson.valuesNote = "The byteLength of initializer.values is larger than 128, check the data in weights bin file via https://ibelem.github.io/netron/reader.html" 
+                                            }
                                         }
                                         initializer.indices ? initializerJson.indices = initializer.indices : null;
                                         initializer.location ? initializerJson.location = initializer.location : null;
@@ -742,6 +802,7 @@ view.View = class {
                             nodeJson.inputs.push(inputJson);
                         }
                     }
+
                     nodeJson.outputs = [];
                     for (const output of node.outputs) {
                         if (output) {
@@ -1067,7 +1128,6 @@ view.View = class {
         if (tensorData.length !== shape[0] * shape[1] * shape[2] * shape[3]) {
             throw new Error(`Shape mismatch: tensorData.length=${tensorData.length}, shape=${shape.join('×')}, expected elements=${shape[0] * shape[1] * shape[2] * shape[3]}`);
         }
-        console.log(tensorData.byteLength);
         if (!tensorData || !Array.isArray(shape) || shape.length !== 4) {
             throw new Error('Invalid tensor data or shape for 4D transpose');
         }
@@ -1115,6 +1175,25 @@ view.View = class {
         return '';
     }
 
+    toBuffer(values, dataType) {
+        if (!Array.isArray(values)) return null;
+        switch (dataType) {
+            case 'float32': return new Float32Array(values).buffer;
+            case 'float64': return new Float64Array(values).buffer;
+            case 'int32':   return new Int32Array(values).buffer;
+            case 'uint32':  return new Uint32Array(values).buffer;
+            case 'int16':   return new Int16Array(values).buffer;
+            case 'uint16':  return new Uint16Array(values).buffer;
+            case 'int8':    return new Int8Array(values).buffer;
+            case 'uint8':   return new Uint8Array(values).buffer;
+            case 'bool':    return new Uint8Array(values).buffer;
+            case 'int64':   return new BigInt64Array(values).buffer;
+            case 'uint64':  return new BigUint64Array(values).buffer;
+            // Add more types as needed
+            default:        return null;
+        }
+    }
+
     async exportAllTensorsAsBinAndJson() {
         const weightBiasButtons = document.querySelectorAll('.action')[0];
 
@@ -1151,10 +1230,44 @@ view.View = class {
 
                             if (tensor.data) {
                                 byteLength = tensor.data.byteLength;
-                                tensorBuffer = tensor.data.buffer.slice(tensor.data.byteOffset, tensor.data.byteOffset + byteLength);
+                                if (tensor.data.buffer) {
+                                    tensorBuffer = tensor.data.buffer.slice(tensor.data.byteOffset, tensor.data.byteOffset + byteLength);
+                                }
                             } else if (tensor.encoding === '|' && tensor.values) {
-                                byteLength = tensor.values.byteLength;
-                                tensorBuffer = tensor.values.buffer.slice(tensor.values.byteOffset, tensor.values.byteOffset + byteLength);
+                                if(tensor.values.byteLength) {
+                                    byteLength = tensor.values.byteLength;
+                                    if (tensor.values.buffer) {
+                                        tensorBuffer = tensor.values.buffer.slice(tensor.values.byteOffset, tensor.values.byteOffset + byteLength);
+                                    }
+                                } else {
+                                    let elementSize = 0;
+                                    switch (tensor.type.dataType) {
+                                        case 'float32':
+                                        case 'int32':
+                                        case 'uint32':
+                                            elementSize = 4;
+                                            break;
+                                        case 'float64':
+                                        case 'int64':
+                                        case 'uint64':
+                                            elementSize = 8;
+                                            break;
+                                        case 'float16':
+                                        case 'int16':
+                                        case 'uint16':
+                                            elementSize = 2;
+                                            break;
+                                        case 'int8':
+                                        case 'uint8':
+                                        case 'bool':
+                                            elementSize = 1;
+                                            break;
+                                        default:
+                                            elementSize = 0;
+                                    }
+                                    byteLength = elementSize * tensor.values.length;
+                                    tensorBuffer = this.toBuffer(tensor.values, tensor.type.dataType);
+                                }
                             }
 
                             if (byteLength > 0 && tensorBuffer) {

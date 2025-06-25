@@ -567,13 +567,53 @@
       function renderGrid(data, shape, title) {
         if (!data || !shape || shape.length < 2) return '';
         let rows = shape[0], cols = shape[1];
+        
+        // Safely convert data to a flat array
+        let flatData = [];
+        try {
+          // Handle different data types safely
+          if (ArrayBuffer.isView(data)) {
+            // For typed arrays (Float32Array, etc.)
+            flatData = Array.from(data);
+          } else if (Array.isArray(data)) {
+            // For regular arrays, try to flatten safely without recursion
+            const stack = [...data];
+            while (stack.length > 0) {
+              const item = stack.pop();
+              if (Array.isArray(item)) {
+                // Use spread in small chunks to avoid stack overflow
+                for (let i = item.length - 1; i >= 0; i--) {
+                  stack.push(item[i]);
+                }
+              } else if (item !== undefined) {
+                flatData.push(item);
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Error flattening data:", e);
+          return `<div><b>${title}</b><br>Error processing data</div>`;
+        }
+        
+        // Find max absolute value for color scaling without using Math.max(...array)
+        // which can cause stack overflow for large arrays
+        let maxAbs = 1e-8; // Small non-zero default to avoid division by zero
+        for (let i = 0; i < flatData.length; i++) {
+          const v = flatData[i];
+          if (typeof v === 'number') {
+            const absV = Math.abs(v);
+            if (absV > maxAbs) maxAbs = absV;
+          }
+        }
+        
+        // Build the grid HTML
         let html = `<div><b>${title}</b><br><table style="border-collapse:collapse;">`;
         for (let r = 0; r < Math.min(rows, 8); r++) {
           html += '<tr>';
           for (let c = 0; c < Math.min(cols, 8); c++) {
             let idx = r * cols + c;
-            let val = data[idx];
-            let color = typeof val === 'number' ? `background:rgba(0,0,255,${Math.abs(val)/Math.max(...data.slice(0, rows*cols))})` : '';
+            let val = flatData[idx]; // Use flattened data for display
+            let color = typeof val === 'number' ? `background:rgba(0,0,255,${Math.abs(val)/maxAbs})` : '';
             html += `<td style="width:24px;height:18px;text-align:center;${color};border:1px solid #ccc;">${typeof val === 'number' ? val.toFixed(1) : ''}</td>`;
           }
           html += '</tr>';
@@ -595,10 +635,18 @@
 
       // Limit the number of outer elements shown if dataLimit is set
       function limitedString(arr) {
-        if (typeof dataLimit === 'number' && Array.isArray(arr)) {
-          return JSON.stringify(arr.slice(0, dataLimit), null, 2) + (arr.length > dataLimit ? ', ...' : '');
+        function replacer(key, value) {
+          // Convert BigInt to string for JSON.stringify
+          if (typeof value === 'bigint') return value.toString() + 'n';
+          // Optionally handle NaN and undefined
+          if (typeof value === 'number' && !isFinite(value)) return String(value);
+          if (typeof value === 'undefined') return null;
+          return value;
         }
-        return JSON.stringify(arr, null, 2);
+        if (typeof dataLimit === 'number' && Array.isArray(arr)) {
+          return JSON.stringify(arr.slice(0, dataLimit), replacer, 2) + (arr.length > dataLimit ? ', ...' : '');
+        }
+        return JSON.stringify(arr, replacer, 2);
       }
 
       stringData.innerHTML = `
