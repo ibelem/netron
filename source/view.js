@@ -1293,27 +1293,35 @@ view.View = class {
                                     let nhwcBuffer = tensorBuffer;
                                     let nhwcShape = shape;
                                     let nhwcByteLength = byteLength;
-                                    if (tensor.data && Array.isArray(shape) && shape.length === 4) {
-                                        let transposed;
-                                        const typedArray = this.getTypedArray(tensor.data, tensor.type.dataType);
-                                        if (this.isDepthwiseConv(node) || this.isConvTranspose(node)) {
-                                            // Depthwise Conv: OIHW -> IHWO
-                                            transposed = this.transpose4D(typedArray, shape, [1, 2, 3, 0]);
-                                            nhwcShape = [shape[1], shape[2], shape[3], shape[0]];
-                                            nhwc_kernel_layout = 'IHWO';
-                                        } else {
-                                            // Regular Conv: OIHW -> OHWI
-                                            transposed = this.transpose4D(typedArray, shape, [0, 2, 3, 1]);
-                                            nhwcShape = [shape[0], shape[2], shape[3], shape[1]];
-                                            nhwc_kernel_layout = 'OHWI';
+                                    if (Array.isArray(shape) && shape.length === 4) {
+                                        let typedArray = null;
+                                        if (tensor.data) {
+                                            typedArray = this.getTypedArray(tensor.data, tensor.type.dataType);
+                                        } else if (tensorBuffer) {
+                                            typedArray = this.getTypedArray({ buffer: tensorBuffer, byteOffset: 0, byteLength: tensorBuffer.byteLength }, tensor.type.dataType);
                                         }
-                                        const nhwcArray = transposed.data;
-                                        const elementSize = transposed.elementSize;
-                                        nhwcByteLength = nhwcArray.length * elementSize;
-                                        const nhwcBufferTmp = new ArrayBuffer(nhwcByteLength);
-                                        new Uint8Array(nhwcBufferTmp).set(new Uint8Array(nhwcArray.buffer, nhwcArray.byteOffset, nhwcByteLength));
-                                        nhwcBuffer = nhwcBufferTmp;
+                                        if (typedArray) {
+                                            let transposed;
+                                            if (this.isDepthwiseConv(node) || this.isConvTranspose(node)) {
+                                                // Depthwise Conv: OIHW -> IHWO
+                                                transposed = this.transpose4D(typedArray, shape, [1, 2, 3, 0]);
+                                                nhwcShape = [shape[1], shape[2], shape[3], shape[0]];
+                                                nhwc_kernel_layout = 'IHWO';
+                                            } else {
+                                                // Regular Conv: OIHW -> OHWI
+                                                transposed = this.transpose4D(typedArray, shape, [0, 2, 3, 1]);
+                                                nhwcShape = [shape[0], shape[2], shape[3], shape[1]];
+                                                nhwc_kernel_layout = 'OHWI';
+                                            }
+                                            const nhwcArray = transposed.data;
+                                            const elementSize = transposed.elementSize;
+                                            nhwcByteLength = nhwcArray.length * elementSize;
+                                            const nhwcBufferTmp = new ArrayBuffer(nhwcByteLength);
+                                            new Uint8Array(nhwcBufferTmp).set(new Uint8Array(nhwcArray.buffer, nhwcArray.byteOffset, nhwcByteLength));
+                                            nhwcBuffer = nhwcBufferTmp;
+                                        }
                                     }
+
                                     binaryData_nhwc.push(nhwcBuffer);
                                     tensorMetadata_nhwc.push({
                                         nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
@@ -1335,26 +1343,33 @@ view.View = class {
                                     let nchwBuffer = tensorBuffer;
                                     let nchwShape = shape;
                                     let nchwByteLength = byteLength;
-                                    if (tensor.data && Array.isArray(shape) && shape.length === 4) {
-                                        let transposed;
-                                        const typedArray = this.getTypedArray(tensor.data, tensor.type.dataType);
-                                        if (this.isDepthwiseConv(node) || this.isConvTranspose(node)) {
-                                            // Depthwise Conv: IHWO -> OIHW
-                                            transposed = this.transpose4D(typedArray, shape, [3, 0, 1, 2]);
-                                            nchwShape = [shape[3], shape[0], shape[1], shape[2]];
-                                            kernel_layout = 'OIHW';
-                                        } else {
-                                            // Regular Conv: OHWI -> OIHW
-                                            transposed = this.transpose4D(typedArray, shape, [0, 3, 1, 2]);
-                                            nchwShape = [shape[0], shape[3], shape[1], shape[2]];
-                                            kernel_layout = 'OIHW';
+                                    if (Array.isArray(shape) && shape.length === 4) {
+                                        let typedArray = null;
+                                        if (tensor.data) {
+                                            typedArray = this.getTypedArray(tensor.data, tensor.type.dataType);
+                                        } else if (tensorBuffer) {
+                                            typedArray = this.getTypedArray({ buffer: tensorBuffer, byteOffset: 0, byteLength: tensorBuffer.byteLength }, tensor.type.dataType);
                                         }
-                                        const nchwArray = transposed.data;
-                                        const elementSize = transposed.elementSize;
-                                        nchwByteLength = nchwArray.length * elementSize;
-                                        const nchwBufferTmp = new ArrayBuffer(nchwByteLength);
-                                        new Uint8Array(nchwBufferTmp).set(new Uint8Array(nchwArray.buffer, nchwArray.byteOffset, nchwByteLength));
-                                        nchwBuffer = nchwBufferTmp;
+                                        if (typedArray) {
+                                            let transposed;
+                                            if (this.isDepthwiseConv(node) || this.isConvTranspose(node)) {
+                                                // Depthwise Conv: IHWO -> OIHW
+                                                transposed = this.transpose4D(typedArray, shape, [3, 0, 1, 2]);
+                                                nchwShape = [shape[3], shape[0], shape[1], shape[2]];
+                                                kernel_layout = 'OIHW';
+                                            } else {
+                                                // Regular Conv: OHWI -> OIHW
+                                                transposed = this.transpose4D(typedArray, shape, [0, 3, 1, 2]);
+                                                nchwShape = [shape[0], shape[3], shape[1], shape[2]];
+                                                kernel_layout = 'OIHW';
+                                            }
+                                            const nchwArray = transposed.data;
+                                            const elementSize = transposed.elementSize;
+                                            nchwByteLength = nchwArray.length * elementSize;
+                                            const nchwBufferTmp = new ArrayBuffer(nchwByteLength);
+                                            new Uint8Array(nchwBufferTmp).set(new Uint8Array(nchwArray.buffer, nchwArray.byteOffset, nchwByteLength));
+                                            nchwBuffer = nchwBufferTmp;
+                                        }
                                     }
                                     binaryData_nchw.push(nchwBuffer);
                                     tensorMetadata_nchw.push({
