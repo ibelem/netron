@@ -129,7 +129,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M124",
-      "windowsml_op": ["Cast"],
+      "windowsml_op": [
+        "Cast"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -167,7 +169,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M125",
-      "windowsml_op": ["Clip"],
+      "windowsml_op": [
+        "Clip"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -240,7 +244,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M125",
-      "windowsml_op": ["Conv"],
+      "windowsml_op": [
+        "Conv"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -277,7 +283,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["ConvTranspose"],
+      "windowsml_op": [
+        "ConvTranspose"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -381,7 +389,9 @@
       ],
       "dml_progress": 4,
       "dml_chromium_version_added": "M119",
-      "windowsml_op": ["Add"],
+      "windowsml_op": [
+        "Add"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "coreml_op": [
@@ -422,7 +432,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M124",
-      "windowsml_op": ["Div"],
+      "windowsml_op": [
+        "Div"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -458,7 +470,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M124",
-      "windowsml_op": ["Max"],
+      "windowsml_op": [
+        "Max"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -494,7 +508,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M124",
-      "windowsml_op": ["Min"],
+      "windowsml_op": [
+        "Min"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -530,7 +546,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M124",
-      "windowsml_op": ["Mul"],
+      "windowsml_op": [
+        "Mul"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -602,7 +620,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M124",
-      "windowsml_op": ["Pow"],
+      "windowsml_op": [
+        "Pow"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -639,7 +659,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M124",
-      "windowsml_op": ["Sub"],
+      "windowsml_op": [
+        "Sub"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -999,7 +1021,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["Abs"],
+      "windowsml_op": [
+        "Abs"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -1035,7 +1059,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["Ceil"],
+      "windowsml_op": [
+        "Ceil"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -1071,7 +1097,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["Identity"],
+      "windowsml_op": [
+        "Identity"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -1107,7 +1135,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["Cos"],
+      "windowsml_op": [
+        "Cos"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -1143,7 +1173,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["Erf"],
+      "windowsml_op": [
+        "Erf"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -1179,7 +1211,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["Exp"],
+      "windowsml_op": [
+        "Exp"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -1215,7 +1249,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["Floor"],
+      "windowsml_op": [
+        "Floor"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -1228,6 +1264,82 @@
       ],
       "fw_ort_progress": 4,
       "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise unary / isInfinite",
+      "op_id": "unary",
+      "version": "",
+      "wpt": "isInfinite",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulate with abs(x) == +inf"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M141",
+      "dml_op": [
+        "ELEMENT_WISE_IS_INFINITY"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M141",
+      "coreml_op": [
+        "Emulate with equal(abs(a), Infinity)"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M141",
+      "windowsml_op": [
+        "IsInf"
+      ],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M141",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "IsInf"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.23.0-dev",
+      "notes": ""
+    },
+    {
+      "op": "element-wise unary / isNaN",
+      "op_id": "unary",
+      "version": "",
+      "wpt": "isNaN",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "Emulate with `x != x`"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M141",
+      "dml_op": [
+        "ELEMENT_WISE_IS_NAN"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M141",
+      "coreml_op": [
+        "Emulate with not_equal(a, a)"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M141",
+      "windowsml_op": [
+        "IsNaN"
+      ],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M141",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "IsNaN"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.23.0-dev",
       "notes": ""
     },
     {
@@ -1251,7 +1363,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["Log"],
+      "windowsml_op": [
+        "Log"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -1287,7 +1401,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M127",
-      "windowsml_op": ["Neg"],
+      "windowsml_op": [
+        "Neg"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -1323,7 +1439,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["Reciprocal"],
+      "windowsml_op": [
+        "Reciprocal"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -1336,6 +1454,44 @@
       ],
       "fw_ort_progress": 4,
       "fw_ort_version_added": "1.18.0",
+      "notes": ""
+    },
+    {
+      "op": "element-wise unary / roundEven",
+      "op_id": "unary",
+      "version": "",
+      "wpt": "roundEven",
+      "wpt_progress": 4,
+      "tflite_op": [
+        "ROUND"
+      ],
+      "tflite_progress": 4,
+      "tflite_chromium_version_added": "M141",
+      "dml_op": [
+        "ELEMENT_WISE_ROUND"
+      ],
+      "dml_progress": 4,
+      "dml_chromium_version_added": "M141",
+      "coreml_op": [
+        "round, todo: emulate when device type is not CPU"
+      ],
+      "coreml_progress": 4,
+      "coreml_chromium_version_added": "M141",
+      "windowsml_op": [
+        "Round"
+      ],
+      "windowsml_progress": 4,
+      "windowsml_chromium_version_added": "M141",
+      "fw_tflite_op": [
+        ""
+      ],
+      "fw_tflite_progress": 2,
+      "fw_tflite_version_added": "",
+      "fw_ort_op": [
+        "Round"
+      ],
+      "fw_ort_progress": 4,
+      "fw_ort_version_added": "1.23.0-dev",
       "notes": ""
     },
     {
@@ -1359,7 +1515,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["Sin"],
+      "windowsml_op": [
+        "Sin"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -1395,7 +1553,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["Sqrt"],
+      "windowsml_op": [
+        "Sqrt"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -1431,7 +1591,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["Tan"],
+      "windowsml_op": [
+        "Tan"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -1647,7 +1809,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M132",
-      "windowsml_op": ["Gelu"],
+      "windowsml_op": [
+        "Gelu"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -1683,7 +1847,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["Gemm"],
+      "windowsml_op": [
+        "Gemm"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -1827,7 +1993,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["HardSwish"],
+      "windowsml_op": [
+        "HardSwish"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -2151,7 +2319,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["AveragePool"],
+      "windowsml_op": [
+        "AveragePool"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -2189,7 +2359,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["LpPool"],
+      "windowsml_op": [
+        "LpPool"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -2226,7 +2398,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["MaxPool"],
+      "windowsml_op": [
+        "MaxPool"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -2695,7 +2869,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M125",
-      "windowsml_op": ["Relu"],
+      "windowsml_op": [
+        "Relu"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -2769,7 +2945,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["Reshape"],
+      "windowsml_op": [
+        "Reshape"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -2916,7 +3094,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["Sigmoid"],
+      "windowsml_op": [
+        "Sigmoid"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -2952,7 +3132,9 @@
       ],
       "coreml_progress": 2,
       "coreml_chromium_version_added": "",
-      "windowsml_op": ["Sign"],
+      "windowsml_op": [
+        "Sign"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -3026,7 +3208,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M127",
-      "windowsml_op": ["Softmax"],
+      "windowsml_op": [
+        "Softmax"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -3098,7 +3282,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M125",
-      "windowsml_op": ["Softsign"],
+      "windowsml_op": [
+        "Softsign"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -3170,7 +3356,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M126",
-      "windowsml_op": ["Tanh"],
+      "windowsml_op": [
+        "Tanh"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
@@ -3242,7 +3430,9 @@
       ],
       "coreml_progress": 4,
       "coreml_chromium_version_added": "M125",
-      "windowsml_op": ["Transpose"],
+      "windowsml_op": [
+        "Transpose"
+      ],
       "windowsml_progress": 4,
       "windowsml_chromium_version_added": "M139",
       "fw_tflite_op": [
