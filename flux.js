@@ -7,7 +7,7 @@ flux.ModelFactory = class {
 
     async match(context) {
         const identifier = context.identifier;
-        const extension = identifier.split('.').pop().toLowerCase();
+        const extension = identifier.lastIndexOf('.') > 0 ? identifier.split('.').pop().toLowerCase() : '';
         const stream = context.stream;
         if (stream && extension === 'bson') {
             return context.set('flux.bson');
@@ -31,10 +31,10 @@ flux.ModelFactory = class {
                 }
             } else if (obj === Object(obj)) {
                 if (obj.tag === 'backref' && obj.ref) {
-                    if (!root._backrefs[obj.ref - 1]) {
+                    if (!root._backrefs[obj.ref - 1n]) {
                         throw new flux.Error(`Invalid backref '${obj.ref}'.`);
                     }
-                    obj = root._backrefs[obj.ref - 1];
+                    obj = root._backrefs[obj.ref - 1n];
                 }
                 for (const key of Object.keys(obj)) {
                     if (obj !== root || key !== '_backrefs') {
@@ -57,7 +57,7 @@ flux.Model = class {
 
     constructor(/* root */) {
         this.format = 'Flux';
-        this.graphs = [];
+        this.modules = [];
     }
 };
 

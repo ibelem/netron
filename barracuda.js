@@ -29,7 +29,7 @@ barracuda.Model = class {
     constructor(metadata, model) {
         const version = model.version.toString();
         this.format = `Barracuda v${version}`;
-        this.graphs = [new barracuda.Graph(metadata, model)];
+        this.modules = [new barracuda.Graph(metadata, model)];
     }
 };
 
@@ -79,19 +79,19 @@ barracuda.Graph = class {
 
 barracuda.Argument = class {
 
-    constructor(name, value, type) {
+    constructor(name, value, type = null) {
         this.name = name;
         this.value = value;
-        this.type = type || null;
+        this.type = type;
     }
 };
 
 barracuda.Value = class {
 
-    constructor(name, type, initializer) {
+    constructor(name, type = null, initializer = null) {
         this.name = name;
-        this.type = type || null;
-        this.initializer = initializer || null;
+        this.type = type;
+        this.initializer = initializer;
     }
 };
 
@@ -110,7 +110,7 @@ barracuda.Node = class {
         } else if (layer.inputs) {
             for (let i = 0; i < layer.inputs.length; i++) {
                 const input = layer.inputs[i];
-                const name = inputs.length > 0 ? inputs.shift().name : i.toString();
+                const name = inputs.length > 0 && inputs[0] ? inputs.shift().name : i.toString();
                 const argument = new barracuda.Argument(name, [values.map(input)]);
                 this.inputs.push(argument);
             }
@@ -119,7 +119,7 @@ barracuda.Node = class {
             for (let i = 0; i < layer.tensors.length; i++) {
                 const tensor = layer.tensors[i];
                 const initializer = new barracuda.Tensor(tensor);
-                const name = inputs.length > 0 ? inputs.shift().name : i.toString();
+                const name = inputs.length > 0 && inputs[0] ? inputs.shift().name : i.toString();
                 const argument = new barracuda.Argument(name, [values.map(tensor.name, initializer.type, initializer)]);
                 this.inputs.push(argument);
             }

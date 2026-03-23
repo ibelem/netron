@@ -95,8 +95,8 @@ openvino.ModelFactory = class {
         return null;
     }
 
-    filter(context, type) {
-        return context.type !== 'openvino.xml' || type !== 'openvino.bin';
+    filter(context, match) {
+        return context.type !== 'openvino.xml' || match.type !== 'openvino.bin';
     }
 
     async open(context) {
@@ -230,7 +230,7 @@ openvino.Model = class {
 
     constructor(metadata, net, bin) {
         this.name = net.name || '';
-        this.graphs = [new openvino.Graph(metadata, net, bin)];
+        this.modules = [new openvino.Graph(metadata, net, bin)];
         this.format = 'OpenVINO IR';
     }
 };
@@ -270,7 +270,7 @@ openvino.Graph = class {
             }
             if (!values.has(name)) {
                 values.set(name, new openvino.Value(name, type, tensor));
-            } else if (type && !type.equals(values.get(name).type)) {
+            } else if (name === id && type && !type.equals(values.get(name).type)) {
                 throw new openvino.Error(`Duplicate value '${name}'.`);
             }
             return values.get(name);
@@ -367,7 +367,7 @@ openvino.Graph = class {
         const ports = new Map();
         if (Array.isArray(net.input)) {
             for (const input of net.input) {
-                const value = values.map('', input.precision, input);
+                const value = values.map('', input.precision || null, input);
                 const argument = new openvino.Argument(input.id, [value]);
                 this.inputs.push(argument);
                 ports.set(input.id, value);
@@ -375,7 +375,7 @@ openvino.Graph = class {
         }
         if (Array.isArray(net.output)) {
             for (const output of net.output) {
-                const value = values.map('', output.precision, output);
+                const value = values.map('', output.precision || null, output);
                 const argument = new openvino.Argument(output.id, [value]);
                 this.outputs.push(argument);
                 ports.set(output.id, value);
@@ -443,7 +443,7 @@ openvino.Graph = class {
                         }
                     }
                 }
-                return values.map(layer.id, input.precision || layer.precision, input, body.edges);
+                return values.map(layer.id, input.precision || layer.precision || null, input, body.edges);
             });
             const outputs = layer.output.map((output) => {
                 let precision = null;
@@ -612,18 +612,12 @@ openvino.Node = class {
             if (schema && schema.visible === false) {
                 visible = false;
             } else if (schema && schema.default !== undefined) {
-                let defaultValue = schema.default;
+                const defaultValue = schema.default;
                 if (value === defaultValue) {
                     visible = false;
                 } else if (Array.isArray(value) && Array.isArray(defaultValue)) {
-                    defaultValue = defaultValue.slice(0, defaultValue.length);
-                    if (defaultValue.length > 1 && defaultValue[defaultValue.length - 1] === null) {
-                        defaultValue.pop();
-                        while (defaultValue.length < value.length) {
-                            defaultValue.push(defaultValue[defaultValue.length - 1]);
-                        }
-                    }
-                    if (value.every((item, index) => item === defaultValue[index])) {
+                    const repeat = defaultValue.length > 1 && defaultValue[defaultValue.length - 1] === null;
+                    if (value.every((item, index) => item === (repeat && index >= defaultValue.length - 1 ? defaultValue[defaultValue.length - 2] : defaultValue[index]))) {
                         visible = false;
                     }
                 }
@@ -643,11 +637,12 @@ openvino.Node = class {
             let dimensions = blob.shape || null;
             const category = blob.kind || 'Blob';
             const id = blob.id || '';
-            const precision = blob.precision || layer.precision;
+            const precision = blob.precision || layer.precision || null;
             let itemSize = -1;
             switch (precision) {
                 case 'BOOL': case 'BOOLEAN':          itemSize = 1; break;
                 case 'I1':   case 'U1':               itemSize = 0.125; break;
+                case 'I2':   case 'U2':               itemSize = 0.25; break;
                 case 'I4':   case 'U4':               itemSize = 0.5; break;
                 case 'I8':   case 'U8':               itemSize = 1; break;
                 case 'I16':  case 'U16': case 'FP16': itemSize = 2; break;
@@ -655,6 +650,7 @@ openvino.Node = class {
                 case 'I64':  case 'U64': case 'FP64': itemSize = 8; break;
                 case 'F8E4M3':                        itemSize = 1; break;
                 case 'BF16':                          itemSize = 2; break;
+                case 'DYNAMIC':                       itemSize = 0; break;
                 default: throw new openvino.Error(`Unsupported data type size '${precision}'.`);
             }
             const weight = (name, precision, dimensions, data) => {
@@ -682,9 +678,7 @@ openvino.Node = class {
                     }
                     case 'Convolution:weights':
                     case 'Deconvolution:weights': {
-                        /* eslint-disable prefer-destructuring */
                         const c = this.inputs[0].value[0].type.shape.dimensions[1];
-                        /* eslint-enable prefer-destructuring */
                         const group = parseInt(layer.data.group || '1', 10);
                         const kernel = layer.data['kernel-x'] !== undefined && layer.data['kernel-y'] !== undefined ?
                             [parseInt(layer.data['kernel-x'], 10), parseInt(layer.data['kernel-y'], 10)] :
@@ -694,9 +688,7 @@ openvino.Node = class {
                         break;
                     }
                     case 'LSTMCell:weights': {
-                        /* eslint-disable prefer-destructuring */
                         const input_size = inputs[0].type.shape.dimensions[1];
-                        /* eslint-enable prefer-destructuring */
                         const hidden_size = parseInt(layer.data.hidden_size, 10);
                         data = weight('W', precision, [4 * hidden_size, input_size], data);
                         data = weight('R', precision, [4 * hidden_size, hidden_size], data);
@@ -708,9 +700,7 @@ openvino.Node = class {
                         break;
                     }
                     case 'GRUCell:weights': {
-                        /* eslint-disable prefer-destructuring */
                         const input_size = inputs[0].type.shape.dimensions[1];
-                        /* eslint-enable prefer-destructuring */
                         const hidden_size = parseInt(layer.data.hidden_size, 10);
                         data = weight('W', precision, [3 * hidden_size, input_size], data);
                         data = weight('R', precision, [3 * hidden_size, hidden_size], data);
@@ -761,23 +751,23 @@ openvino.Node = class {
 
 openvino.Argument = class {
 
-    constructor(name, value, type, visible) {
+    constructor(name, value, type = null, visible = true) {
         this.name = name;
         this.value = value;
-        this.type = type || null;
-        this.visible = visible !== false;
+        this.type = type;
+        this.visible = visible;
     }
 };
 
 openvino.Value = class {
 
-    constructor(name, type, initializer) {
+    constructor(name, type, initializer = null) {
         if (typeof name !== 'string') {
             throw new openvino.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
         }
         this.name = name;
         this.type = initializer ? initializer.type : type;
-        this.initializer = initializer || null;
+        this.initializer = initializer;
     }
 };
 
@@ -814,6 +804,7 @@ openvino.TensorType = class {
             case 'i32':         this.dataType = 'int32'; break;
             case 'i64':         this.dataType = 'int64'; break;
             case 'u1':          this.dataType = 'boolean'; break;
+            case 'u2':          this.dataType = 'uint2'; break;
             case 'u4':          this.dataType = 'uint4'; break;
             case 'u8':          this.dataType = 'uint8'; break;
             case 'u16':         this.dataType = 'uint16'; break;

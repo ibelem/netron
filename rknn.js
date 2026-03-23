@@ -52,7 +52,7 @@ rknn.Model = class {
                 this.name = model.name || '';
                 this.producer = model.ori_network_platform || model.network_platform || '';
                 this.runtime = model.target_platform ? model.target_platform.join(',') : '';
-                this.graphs = [new rknn.Graph(metadata, type, model.name || '', model, container)];
+                this.modules = [new rknn.Graph(metadata, type, model.name || '', model, container)];
                 break;
             }
             case 'flatbuffers': {
@@ -60,14 +60,14 @@ rknn.Model = class {
                 this.format = `RKNN Lite${version ? ` v${version}` : ''}`;
                 this.runtime = model.runtime;
                 this.name = model.name || '';
-                this.graphs = model.graphs.map((graph) => new rknn.Graph(metadata, type, '', graph, null));
+                this.modules = model.graphs.map((graph) => new rknn.Graph(metadata, type, '', graph, null));
                 this.source = model.source;
                 break;
             }
             case 'openvx': {
                 this.format = 'RKNN OpenVX';
                 this.name = model.name || '';
-                this.graphs = [new rknn.Graph(metadata, type, '', model, container)];
+                this.modules = [new rknn.Graph(metadata, type, '', model, container)];
                 break;
             }
             default: {
@@ -111,10 +111,15 @@ rknn.Graph = class {
                 for (const const_tensor of model.const_tensor) {
                     const name = `const_tensor:${const_tensor.tensor_id}`;
                     const shape = new rknn.TensorShape(const_tensor.size);
-                    const type = new rknn.TensorType(dataType(const_tensor.dtype), shape);
-                    const tensor = new rknn.Tensor(type, const_tensor.offset, null);
-                    const value = new rknn.Value(name, type, tensor);
-                    values.set(name, value);
+                    if (const_tensor.data_type === 0) {
+                        const value = new rknn.Value(name, null, null);
+                        values.set(name, value);
+                    } else {
+                        const type = new rknn.TensorType(dataType(const_tensor.dtype), shape);
+                        const tensor = new rknn.Tensor(type, const_tensor.offset, undefined, null);
+                        const value = new rknn.Value(name, type, tensor);
+                        values.set(name, value);
+                    }
                 }
                 for (const virtual_tensor of model.virtual_tensor) {
                     const name = `${virtual_tensor.node_id}:${virtual_tensor.output_port}`;
@@ -124,9 +129,14 @@ rknn.Graph = class {
                 for (const norm_tensor of model.norm_tensor) {
                     const name = `norm_tensor:${norm_tensor.tensor_id}`;
                     const shape = new rknn.TensorShape(norm_tensor.size);
-                    const type = new rknn.TensorType(dataType(norm_tensor.dtype), shape);
-                    const value = new rknn.Value(name, type, null);
-                    values.set(name, value);
+                    if (norm_tensor.dtype === 0) {
+                        const value = new rknn.Value(name, null, null);
+                        values.set(name, value);
+                    } else {
+                        const type = new rknn.TensorType(dataType(norm_tensor.dtype), shape);
+                        const value = new rknn.Value(name, type, null);
+                        values.set(name, value);
+                    }
                 }
                 const value = (name) => {
                     if (!values.has(name)) {
@@ -173,15 +183,12 @@ rknn.Graph = class {
             }
             case 'flatbuffers': {
                 const graph = obj;
-                const dataTypes = ['unk0', 'int32', '?', 'int8', '?', 'int16', 'float32', 'int64', '?', '?', 'float16', '?', '?', 'unk13', '?', '?', 'bfloat16'];
+                const dataTypes = ['?', 'float32', 'uint8', 'int8', 'uint16', 'int16', 'int32', 'int64', 'string', 'boolean', 'float16', 'float64', 'uint32', 'uint64', 'complex<float32>', 'complex<float64>', 'bfloat16'];
                 const args = graph.tensors.map((tensor) => {
                     const shape = new rknn.TensorShape(Array.from(tensor.shape));
                     const dataType = tensor.data_type < dataTypes.length ? dataTypes[tensor.data_type] : '?';
-                    if (dataType === '?') {
-                        throw new rknn.Error(`Unsupported tensor data type '${tensor.data_type}'.`);
-                    }
                     const type = new rknn.TensorType(dataType, shape);
-                    const initializer = tensor.kind !== 4 && tensor.kind !== 5 ? null : new rknn.Tensor(type, 0, null);
+                    const initializer = tensor.kind !== 4 && tensor.kind !== 5 ? null : new rknn.Tensor(type, 0, tensor.size, null);
                     return new rknn.Value(tensor.name, type, initializer);
                 });
                 const arg = (index) => {
@@ -215,13 +222,13 @@ rknn.Argument = class {
 
 rknn.Value = class {
 
-    constructor(name, type, initializer) {
+    constructor(name, type = null, initializer = null) {
         if (typeof name !== 'string') {
             throw new rknn.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
         }
         this.name = name;
-        this.type = type || null;
-        this.initializer = initializer || null;
+        this.type = type;
+        this.initializer = initializer;
     }
 };
 
@@ -333,7 +340,7 @@ rknn.Node = class {
 
 rknn.Tensor = class {
 
-    constructor(type, offset, weights) {
+    constructor(type, offset, size, weights) {
         this.type = type;
         this.values = null;
         let itemsize = 0;
@@ -343,17 +350,28 @@ rknn.Tensor = class {
             case 'int16': itemsize = 2; break;
             case 'int32': itemsize = 4; break;
             case 'int64': itemsize = 8; break;
+            case 'uint16': itemsize = 2; break;
+            case 'uint32': itemsize = 4; break;
+            case 'uint64': itemsize = 8; break;
             case 'float16': itemsize = 2; break;
+            case 'bfloat16': itemsize = 2; break;
             case 'float32': itemsize = 4; break;
             case 'float64': itemsize = 8; break;
+            case 'boolean': itemsize = 1; break;
             case 'vdata': itemsize = 1; break;
+            case 'string': itemsize = 1; break;
+            case '?': itemsize = 0; break;
             default: throw new rknn.Error(`Unsupported tensor data type '${this.type.dataType}'.`);
         }
         if (weights) {
             const shape = type.shape.dimensions;
-            const size = itemsize * shape.reduce((a, b) => a * b, 1);
-            if (size > 0) {
-                this.values = weights.slice(offset, offset + size);
+            const count = shape.reduce((a, b) => a * b, 1);
+            const length = itemsize * count;
+            if (length > 0) {
+                if (size !== undefined && size !== length) {
+                    throw new rknn.Error(`Tensor size mismatch for '${this.type.dataType}'. Expected '${length}' bytes but got '${size}' bytes.`);
+                }
+                this.values = weights.slice(offset, offset + length);
             }
         }
     }
@@ -424,33 +442,20 @@ rknn.Container = class extends Map {
                     const uint64 = () => {
                         const buffer = stream.read(8);
                         const reader = base.BinaryReader.open(buffer);
-                        return reader.uint64().toNumber();
+                        return reader.uint64();
                     };
                     stream.skip(8);
                     const version = uint64();
-                    const data_size = uint64();
-                    switch (version) {
-                        case 0x0001:
-                        case 0x1001:
-                            break;
-                        case 0x0002:
-                        case 0x1002:
-                        case 0x0003:
-                        case 0x1003:
-                        case 0x0004:
-                        case 0x1004:
-                        case 0x0005:
-                        case 0x0006:
-                            if (data_size > 0) {
-                                stream.skip(40);
-                            }
-                            break;
-                        default:
-                            throw new rknn.Error(`Unsupported RKNN container version '${version}'.`);
+                    if ((version >> 8n) !== 0n && (version >> 8n) !== 0x10n) {
+                        throw new rknn.Error(`Unsupported RKNN container version '${version}'.`);
+                    }
+                    const data_size = uint64().toNumber();
+                    if ((version & 0xffn) > 1n && data_size > 0) {
+                        stream.skip(40);
                     }
                     const signature = rknn.Container.signature(stream, data_size);
                     const data = stream.read(data_size);
-                    const json_size = uint64();
+                    const json_size = uint64().toNumber();
                     const json = stream.read(json_size);
                     this.set('json', json);
                     if (signature) {

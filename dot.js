@@ -41,7 +41,7 @@ dot.Model = class {
 
     constructor(graph) {
         this.format = 'DOT';
-        this.graphs = [new dot.Graph(graph)];
+        this.modules = [new dot.Graph(graph)];
     }
 };
 
@@ -205,7 +205,7 @@ dot.Graph = class {
 
 dot.Argument = class {
 
-    constructor(name, value, type) {
+    constructor(name, value, type = null) {
         this.name = name;
         this.value = value;
         this.type = type;

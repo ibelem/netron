@@ -16,7 +16,7 @@ zip.Archive = class {
         if (stream && stream.length > 2) {
             const buffer = stream.peek(Math.min(512, stream.length));
             if (buffer.length >= 512) {
-                // Reject tar with Zip content
+                // Reject tar with ZIP content
                 const sum = buffer.map((value, index) => (index >= 148 && index < 156) ? 32 : value).reduce((a, b) => a + b, 0);
                 const checksum = parseInt(Array.from(buffer.slice(148, 156)).map((c) => String.fromCharCode(c)).join('').split('\0').shift(), 8);
                 if (!isNaN(checksum) && sum === checksum) {
@@ -29,7 +29,7 @@ zip.Archive = class {
                     return new zlib.Archive(stream);
                 }
             }
-            if ((!format || format === 'gzip') && buffer.length > 18 && buffer[0] === 0x1f && buffer[1] === 0x8b) { // gzip
+            if ((!format || format === 'gzip') && buffer.length >= 18 && buffer[0] === 0x1f && buffer[1] === 0x8b) { // gzip
                 return new gzip.Archive(stream);
             }
             if (!format || format === 'zip') {
@@ -58,7 +58,7 @@ zip.Archive = class {
                     return null;
                 };
                 const read = (signature, size) => {
-                    if ((stream.position - size) > 0) {
+                    if ((stream.position - size) >= 0) {
                         stream.skip(-size);
                         signature = Array.from(signature, (c) => c.charCodeAt(0));
                         const buffer = stream.peek(size);
@@ -86,7 +86,7 @@ zip.Archive = class {
                         reader = read('PK\x06\x06', 56);
                         if (!reader) {
                             stream.seek(location);
-                            throw new zip.Error('Zip64 end of central directory not found.');
+                            throw new zip.Error('Invalid ZIP data. ZIP64 end of central directory not found.');
                         }
                     }
                 } else {
@@ -94,7 +94,7 @@ zip.Archive = class {
                     if (!reader) {
                         stream.seek(location);
                         if (search) {
-                            throw new zip.Error('Zip end of central directory not found.');
+                            throw new zip.Error('Invalid ZIP data. End of central directory not found.');
                         }
                         return null;
                     }
@@ -113,18 +113,18 @@ zip.Archive = class {
                     header.offset = reader.uint64();
                     if (header.offset > Number.MAX_SAFE_INTEGER) {
                         stream.seek(location);
-                        throw new zip.Error('Zip 64-bit central directory offset not supported.');
+                        throw new zip.Error('ZIP 64-bit central directory offset not supported.');
                     }
                     header.offset = header.offset.toNumber();
                 }
                 position -= header.size;
                 if (position < 0 || position > stream.length) {
                     stream.seek(location);
-                    throw new zip.Error('Invalid Zip central directory size.');
+                    throw new zip.Error('Invalid ZIP data. Central directory size is outside expected range.');
                 }
                 if (position < header.offset) {
                     stream.seek(location);
-                    throw new zip.Error('Invalid Zip central directory offset.');
+                    throw new zip.Error('Invalid ZIP data. Central directory offset is outside expected range.');
                 }
                 stream.seek(position);
                 position -= header.offset;
@@ -148,7 +148,7 @@ zip.Archive = class {
             reader.skip(2); // version needed to extract
             const flags = reader.uint16();
             if ((flags & 1) === 1) {
-                throw new zip.Error('Encrypted Zip entries not supported.');
+                throw new zip.Error('Encrypted ZIP entries not supported.');
             }
             header.encoding = flags & 0x800 ? 'utf-8' : 'ascii';
             header.compressionMethod = reader.uint16();
@@ -177,19 +177,19 @@ zip.Archive = class {
                             if (header.size === 0xffffffff) {
                                 header.size = reader.uint64().toNumber();
                                 if (header.size === undefined) {
-                                    throw new zip.Error('Zip 64-bit size not supported.');
+                                    throw new zip.Error('ZIP 64-bit size not supported.');
                                 }
                             }
                             if (header.compressedSize === 0xffffffff) {
                                 header.compressedSize = reader.uint64().toNumber();
                                 if (header.compressedSize === undefined) {
-                                    throw new zip.Error('Zip 64-bit compressed size not supported.');
+                                    throw new zip.Error('ZIP 64-bit compressed size not supported.');
                                 }
                             }
                             if (header.localHeaderOffset === 0xffffffff) {
                                 header.localHeaderOffset = reader.uint64().toNumber();
                                 if (header.localHeaderOffset === undefined) {
-                                    throw new zip.Error('Zip 64-bit offset not supported.');
+                                    throw new zip.Error('ZIP 64-bit offset not supported.');
                                 }
                             }
                             if (header.disk === 0xffff) {
@@ -225,34 +225,31 @@ zip.Entry = class {
         offset = offset || 0;
         this._name = header.name;
         stream.seek(offset + header.localHeaderOffset);
-        const signature = Array.from('PK\x03\x04', (c) => c.charCodeAt(0));
-        if (stream.position + 4 > stream.length || !stream.read(4).every((value, index) => value === signature[index])) {
-            this._stream = new zip.ErrorStream(header.size, 'Invalid Zip local file header signature.');
-        } else {
-            const reader = new zip.BinaryReader(stream.read(26));
-            reader.skip(22);
-            header.nameLength = reader.uint16();
-            const extraDataLength = reader.uint16();
-            header.nameBuffer = stream.read(header.nameLength);
-            stream.skip(extraDataLength);
-            const decoder = new TextDecoder(header.encoding);
-            this._name = decoder.decode(header.nameBuffer);
-            this._stream = stream.stream(header.compressedSize);
-            switch (header.compressionMethod) {
-                case 0: { // stored
-                    if (header.size !== header.compressedSize) {
-                        this._stream = new zip.ErrorStream(header.size, 'Invalid compression size.');
-                    }
-                    break;
+        if (stream.position + 4 > stream.length || String.fromCharCode(...stream.read(4)) !== 'PK\x03\x04') {
+            this._stream = new zip.ErrorStream(header.size, 'Invalid ZIP data. Local file header signature not found.');
+            return;
+        }
+        const reader = new zip.BinaryReader(stream.read(26));
+        reader.skip(22);
+        header.nameLength = reader.uint16();
+        const extraDataLength = reader.uint16();
+        header.nameBuffer = stream.read(header.nameLength);
+        stream.skip(extraDataLength);
+        const decoder = new TextDecoder(header.encoding);
+        this._name = decoder.decode(header.nameBuffer);
+        this._stream = stream.stream(header.compressedSize);
+        switch (header.compressionMethod) {
+            case 0: // stored
+                if (header.size !== header.compressedSize) {
+                    this._stream = new zip.ErrorStream(header.size, 'Invalid ZIP entry compression size.');
                 }
-                case 8: { // deflate
-                    this._stream = new zip.InflaterStream(this._stream, header.size);
-                    break;
-                }
-                default: {
-                    this._stream = new new zip.ErrorStream(header.size, 'Invalid compression method.');
-                }
-            }
+                break;
+            case 8: // deflate
+                this._stream = new zip.InflaterStream(this._stream, header.size);
+                break;
+            default:
+                this._stream = new zip.ErrorStream(header.size, `Invalid ZIP entry compression method '${header.compressionMethod}'.`);
+                break;
         }
     }
 
@@ -267,13 +264,13 @@ zip.Entry = class {
 
 zip.Inflater = class {
 
-    inflateRaw(data, length) {
+    inflateRaw(data, length, size) {
         let buffer = null;
-        if (zip.zlib) {
+        if (zip.zlib && size === undefined && (length === undefined || length > 0x4000)) {
             buffer = zip.zlib.inflateRawSync(data);
         } else {
             const reader = new zip.BitReader(data);
-            const writer = length === undefined ? new zip.BlockWriter() : new zip.BufferWriter(length);
+            const writer = length === undefined || size !== undefined ? new zip.BlockWriter() : new zip.BufferWriter(length);
             if (!zip.Inflater._staticLengthTree) {
                 zip.Inflater._codeLengths = new Uint8Array(19);
                 zip.Inflater._codeOrder = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
@@ -307,13 +304,16 @@ zip.Inflater = class {
                         throw new zip.Error('Unsupported block type.');
                     }
                 }
+                if (size !== undefined && writer.length >= size) {
+                    break;
+                }
             } while ((type & 1) === 0);
-            if (length !== undefined && length !== writer.length) {
+            if (size === undefined && length !== undefined && length !== writer.length) {
                 throw new zip.Error('Invalid uncompressed size.');
             }
             buffer = writer.toBuffer();
         }
-        if (length !== undefined && length !== buffer.length) {
+        if (size === undefined && length !== undefined && length !== buffer.length) {
             throw new zip.Error('Invalid uncompressed size.');
         }
         return buffer;
@@ -608,17 +608,13 @@ zip.InflaterStream = class {
 
     seek(position) {
         if (position !== this._position) {
-            if (this._buffer === undefined) {
-                this._inflate();
-            }
+            this._inflate(position, 0);
             this._position = position >= 0 ? position : this._length + position;
         }
     }
 
     skip(offset) {
-        if (this._buffer === undefined) {
-            this._inflate();
-        }
+        this._inflate(this.position, offset);
         this._position += offset;
     }
 
@@ -649,15 +645,18 @@ zip.InflaterStream = class {
         return new zip.BinaryReader(buffer);
     }
 
-    _inflate() {
-        if (this._buffer === undefined) {
+    _inflate(position, length) {
+        const size = Number.isInteger(position) && Number.isInteger(length) ? position + length : undefined;
+        if (this._buffer === undefined || (size !== undefined && this._buffer.length < size)) {
             const position = this._stream.position;
             this._stream.seek(this._offset);
             const buffer = this._stream.peek();
-            this._buffer = new zip.Inflater().inflateRaw(buffer, this._length);
-            this._length = this._buffer.length;
+            this._buffer = new zip.Inflater().inflateRaw(buffer, this._length, size);
             this._stream.seek(position);
-            delete this._stream;
+            if ((size === undefined || this._buffer.length > size) && (this._length === undefined)) {
+                this._length = this._buffer.length;
+                delete this._stream;
+            }
         }
     }
 };
@@ -680,10 +679,16 @@ zip.ErrorStream = class {
 
     seek(position) {
         this._position = position >= 0 ? position : this._length + position;
+        if (this._position > this._length || this._position < 0) {
+            throw new zip.Error('Invalid ZIP data. Unexpected end of file.');
+        }
     }
 
     skip(offset) {
         this._position += offset;
+        if (this._position > this._length || this._position < 0) {
+            throw new zip.Error('Invalid ZIP data. Unexpected end of file.');
+        }
     }
 
     peek(/* length */) {
@@ -800,7 +805,7 @@ zip.Error = class extends Error {
 
     constructor(message) {
         super(message);
-        this.name = 'Zip Error';
+        this.name = 'ZIP Error';
     }
 };
 
@@ -809,11 +814,11 @@ gzip.Archive = class {
     constructor(stream) {
         const position = stream.position;
         if (stream.position + 10 > stream.length) {
-            throw new gzip.Error('Invalid Gzip header size.');
+            throw new gzip.Error('Invalid gzip header size.');
         }
         const header = stream.peek(10);
         if (header[0] !== 0x1f || header[1] !== 0x8b) {
-            throw new gzip.Error('Invalid Gzip signature.');
+            throw new gzip.Error('Invalid gzip signature.');
         }
         if (header[2] !== 8) {
             stream.seek(position);
@@ -831,7 +836,7 @@ gzip.Archive = class {
             }
             return content;
         };
-        const fhcrc = header[3] & 1;
+        const fhcrc = header[3] & 2;
         const fextra = header[3] & 4;
         const fname = header[3] & 8;
         const fcomment = header[3] & 16;
@@ -927,7 +932,7 @@ gzip.InflaterStream = class {
 gzip.Error = class extends Error {
     constructor(message) {
         super(message);
-        this.name = 'Gzip Error';
+        this.name = 'gzip Error';
     }
 };
 

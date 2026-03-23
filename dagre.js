@@ -634,7 +634,13 @@ dagre.layout = (nodes, edges, layout, state) => {
             }
         };
         const depths = treeDepths(g);
-        const height = Math.max(...Object.values(depths)) - 1; // Note: depths is an Object not an array
+        let height = 0;
+        for (const value of Object.values(depths)) {
+            if (value > height) {
+                height = value;
+            }
+        }
+        height -= 1;
         const nodeSep = 2 * height + 1;
         state.nestingRoot = root;
         // Multiply minlen by nodeSep to align nodes on non-border ranks.
@@ -920,7 +926,7 @@ dagre.layout = (nodes, edges, layout, state) => {
                 }
                 const sourceSet = Array.from(mappedEntries.values()).filter((entry) => !entry.indegree);
                 const results = [];
-                function handleIn(vEntry) {
+                const handleIn = function(vEntry) {
                     return function(uEntry) {
                         if (uEntry.merged) {
                             return;
@@ -943,15 +949,15 @@ dagre.layout = (nodes, edges, layout, state) => {
                             uEntry.merged = true;
                         }
                     };
-                }
-                function handleOut(vEntry) {
+                };
+                const handleOut = (vEntry) => {
                     return function(wEntry) {
                         wEntry.in.push(vEntry);
                         if (--wEntry.indegree === 0) {
                             sourceSet.push(wEntry);
                         }
                     };
-                }
+                };
                 while (sourceSet.length) {
                     const entry = sourceSet.pop();
                     results.push(entry);

@@ -12,11 +12,11 @@ hailo.ModelFactory = class {
         return null;
     }
 
-    filter(context, type) {
-        if (context.type === 'hailo.metadata' && (type === 'hailo.configuration' || type === 'npz' || type === 'onnx.proto')) {
+    filter(context, match) {
+        if (context.type === 'hailo.metadata' && (match.type === 'hailo.configuration' || match.type === 'npz' || match.type === 'onnx.proto')) {
             return false;
         }
-        if (context.type === 'hailo.configuration' && type === 'npz') {
+        if (context.type === 'hailo.configuration' && match.type === 'npz') {
             return false;
         }
         return true;
@@ -34,7 +34,7 @@ hailo.Model = class {
 
     constructor(metadata, container) {
         const configuration = container.configuration;
-        this.graphs = [new hailo.Graph(metadata, configuration, container.weights)];
+        this.modules = [new hailo.Graph(metadata, configuration, container.weights)];
         this.name = configuration && configuration.name || "";
         this.format = container.format + (container.metadata && container.metadata.sdk_version ? ` v${container.metadata.sdk_version}` : '');
         this.metadata = [];
@@ -108,11 +108,11 @@ hailo.Graph = class {
 
 hailo.Argument = class {
 
-    constructor(name, value, type, visible) {
+    constructor(name, value, type = null, visible = true) {
         this.name = name;
         this.value = value;
-        this.type = type || null;
-        this.visible = visible !== false;
+        this.type = type;
+        this.visible = visible;
     }
 };
 

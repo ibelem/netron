@@ -1,411 +1,5 @@
 [
   {
-    "name": "__torch__.torch.classes.rnn.CellParamsBase",
-    "inputs": [
-      { "name": "type", "type": "string" },
-      { "name": "tensors", "type": "Tensor[]" },
-      { "name": "doubles", "type": "float64[]" },
-      { "name": "longs", "type": "int64[]" },
-      { "name": "packed_params", "type": "__torch__.torch.classes.quantized.LinearPackedParamsBase[]" }
-    ]
-  },
-  {
-    "name": "__torch__.torch.classes.xnnpack.Conv2dOpContext",
-    "inputs": [
-      { "name": "weight", "type": "Tensor" },
-      { "name": "bias", "type": "Tensor", "optional": true },
-      { "name": "stride", "type": "int64[]" },
-      { "name": "padding", "type": "int64[]" },
-      { "name": "dilation", "type": "int64[]" },
-      { "name": "groups", "type": "int64" },
-      { "name": "output_min", "type": "int64[]", "optional": true },
-      { "name": "output_max", "type": "int64[]", "optional": true }
-    ]
-  },
-  {
-    "name": "__torch__.torch.classes.xnnpack.LinearOpContext",
-    "inputs": [
-      { "name": "weight", "type": "Tensor" },
-      { "name": "bias", "type": "Tensor", "optional": true },
-      { "name": "output_min", "type": "int64[]", "optional": true },
-      { "name": "output_max", "type": "int64[]", "optional": true }
-    ]
-  },
-  {
-    "name": "torch.nn.modules.activation.ELU",
-    "category": "Activation"
-  },
-  {
-    "name": "torch.nn.modules.activation.GELU",
-    "category": "Activation"
-  },
-  {
-    "name": "torch.nn.modules.activation.GLU",
-    "category": "Activation"
-  },
-  {
-    "name": "torch.nn.modules.activation.Hardsigmoid",
-    "category": "Activation"
-  },
-  {
-    "name": "torch.nn.modules.activation.Hardswish",
-    "category": "Activation"
-  },
-  {
-    "name": "torch.nn.modules.activation.Hardtanh",
-    "category": "Activation"
-  },
-  {
-    "name": "torch.nn.modules.activation.LeakyReLU",
-    "category": "Activation"
-  },
-  {
-    "name": "torch.nn.modules.activation.LogSoftmax",
-    "category": "Activation"
-  },
-  {
-    "name": "torch.nn.modules.activation.PReLU",
-    "category": "Activation"
-  },
-  {
-    "name": "torch.nn.modules.activation.ReLU",
-    "category": "Activation",
-    "inputs": [
-      { "name": "inplace", "default": false, "visible": false },
-      { "name": "threshold", "default": 0 },
-      { "name": "value", "default": 0 }
-    ]
-  },
-  {
-    "name": "torch.nn.modules.activation.ReLU6",
-    "category": "Activation"
-  },
-  {
-    "name": "torch.nn.modules.activation.SiLU",
-    "category": "Activation"
-  },
-  {
-    "name": "torch.nn.modules.activation.Sigmoid",
-    "category": "Activation"
-  },
-  {
-    "name": "torch.nn.modules.activation.Softmax",
-    "category": "Activation"
-  },
-  {
-    "name": "torch.nn.modules.activation.Softmax2d",
-    "category": "Activation"
-  },
-  {
-    "name": "torch.nn.modules.activation.Softplus",
-    "category": "Activation"
-  },
-  {
-    "name": "torch.nn.modules.activation.Tanh",
-    "category": "Activation"
-  },
-  {
-    "name": "torch.nn.modules.batchnorm.BatchNorm1d",
-    "category": "Normalization"
-  },
-  {
-    "name": "torch.nn.modules.batchnorm.BatchNorm2d",
-    "category": "Normalization",
-    "inputs": [
-      { "name": "input" },
-      { "name": "weight" },
-      { "name": "bias" },
-      { "name": "running_mean" },
-      { "name": "running_var" },
-      { "name": "num_batches_tracked", "visible": false },
-      { "name": "eps", "default": 1e-05 },
-      { "name": "momentum", "default": 0.1 },
-      { "name": "affine", "default": true },
-      { "name": "track_running_stats", "default": true }
-    ]
-  },
-  {
-    "name": "torch.nn.modules.conv.Conv1d",
-    "category": "Layer",
-    "inputs": [
-      { "name": "input" },
-      { "name": "weight" },
-      { "name": "bias" },
-      { "name": "output_padding", "visible": false },
-      { "name": "in_channels", "visible": false },
-      { "name": "out_channels", "visible": false },
-      { "name": "groups", "default": 1 },
-      { "name": "transposed", "default": false },
-      { "name": "padding", "default": [   0 ] },
-      { "name": "dilation", "default": [   1 ] },
-      { "name": "stride", "default": [   1 ] }
-    ]
-  },
-  {
-    "name": "torch.nn.modules.conv.Conv2d",
-    "category": "Layer",
-    "inputs": [
-      { "name": "input" },
-      { "name": "weight" },
-      { "name": "bias" },
-      { "name": "output_padding", "visible": false },
-      { "name": "in_channels", "visible": false },
-      { "name": "out_channels", "visible": false },
-      { "name": "groups", "default": 1 },
-      { "name": "transposed", "default": false },
-      { "name": "padding", "default": [   0,   0 ] },
-      { "name": "dilation", "default": [   1,   1 ] },
-      { "name": "stride", "default": [   1,   1 ] }
-    ]
-  },
-  {
-    "name": "torch.nn.modules.conv.Conv3d",
-    "category": "Layer"
-  },
-  {
-    "name": "torch.nn.modules.conv.ConvTranspose1d",
-    "category": "Layer",
-    "inputs": [
-      { "name": "input" },
-      { "name": "weight" },
-      { "name": "bias" },
-      { "name": "output_padding", "visible": false },
-      { "name": "in_channels", "visible": false },
-      { "name": "out_channels", "visible": false },
-      { "name": "groups", "default": 1 },
-      { "name": "transposed", "default": true },
-      { "name": "padding", "default": [   0 ] },
-      { "name": "dilation", "default": [   1 ] },
-      { "name": "stride", "default": [   1 ] }
-    ]
-  },
-  {
-    "name": "torch.nn.modules.conv.ConvTranspose2d",
-    "category": "Layer",
-    "inputs": [
-      { "name": "input" },
-      { "name": "weight" },
-      { "name": "bias" },
-      { "name": "output_padding", "visible": false },
-      { "name": "in_channels", "visible": false },
-      { "name": "out_channels", "visible": false },
-      { "name": "groups", "default": 1 },
-      { "name": "transposed", "default": true },
-      { "name": "padding", "default": [   0,   0 ] },
-      { "name": "dilation", "default": [   1,   1 ] },
-      { "name": "stride", "default": [   1,   1 ] }
-    ]
-  },
-  {
-    "name": "torch.nn.modules.conv.ConvTranspose3d",
-    "category": "Layer"
-  },
-  {
-    "name": "torch.nn.modules.dropout.Dropout",
-    "category": "Dropout",
-    "inputs": [
-      { "name": "inplace", "default": false, "visible": false },
-      { "name": "p", "default": 0.5 }
-    ]
-  },
-  {
-    "name": "torch.nn.modules.dropout.Dropout2d",
-    "category": "Dropout",
-    "inputs": [
-      { "name": "inplace", "default": false, "visible": false },
-      { "name": "p", "default": 0.5 }
-    ]
-  },
-  {
-    "name": "torch.nn.modules.instancenorm.InstanceNorm1d"
-  },
-  {
-    "name": "torch.nn.modules.instancenorm.InstanceNorm2d"
-  },
-  {
-    "name": "torch.nn.modules.instancenorm.InstanceNorm3d"
-  },
-  {
-    "name": "torch.nn.modules.linear.Linear",
-    "category": "Layer"
-  },
-  {
-    "name": "torch.nn.modules.normalization.CrossMapLRN2d",
-    "category": "Normalization",
-    "inputs": [
-      { "name": "alpha", "default": 0.0001 },
-      { "name": "beta", "default": 0.75 },
-      { "name": "k", "default": 1 }
-    ]
-  },
-  {
-    "name": "torch.nn.modules.normalization.GroupNorm",
-    "category": "Normalization"
-  },
-  {
-    "name": "torch.nn.modules.normalization.LayerNorm",
-    "category": "Normalization"
-  },
-  {
-    "name": "torch.nn.modules.padding.ConstantPad1d",
-    "category": "Tensor"
-  },
-  {
-    "name": "torch.nn.modules.padding.ConstantPad2d",
-    "category": "Tensor"
-  },
-  {
-    "name": "torch.nn.modules.padding.ConstantPad3d",
-    "category": "Tensor"
-  },
-  {
-    "name": "torch.nn.modules.padding.ReflectionPad1d",
-    "category": "Tensor"
-  },
-  {
-    "name": "torch.nn.modules.padding.ReflectionPad2d",
-    "category": "Tensor"
-  },
-  {
-    "name": "torch.nn.modules.padding.ReplicationPad1d",
-    "category": "Tensor"
-  },
-  {
-    "name": "torch.nn.modules.padding.ReplicationPad2d",
-    "category": "Tensor"
-  },
-  {
-    "name": "torch.nn.modules.padding.ReplicationPad3d",
-    "category": "Tensor"
-  },
-  {
-    "name": "torch.nn.modules.padding.ZeroPad2d",
-    "category": "Tensor"
-  },
-  {
-    "name": "torch.nn.modules.pixelshuffle.PixelShuffle"
-  },
-  {
-    "name": "torch.nn.modules.pooling.AdaptiveAvgPool1d",
-    "category": "Pool"
-  },
-  {
-    "name": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
-    "category": "Pool"
-  },
-  {
-    "name": "torch.nn.modules.pooling.AdaptiveAvgPool3d",
-    "category": "Pool"
-  },
-  {
-    "name": "torch.nn.modules.pooling.AdaptiveMaxPool1d",
-    "category": "Pool"
-  },
-  {
-    "name": "torch.nn.modules.pooling.AdaptiveMaxPool2d",
-    "category": "Pool"
-  },
-  {
-    "name": "torch.nn.modules.pooling.AdaptiveMaxPool3d",
-    "category": "Pool"
-  },
-  {
-    "name": "torch.nn.modules.pooling.AvgPool2d",
-    "category": "Pool",
-    "inputs": [
-      { "name": "padding", "default": 0 },
-      { "name": "count_include_pad", "default": true },
-      { "name": "ceil_mode", "visible": false }
-    ]
-  },
-  {
-    "name": "torch.nn.modules.pooling.AvgPool3d",
-    "category": "Pool"
-  },
-  {
-    "name": "torch.nn.modules.pooling.MaxPool1d",
-    "category": "Pool"
-  },
-  {
-    "name": "torch.nn.modules.pooling.MaxPool2d",
-    "category": "Pool",
-    "inputs": [
-      { "name": "input" },
-      { "name": "padding", "default": 0 },
-      { "name": "dilation", "default": 1 },
-      { "name": "return_indices", "default": false },
-      { "name": "ceil_mode", "visible": false }
-    ]
-  },
-  {
-    "name": "torch.nn.modules.pooling.MaxPool3d",
-    "category": "Pool"
-  },
-  {
-    "name": "torch.nn.modules.pooling.MaxUnpool1d",
-    "category": "Pool"
-  },
-  {
-    "name": "torch.nn.modules.pooling.MaxUnpool2d",
-    "category": "Pool"
-  },
-  {
-    "name": "torch.nn.modules.pooling.MaxUnpool3d",
-    "category": "Pool"
-  },
-  {
-    "name": "torch.nn.modules.rnn.GRU",
-    "category": "Layer"
-  },
-  {
-    "name": "torch.nn.modules.rnn.GRUCell",
-    "category": "Layer"
-  },
-  {
-    "name": "torch.nn.modules.rnn.LSTM",
-    "category": "Layer",
-    "inputs": [
-      { "name": "input" },
-      { "name": "weight_ih_l0", "visible": false },
-      { "name": "weight_hh_l0", "visible": false },
-      { "name": "bias_ih_l0", "visible": false },
-      { "name": "bias_hh_l0", "visible": false },
-      { "name": "weight_ih_l1", "visible": false },
-      { "name": "weight_hh_l1", "visible": false },
-      { "name": "bias_ih_l1", "visible": false },
-      { "name": "bias_hh_l1", "visible": false },
-      { "name": "dropout", "default": 0 },
-      { "name": "dropout_state", "default": {} },
-      { "name": "num_layers", "default": 1 },
-      { "name": "batch_first", "visible": false },
-      { "name": "bidirectional", "visible": false },
-      { "name": "bias", "visible": false }
-    ]
-  },
-  {
-    "name": "torch.nn.modules.rnn.LSTMCell",
-    "category": "Layer"
-  },
-  {
-    "name": "torch.nn.modules.rnn.RNN",
-    "category": "Layer"
-  },
-  {
-    "name": "torch.nn.modules.sparse.Embedding",
-    "category": "Transform",
-    "inputs": [
-      { "name": "norm_type", "default": 2 },
-      { "name": "scale_grad_by_freq", "default": false },
-      { "name": "sparse", "default": false },
-      { "name": "max_norm", "default": null },
-      { "name": "padding_idx", "default": null }
-    ]
-  },
-  {
-    "name": "torch.nn.modules.upsampling.Upsample",
-    "category": "Data"
-  },
-  {
     "name": "_caffe2::BBoxTransform(Tensor rois, Tensor deltas, Tensor im_info, float[] weights, bool apply_scale, bool rotated, bool angle_bound_on, int angle_bound_lo, int angle_bound_hi, float clip_angle_thresh, bool legacy_plus_one, Tensor[]? _caffe2_preallocated_outputs=None) -> (Tensor output_0, Tensor output_1)"
   },
   {
@@ -500,6 +94,27 @@
   },
   {
     "name": "aten::ComplexImplicit(Tensor a) -> complex"
+  },
+  {
+    "name": "aten::Delete.t(t[](a!) self, int idx) -> ()"
+  },
+  {
+    "name": "aten::Delete.Dict_str(Dict(str, t)(a!) self, str key) -> ()"
+  },
+  {
+    "name": "aten::Delete.Dict_int(Dict(int, t)(a!) self, int key) -> ()"
+  },
+  {
+    "name": "aten::Delete.Dict_bool(Dict(bool, t)(a!) self, bool key) -> ()"
+  },
+  {
+    "name": "aten::Delete.Dict_float(Dict(float, t)(a!) self, float key) -> ()"
+  },
+  {
+    "name": "aten::Delete.Dict_complex(Dict(complex, t)(a!) self, complex key) -> ()"
+  },
+  {
+    "name": "aten::Delete.Dict_Tensor(Dict(Tensor, t)(a!) self, Tensor key) -> ()"
   },
   {
     "name": "aten::Float.Tensor(Tensor a) -> float"
@@ -774,6 +389,12 @@
     "name": "aten::_aminmax.dim_out(Tensor self, int dim, bool keepdim=False, *, Tensor(a!) out0, Tensor(b!) out1) -> (Tensor(a!), Tensor(b!))"
   },
   {
+    "name": "aten::_assert_scalar(Scalar self, str assert_msg) -> ()"
+  },
+  {
+    "name": "aten::_assert_tensor_metadata(Tensor a, SymInt[]? size=None, SymInt[]? stride=None, ScalarType? dtype=None, *, Device? device=None, Layout? layout=None) -> ()"
+  },
+  {
     "name": "aten::_autocast_to_full_precision(Tensor(a) self, bool cuda_enabled, bool cpu_enabled) -> Tensor(a)"
   },
   {
@@ -822,6 +443,9 @@
     "name": "aten::_coalesce(Tensor self) -> Tensor"
   },
   {
+    "name": "aten::_coalesced_(Tensor(a!) self, bool coalesced) -> Tensor(a!)"
+  },
+  {
     "name": "aten::_conj(Tensor(a) self) -> Tensor(a)"
   },
   {
@@ -854,6 +478,18 @@
     "name": "aten::_dim_arange(Tensor like, int dim) -> Tensor"
   },
   {
+    "name": "aten::_embedding_bag(Tensor weight, Tensor indices, Tensor offsets, bool scale_grad_by_freq=False, int mode=0, bool sparse=False, Tensor? per_sample_weights=None, bool include_last_offset=False, int padding_idx=-1) -> (Tensor, Tensor, Tensor, Tensor)"
+  },
+  {
+    "name": "aten::_embedding_bag.out(Tensor weight, Tensor indices, Tensor offsets, bool scale_grad_by_freq=False, int mode=0, bool sparse=False, Tensor? per_sample_weights=None, bool include_last_offset=False, int padding_idx=-1, *, Tensor(a!) out0, Tensor(b!) out1, Tensor(c!) out2, Tensor(d!) out3) -> (Tensor(a!), Tensor(b!), Tensor(c!), Tensor(d!))"
+  },
+  {
+    "name": "aten::_fake_quantize_learnable_per_channel_affine(Tensor self, Tensor scale, Tensor zero_point, int axis, int quant_min, int quant_max, float grad_factor=1.) -> Tensor"
+  },
+  {
+    "name": "aten::_fake_quantize_learnable_per_channel_affine.out(Tensor self, Tensor scale, Tensor zero_point, int axis, int quant_min, int quant_max, float grad_factor=1., *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
     "name": "aten::_fake_quantize_learnable_per_tensor_affine(Tensor self, Tensor scale, Tensor zero_point, int quant_min, int quant_max, float grad_factor=1.) -> Tensor",
     "category": "Quantization"
   },
@@ -866,16 +502,49 @@
     "category": "Quantization"
   },
   {
+    "name": "aten::_fft_r2c(Tensor self, int[] dim, int normalization, bool onesided) -> Tensor"
+  },
+  {
+    "name": "aten::_fft_r2c.out(Tensor self, int[] dim, int normalization, bool onesided, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::_get_cpu_capability() -> str"
+  },
+  {
+    "name": "aten::_has_compatible_shallow_copy_type(Tensor self, Tensor from) -> bool"
+  },
+  {
     "name": "aten::_indices(Tensor(a) self) -> Tensor(a)"
   },
   {
+    "name": "aten::_infer_size(int[] a, int[] b) -> int[]"
+  },
+  {
     "name": "aten::_local_scalar_dense(Tensor self) -> Scalar"
+  },
+  {
+    "name": "aten::_log_softmax(Tensor self, int dim, bool half_to_float) -> Tensor"
+  },
+  {
+    "name": "aten::_log_softmax.out(Tensor self, int dim, bool half_to_float, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "aten::_make_per_tensor_quantized_tensor(Tensor self, float scale, int zero_point) -> Tensor"
   },
   {
     "name": "aten::_make_per_tensor_quantized_tensor.out(Tensor self, float scale, int zero_point, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::_native_batch_norm_legit(Tensor input, Tensor? weight, Tensor? bias, Tensor(a!) running_mean, Tensor(b!) running_var, bool training, float momentum, float eps) -> (Tensor, Tensor, Tensor)"
+  },
+  {
+    "name": "aten::_native_batch_norm_legit.no_stats(Tensor input, Tensor? weight, Tensor? bias, bool training, float momentum, float eps) -> (Tensor, Tensor, Tensor)"
+  },
+  {
+    "name": "aten::_native_batch_norm_legit.out(Tensor input, Tensor? weight, Tensor? bias, Tensor(a!) running_mean, Tensor(b!) running_var, bool training, float momentum, float eps, *, Tensor(d!) out, Tensor(e!) save_mean, Tensor(f!) save_invstd) -> (Tensor(d!), Tensor(e!), Tensor(f!))"
+  },
+  {
+    "name": "aten::_native_batch_norm_legit.no_stats_out(Tensor input, Tensor? weight, Tensor? bias, bool training, float momentum, float eps, *, Tensor(a!) out, Tensor(b!) save_mean, Tensor(c!) save_invstd) -> (Tensor(a!), Tensor(b!), Tensor(c!))"
   },
   {
     "name": "aten::_native_batch_norm_legit_functional(Tensor input, Tensor? weight, Tensor? bias, Tensor running_mean, Tensor running_var, bool training, float momentum, float eps) -> (Tensor, Tensor, Tensor, Tensor running_mean_out, Tensor running_var_out)",
@@ -918,7 +587,17 @@
     "name": "aten::_prelu_kernel(Tensor self, Tensor weight) -> Tensor"
   },
   {
+    "name": "aten::_safe_softmax(Tensor self, int dim, ScalarType? dtype=None) -> Tensor",
+    "category": "Activation"
+  },
+  {
     "name": "aten::_scaled_dot_product_efficient_attention(Tensor query, Tensor key, Tensor value, Tensor? attn_bias, bool compute_log_sumexp, float dropout_p=0., bool is_causal=False, *, float? scale=None) -> (Tensor output, Tensor log_sumexp, Tensor philox_seed, Tensor philox_offset)"
+  },
+  {
+    "name": "aten::_scaled_dot_product_flash_attention(Tensor query, Tensor key, Tensor value, float dropout_p=0., bool is_causal=False, bool return_debug_mask=False, *, float? scale=None) -> (Tensor output, Tensor logsumexp, Tensor cum_seq_q, Tensor cum_seq_k, SymInt max_q, SymInt max_k, Tensor rng_state, Tensor unused, Tensor debug_attn_mask)"
+  },
+  {
+    "name": "aten::_scaled_dot_product_flash_attention.quantized(Tensor query, Tensor key, Tensor value, Tensor? q_descale, Tensor? k_descale, Tensor? v_descale, float dropout_p=0., bool is_causal=False, bool return_debug_mask=False, *, float? scale=None) -> (Tensor output, Tensor logsumexp, Tensor cum_seq_q, Tensor cum_seq_k, SymInt max_q, SymInt max_k, Tensor rng_state, Tensor unused, Tensor debug_attn_mask)"
   },
   {
     "name": "aten::_scaled_dot_product_flash_attention_for_cpu(Tensor query, Tensor key, Tensor value, float dropout_p=0., bool is_causal=False, *, Tensor? attn_mask=None, float? scale=None) -> (Tensor output, Tensor logsumexp)"
@@ -959,6 +638,12 @@
     "category": "Tensor"
   },
   {
+    "name": "aten::_sparse_mm(Tensor sparse, Tensor dense) -> Tensor"
+  },
+  {
+    "name": "aten::_sparse_mm.reduce(Tensor sparse, Tensor dense, str reduce) -> Tensor"
+  },
+  {
     "name": "aten::_test_serialization_subcmul(Tensor self, Tensor other, Scalar alpha=1) -> Tensor"
   },
   {
@@ -986,10 +671,22 @@
     "name": "aten::_transformer_encoder_layer_fwd.out(Tensor src, int embed_dim, int num_heads, Tensor qkv_weight, Tensor qkv_bias, Tensor proj_weight, Tensor proj_bias, bool use_gelu, bool norm_first, float eps, Tensor norm_weight_1, Tensor norm_bias_1, Tensor norm_weight_2, Tensor norm_bias_2, Tensor ffn_weight_1, Tensor ffn_bias_1, Tensor ffn_weight_2, Tensor ffn_bias_2, Tensor? mask=None, int? mask_type=None, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
+    "name": "aten::_unique(Tensor self, bool sorted=True, bool return_inverse=False) -> (Tensor, Tensor)"
+  },
+  {
+    "name": "aten::_unique.out(Tensor self, bool sorted=True, bool return_inverse=False, *, Tensor(a!) out0, Tensor(b!) out1) -> (Tensor(a!), Tensor(b!))"
+  },
+  {
     "name": "aten::_unique2(Tensor self, bool sorted=True, bool return_inverse=False, bool return_counts=False) -> (Tensor, Tensor, Tensor)"
   },
   {
     "name": "aten::_unique2.out(Tensor self, bool sorted=True, bool return_inverse=False, bool return_counts=False, *, Tensor(a!) out0, Tensor(b!) out1, Tensor(c!) out2) -> (Tensor(a!), Tensor(b!), Tensor(c!))"
+  },
+  {
+    "name": "aten::_unsafe_index.Tensor(Tensor self, Tensor?[] indices) -> Tensor"
+  },
+  {
+    "name": "aten::_unsafe_index.Tensor_hacked_twin(Tensor self, Tensor[] indices) -> Tensor"
   },
   {
     "name": "aten::_unsafe_view(Tensor self, SymInt[] size) -> Tensor"
@@ -1212,6 +909,12 @@
     "name": "aten::add_.t(t[](a!) self, t[] b) -> t[]"
   },
   {
+    "name": "aten::addbmm(Tensor self, Tensor batch1, Tensor batch2, *, Scalar beta=1, Scalar alpha=1) -> Tensor"
+  },
+  {
+    "name": "aten::addbmm.out(Tensor self, Tensor batch1, Tensor batch2, *, Scalar beta=1, Scalar alpha=1, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
     "name": "aten::addcdiv(Tensor self, Tensor tensor1, Tensor tensor2, *, Scalar value=1) -> Tensor"
   },
   {
@@ -1408,6 +1111,12 @@
   },
   {
     "name": "aten::arctan.out(Tensor self, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::arctan2(Tensor self, Tensor other) -> Tensor"
+  },
+  {
+    "name": "aten::arctan2.out(Tensor self, Tensor other, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "aten::arctan_(Tensor(a!) self) -> Tensor(a!)"
@@ -1666,10 +1375,10 @@
     "name": "aten::binary_cross_entropy_with_logits.out(Tensor self, Tensor target, Tensor? weight=None, Tensor? pos_weight=None, int reduction=1, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
-    "name": "aten::bincount(Tensor self, Tensor? weights=None, int minlength=0) -> Tensor"
+    "name": "aten::bincount(Tensor self, Tensor? weights=None, SymInt minlength=0) -> Tensor"
   },
   {
-    "name": "aten::bincount.out(Tensor self, Tensor? weights=None, int minlength=0, *, Tensor(a!) out) -> Tensor(a!)"
+    "name": "aten::bincount.out(Tensor self, Tensor? weights=None, SymInt minlength=0, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "aten::binomial(Tensor count, Tensor prob, Generator? generator=None) -> Tensor"
@@ -1900,6 +1609,12 @@
   },
   {
     "name": "aten::channel_shuffle.out(Tensor self, SymInt groups, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::cholesky_solve(Tensor self, Tensor input2, bool upper=False) -> Tensor"
+  },
+  {
+    "name": "aten::cholesky_solve.out(Tensor self, Tensor input2, bool upper=False, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "aten::chr(int i) -> str"
@@ -2264,6 +1979,12 @@
     "name": "aten::cuda(Tensor(a) self) -> Tensor(a|b)"
   },
   {
+    "name": "aten::cudnn_batch_norm(Tensor input, Tensor weight, Tensor? bias, Tensor? running_mean, Tensor? running_var, bool training, float exponential_average_factor, float epsilon) -> (Tensor, Tensor, Tensor, Tensor)"
+  },
+  {
+    "name": "aten::cudnn_batch_norm.out(Tensor input, Tensor weight, Tensor? bias, Tensor? running_mean, Tensor? running_var, bool training, float exponential_average_factor, float epsilon, *, Tensor(a!) out0, Tensor(b!) out1, Tensor(c!) out2, Tensor(d!) out3) -> (Tensor(a!), Tensor(b!), Tensor(c!), Tensor(d!))"
+  },
+  {
     "name": "aten::cudnn_convolution_add_relu.out(Tensor self, Tensor weight, Tensor z, Scalar? alpha, Tensor? bias, SymInt[] stride, SymInt[] padding, SymInt[] dilation, SymInt groups, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
@@ -2591,10 +2312,12 @@
     "category": "Transform"
   },
   {
-    "name": "aten::embedding_bag.padding_idx(Tensor weight, Tensor indices, Tensor offsets, bool scale_grad_by_freq, int mode, bool sparse, Tensor? per_sample_weights, bool include_last_offset, int? padding_idx) -> (Tensor, Tensor, Tensor, Tensor)"
+    "name": "aten::embedding_bag.padding_idx(Tensor weight, Tensor indices, Tensor offsets, bool scale_grad_by_freq, int mode, bool sparse, Tensor? per_sample_weights, bool include_last_offset, int? padding_idx) -> (Tensor, Tensor, Tensor, Tensor)",
+    "category": "Transform"
   },
   {
-    "name": "aten::embedding_renorm_(Tensor(a!) self, Tensor indices, float max_norm, float norm_type) -> Tensor(a!)"
+    "name": "aten::embedding_renorm_(Tensor(a!) self, Tensor indices, float max_norm, float norm_type) -> Tensor(a!)",
+    "category": "Transform"
   },
   {
     "name": "aten::empty.memory_format(SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=None) -> Tensor"
@@ -2613,6 +2336,12 @@
   },
   {
     "name": "aten::empty_like.out(Tensor self, *, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::empty_permuted(SymInt[] size, int[] physical_layout, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor"
+  },
+  {
+    "name": "aten::empty_permuted.out(SymInt[] size, int[] physical_layout, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "aten::eq.Tensor(Tensor self, Tensor other) -> Tensor"
@@ -2711,6 +2440,12 @@
     "name": "aten::erfc.Scalar(Scalar a) -> Scalar"
   },
   {
+    "name": "aten::erfinv(Tensor self) -> Tensor"
+  },
+  {
+    "name": "aten::erfinv.out(Tensor self, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
     "name": "aten::exp(Tensor self) -> Tensor"
   },
   {
@@ -2727,6 +2462,12 @@
   },
   {
     "name": "aten::exp.Scalar(Scalar a) -> Scalar"
+  },
+  {
+    "name": "aten::exp2(Tensor self) -> Tensor"
+  },
+  {
+    "name": "aten::exp2.out(Tensor self, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "aten::exp_(Tensor(a!) self) -> Tensor(a!)"
@@ -2925,6 +2666,18 @@
     "name": "aten::fft_rfftn.out(Tensor self, SymInt[1]? s=None, int[1]? dim=None, str? norm=None, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
+    "name": "aten::fill.Scalar(Tensor self, Scalar value) -> Tensor"
+  },
+  {
+    "name": "aten::fill.Scalar_out(Tensor self, Scalar value, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::fill.Tensor(Tensor self, Tensor value) -> Tensor"
+  },
+  {
+    "name": "aten::fill.Tensor_out(Tensor self, Tensor value, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
     "name": "aten::fill_.Scalar(Tensor(a!) self, Scalar value) -> Tensor(a!)"
   },
   {
@@ -3038,6 +2791,15 @@
     "is_vararg": true
   },
   {
+    "name": "aten::frexp.Tensor(Tensor self) -> (Tensor mantissa, Tensor exponent)"
+  },
+  {
+    "name": "aten::frexp.Tensor_out(Tensor self, *, Tensor(a!) mantissa, Tensor(b!) exponent) -> (Tensor(a!) mantissa, Tensor(b!) exponent)"
+  },
+  {
+    "name": "aten::frexp(float a) -> (float, int)"
+  },
+  {
     "name": "aten::frobenius_norm.dim(Tensor self, int[1] dim, bool keepdim=False) -> Tensor",
     "category": "Normalization"
   },
@@ -3145,10 +2907,12 @@
     "category": "Activation"
   },
   {
-    "name": "aten::gelu_backward(Tensor grad_output, Tensor self, *, str approximate=\"none\") -> Tensor"
+    "name": "aten::gelu_backward(Tensor grad_output, Tensor self, *, str approximate=\"none\") -> Tensor",
+    "category": "Activation"
   },
   {
-    "name": "aten::gelu_backward.grad_input(Tensor grad_output, Tensor self, *, str approximate=\"none\", Tensor(a!) grad_input) -> Tensor(a!)"
+    "name": "aten::gelu_backward.grad_input(Tensor grad_output, Tensor self, *, str approximate=\"none\", Tensor(a!) grad_input) -> Tensor(a!)",
+    "category": "Activation"
   },
   {
     "name": "aten::geometric_(Tensor(a!) self, float p, *, Generator? generator=None) -> Tensor(a!)"
@@ -3202,7 +2966,13 @@
     "name": "aten::get.default_Tensor(Dict(Tensor, t) self, Tensor key, t default_value) -> t(*)"
   },
   {
+    "name": "aten::get_autocast_dtype(str device_type) -> ScalarType"
+  },
+  {
     "name": "aten::get_device(Tensor self) -> int"
+  },
+  {
+    "name": "aten::get_num_threads() -> int"
   },
   {
     "name": "aten::glu(Tensor self, int dim=-1) -> Tensor",
@@ -3210,6 +2980,24 @@
   },
   {
     "name": "aten::glu.out(Tensor self, int dim=-1, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::grad(Tensor[] outputs, Tensor[] inputs, Tensor?[]? grad_outputs=None, bool? retain_graph=None, bool create_graph=False, bool allow_unused=False) -> Tensor?[]"
+  },
+  {
+    "name": "aten::greater.Tensor(Tensor self, Tensor other) -> Tensor"
+  },
+  {
+    "name": "aten::greater.Scalar(Tensor self, Scalar other) -> Tensor"
+  },
+  {
+    "name": "aten::greater.Scalar_out(Tensor self, Scalar other, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::greater.Tensor_out(Tensor self, Tensor other, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::greater(Tensor self, Tensor other) -> Tensor"
   },
   {
     "name": "aten::greater_equal.Tensor(Tensor self, Tensor other) -> Tensor"
@@ -3234,6 +3022,12 @@
   },
   {
     "name": "aten::grid_sampler.legacy(Tensor input, Tensor grid, int interpolation_mode, int padding_mode) -> Tensor"
+  },
+  {
+    "name": "aten::grid_sampler_2d(Tensor input, Tensor grid, int interpolation_mode, int padding_mode, bool align_corners) -> Tensor"
+  },
+  {
+    "name": "aten::grid_sampler_2d.out(Tensor input, Tensor grid, int interpolation_mode, int padding_mode, bool align_corners, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "aten::group_norm(Tensor input, int num_groups, Tensor? weight=None, Tensor? bias=None, float eps=1.0000000000000001e-05, bool cudnn_enabled=True) -> Tensor",
@@ -3369,6 +3163,9 @@
     "name": "aten::hardtanh_backward.grad_input(Tensor grad_output, Tensor self, Scalar min_val, Scalar max_val, *, Tensor(a!) grad_input) -> Tensor(a!)"
   },
   {
+    "name": "aten::has_torch_function(...) -> bool"
+  },
+  {
     "name": "aten::histc(Tensor self, int bins=100, Scalar min=0, Scalar max=0) -> Tensor"
   },
   {
@@ -3391,6 +3188,12 @@
   },
   {
     "name": "aten::huber_loss_backward(Tensor grad_output, Tensor self, Tensor target, int reduction, float delta) -> Tensor"
+  },
+  {
+    "name": "aten::i0(Tensor self) -> Tensor"
+  },
+  {
+    "name": "aten::i0.out(Tensor self, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "aten::im2col(Tensor self, int[2] kernel_size, int[2] dilation, int[2] padding, int[2] stride) -> Tensor"
@@ -3525,6 +3328,9 @@
     "name": "aten::index_select_backward(Tensor grad, SymInt[] self_sizes, int dim, Tensor index) -> Tensor"
   },
   {
+    "name": "aten::indices(Tensor(a) self) -> Tensor(a)"
+  },
+  {
     "name": "aten::insert.t(t[](a!) self, int idx, t(b -> *) el) -> ()"
   },
   {
@@ -3565,6 +3371,9 @@
     "name": "aten::is_scripting() -> bool"
   },
   {
+    "name": "aten::isdigit(str self) -> bool"
+  },
+  {
     "name": "aten::isfinite(Tensor self) -> Tensor"
   },
   {
@@ -3572,6 +3381,24 @@
   },
   {
     "name": "aten::isfinite.complex(complex a) -> bool"
+  },
+  {
+    "name": "aten::isin.Tensor_Tensor(Tensor elements, Tensor test_elements, *, bool assume_unique=False, bool invert=False) -> Tensor"
+  },
+  {
+    "name": "aten::isin.Tensor_Tensor_out(Tensor elements, Tensor test_elements, *, bool assume_unique=False, bool invert=False, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::isin.Tensor_Scalar(Tensor elements, Scalar test_element, *, bool assume_unique=False, bool invert=False) -> Tensor"
+  },
+  {
+    "name": "aten::isin.Tensor_Scalar_out(Tensor elements, Scalar test_element, *, bool assume_unique=False, bool invert=False, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::isin.Scalar_Tensor(Scalar element, Tensor test_elements, *, bool assume_unique=False, bool invert=False) -> Tensor"
+  },
+  {
+    "name": "aten::isin.Scalar_Tensor_out(Scalar element, Tensor test_elements, *, bool assume_unique=False, bool invert=False, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "aten::isinf(Tensor self) -> Tensor"
@@ -3646,16 +3473,16 @@
     "name": "aten::kl_div(Tensor self, Tensor target, int reduction=1, *, bool log_target=False) -> Tensor"
   },
   {
-    "name": "aten::kthvalue(Tensor self, int k, int dim=-1, bool keepdim=False) -> (Tensor values, Tensor indices)"
+    "name": "aten::kthvalue(Tensor self, SymInt k, int dim=-1, bool keepdim=False) -> (Tensor values, Tensor indices)"
   },
   {
-    "name": "aten::kthvalue.dimname(Tensor self, int k, str dim, bool keepdim=False) -> (Tensor values, Tensor indices)"
+    "name": "aten::kthvalue.dimname(Tensor self, SymInt k, str dim, bool keepdim=False) -> (Tensor values, Tensor indices)"
   },
   {
-    "name": "aten::kthvalue.dimname_out(Tensor self, int k, str dim, bool keepdim=False, *, Tensor(a!) values, Tensor(b!) indices) -> (Tensor(a!) values, Tensor(b!) indices)"
+    "name": "aten::kthvalue.dimname_out(Tensor self, SymInt k, str dim, bool keepdim=False, *, Tensor(a!) values, Tensor(b!) indices) -> (Tensor(a!) values, Tensor(b!) indices)"
   },
   {
-    "name": "aten::kthvalue.values(Tensor self, int k, int dim=-1, bool keepdim=False, *, Tensor(a!) values, Tensor(b!) indices) -> (Tensor(a!) values, Tensor(b!) indices)"
+    "name": "aten::kthvalue.values(Tensor self, SymInt k, int dim=-1, bool keepdim=False, *, Tensor(a!) values, Tensor(b!) indices) -> (Tensor(a!) values, Tensor(b!) indices)"
   },
   {
     "name": "aten::l1_loss(Tensor self, Tensor target, int reduction=1) -> Tensor"
@@ -3748,6 +3575,30 @@
     "name": "aten::lerp.Tensor_out(Tensor self, Tensor end, Tensor weight, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
+    "name": "aten::less.Tensor(Tensor self, Tensor other) -> Tensor"
+  },
+  {
+    "name": "aten::less.Scalar(Tensor self, Scalar other) -> Tensor"
+  },
+  {
+    "name": "aten::less.Scalar_out(Tensor self, Scalar other, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::less.Tensor_out(Tensor self, Tensor other, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::less_equal.Tensor(Tensor self, Tensor other) -> Tensor"
+  },
+  {
+    "name": "aten::less_equal.Scalar(Tensor self, Scalar other) -> Tensor"
+  },
+  {
+    "name": "aten::less_equal.Scalar_out(Tensor self, Scalar other, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::less_equal.Tensor_out(Tensor self, Tensor other, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
     "name": "aten::lift_fresh(Tensor(a) self) -> Tensor(a)"
   },
   {
@@ -3757,10 +3608,28 @@
     "name": "aten::lift_fresh_copy.out(Tensor self, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
+    "name": "aten::linalg_cholesky(Tensor self, *, bool upper=False) -> Tensor"
+  },
+  {
+    "name": "aten::linalg_cholesky.out(Tensor self, *, bool upper=False, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::linalg_cholesky_ex(Tensor self, *, bool upper=False, bool check_errors=False) -> (Tensor L, Tensor info)"
+  },
+  {
+    "name": "aten::linalg_cholesky_ex.L(Tensor self, *, bool upper=False, bool check_errors=False, Tensor(a!) L, Tensor(b!) info) -> (Tensor(a!) L, Tensor(b!) info)"
+  },
+  {
     "name": "aten::linalg_cross(Tensor self, Tensor other, *, int dim=-1) -> Tensor"
   },
   {
     "name": "aten::linalg_cross.out(Tensor self, Tensor other, *, int dim=-1, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::linalg_det(Tensor A) -> Tensor"
+  },
+  {
+    "name": "aten::linalg_det.out(Tensor A, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "aten::linalg_inv(Tensor A) -> Tensor"
@@ -3773,6 +3642,24 @@
   },
   {
     "name": "aten::linalg_inv_ex.inverse(Tensor A, *, bool check_errors=False, Tensor(a!) inverse, Tensor(b!) info) -> (Tensor(a!) inverse, Tensor(b!) info)"
+  },
+  {
+    "name": "aten::linalg_lstsq(Tensor self, Tensor b, float? rcond=None, *, str? driver=None) -> (Tensor solution, Tensor residuals, Tensor rank, Tensor singular_values)"
+  },
+  {
+    "name": "aten::linalg_lstsq.out(Tensor self, Tensor b, float? rcond=None, *, str? driver=None, Tensor(a!) solution, Tensor(b!) residuals, Tensor(c!) rank, Tensor(d!) singular_values) -> (Tensor(a!) solution, Tensor(b!) residuals, Tensor(c!) rank, Tensor(d!) singular_values)"
+  },
+  {
+    "name": "aten::linalg_matrix_norm(Tensor self, Scalar ord, int[] dim=[-2, -1], bool keepdim=False, *, ScalarType? dtype=None) -> Tensor"
+  },
+  {
+    "name": "aten::linalg_matrix_norm.str_ord(Tensor self, str ord=\"fro\", int[] dim=[-2, -1], bool keepdim=False, *, ScalarType? dtype=None) -> Tensor"
+  },
+  {
+    "name": "aten::linalg_matrix_norm.out(Tensor self, Scalar ord, int[] dim=[-2, -1], bool keepdim=False, *, ScalarType? dtype=None, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::linalg_matrix_norm.str_ord_out(Tensor self, str ord=\"fro\", int[] dim=[-2, -1], bool keepdim=False, *, ScalarType? dtype=None, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "aten::linalg_norm(Tensor self, Scalar? ord=None, int[1]? dim=None, bool keepdim=False, *, ScalarType? dtype=None) -> Tensor"
@@ -3883,6 +3770,9 @@
   },
   {
     "name": "aten::list.t(t[] l) -> t[]"
+  },
+  {
+    "name": "aten::list_with_default(int[] list, int[] defaults) -> int[]"
   },
   {
     "name": "aten::log(Tensor self) -> Tensor"
@@ -4178,6 +4068,12 @@
     "name": "aten::lt.str(str a, str b) -> bool"
   },
   {
+    "name": "aten::mT(Tensor(a) self) -> Tensor(a)"
+  },
+  {
+    "name": "aten::mT.a(Tensor(a) self) -> Tensor(a)"
+  },
+  {
     "name": "aten::manual_seed(int seed) -> ()"
   },
   {
@@ -4393,6 +4289,12 @@
     "name": "aten::mkldnn_reorder_conv2d_weight(Tensor self, SymInt[2] padding=[0, 0], SymInt[2] stride=[1, 1], SymInt[2] dilation=[1, 1], SymInt groups=1, SymInt[]? input_size=None) -> Tensor"
   },
   {
+    "name": "aten::mkldnn_rnn_layer(Tensor input, Tensor weight0, Tensor weight1, Tensor weight2, Tensor weight3, Tensor hx_, Tensor cx_, bool reverse, int[] batch_sizes, int mode, int hidden_size, int num_layers, bool has_biases, bool bidirectional, bool batch_first, bool train) -> (Tensor, Tensor, Tensor, Tensor)"
+  },
+  {
+    "name": "aten::mkldnn_rnn_layer.out(Tensor input, Tensor weight0, Tensor weight1, Tensor weight2, Tensor weight3, Tensor hx_, Tensor cx_, bool reverse, int[] batch_sizes, int mode, int hidden_size, int num_layers, bool has_biases, bool bidirectional, bool batch_first, bool train, *, Tensor(a!) out0, Tensor(b!) out1, Tensor(c!) out2, Tensor(d!) out3) -> (Tensor(a!), Tensor(b!), Tensor(c!), Tensor(d!))"
+  },
+  {
     "name": "aten::mm(Tensor self, Tensor mat2) -> Tensor"
   },
   {
@@ -4403,6 +4305,18 @@
   },
   {
     "name": "aten::mm.dtype(Tensor self, Tensor mat2, ScalarType out_dtype) -> Tensor"
+  },
+  {
+    "name": "aten::mode(Tensor self, int dim=-1, bool keepdim=False) -> (Tensor values, Tensor indices)"
+  },
+  {
+    "name": "aten::mode.dimname(Tensor self, str dim, bool keepdim=False) -> (Tensor values, Tensor indices)"
+  },
+  {
+    "name": "aten::mode.dimname_out(Tensor self, str dim, bool keepdim=False, *, Tensor(a!) values, Tensor(b!) indices) -> (Tensor(a!) values, Tensor(b!) indices)"
+  },
+  {
+    "name": "aten::mode.values(Tensor self, int dim=-1, bool keepdim=False, *, Tensor(a!) values, Tensor(b!) indices) -> (Tensor(a!) values, Tensor(b!) indices)"
   },
   {
     "name": "aten::moveaxis.intlist(Tensor(a) self, int[] source, int[] destination) -> Tensor(a)"
@@ -4541,6 +4455,18 @@
   },
   {
     "name": "aten::narrow_copy.out(Tensor self, int dim, SymInt start, SymInt length, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::native_dropout(Tensor input, float p, bool? train) -> (Tensor, Tensor)"
+  },
+  {
+    "name": "aten::native_dropout.out(Tensor input, float p, bool? train, *, Tensor(a!) out0, Tensor(b!) out1) -> (Tensor(a!), Tensor(b!))"
+  },
+  {
+    "name": "aten::native_group_norm(Tensor input, Tensor? weight, Tensor? bias, SymInt N, SymInt C, SymInt HxW, int group, float eps) -> (Tensor, Tensor, Tensor)"
+  },
+  {
+    "name": "aten::native_group_norm.out(Tensor input, Tensor? weight, Tensor? bias, SymInt N, SymInt C, SymInt HxW, int group, float eps, *, Tensor(a!) out0, Tensor(b!) out1, Tensor(c!) out2) -> (Tensor(a!), Tensor(b!), Tensor(c!))"
   },
   {
     "name": "aten::native_layer_norm(Tensor input, SymInt[] normalized_shape, Tensor? weight, Tensor? bias, float eps) -> (Tensor, Tensor, Tensor)",
@@ -4755,6 +4681,18 @@
     "name": "aten::normal_(Tensor(a!) self, float mean=0., float std=1., *, Generator? generator=None) -> Tensor(a!)"
   },
   {
+    "name": "aten::not_equal.Tensor(Tensor self, Tensor other) -> Tensor"
+  },
+  {
+    "name": "aten::not_equal.Scalar(Tensor self, Scalar other) -> Tensor"
+  },
+  {
+    "name": "aten::not_equal.Scalar_out(Tensor self, Scalar other, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::not_equal.Tensor_out(Tensor self, Tensor other, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
     "name": "aten::nuclear_norm(Tensor self, bool keepdim=False) -> Tensor"
   },
   {
@@ -4795,6 +4733,9 @@
   },
   {
     "name": "aten::ones_like.out(Tensor self, *, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::ord(str string) -> int"
   },
   {
     "name": "aten::outer(Tensor self, Tensor vec2) -> Tensor"
@@ -5098,10 +5039,10 @@
     "name": "aten::rand_like(Tensor self, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=None) -> Tensor"
   },
   {
-    "name": "aten::rand_like.out(Tensor self, *, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)"
+    "name": "aten::rand_like.generator(Tensor self, *, Generator? generator, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=None) -> Tensor"
   },
   {
-    "name": "aten::rand_like.generator(Tensor self, *, Generator? generator, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=None) -> Tensor"
+    "name": "aten::rand_like.out(Tensor self, *, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "aten::rand_like.generator_out(Tensor self, *, Generator? generator, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)"
@@ -5134,19 +5075,37 @@
     "name": "aten::randint_like(Tensor self, SymInt high, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=None) -> Tensor"
   },
   {
+    "name": "aten::randint_like.Tensor(Tensor self, Tensor high, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=None) -> Tensor"
+  },
+  {
     "name": "aten::randint_like.low_dtype(Tensor self, SymInt low, SymInt high, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=None) -> Tensor"
-  },
-  {
-    "name": "aten::randint_like.out(Tensor self, SymInt high, *, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)"
-  },
-  {
-    "name": "aten::randint_like.low_dtype_out(Tensor self, SymInt low, SymInt high, *, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "aten::randint_like.generator(Tensor self, SymInt high, *, Generator? generator, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=None) -> Tensor"
   },
   {
+    "name": "aten::randint_like.Tensor_generator(Tensor self, Tensor high, *, Generator? generator, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=None) -> Tensor"
+  },
+  {
+    "name": "aten::randint_like.low_generator_dtype(Tensor self, SymInt low, SymInt high, *, Generator? generator, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=None) -> Tensor"
+  },
+  {
+    "name": "aten::randint_like.out(Tensor self, SymInt high, *, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
     "name": "aten::randint_like.generator_out(Tensor self, SymInt high, *, Generator? generator, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::randint_like.Tensor_out(Tensor self, Tensor high, *, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::randint_like.Tensor_generator_out(Tensor self, Tensor high, *, Generator? generator, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::randint_like.low_dtype_out(Tensor self, SymInt low, SymInt high, *, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::randint_like.low_generator_dtype_out(Tensor self, SymInt low, SymInt high, *, Generator? generator, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "aten::randint_like.generator_with_low_dtype(Tensor self, SymInt low, SymInt high, *, Generator? generator, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=None) -> Tensor"
@@ -5182,10 +5141,10 @@
     "name": "aten::randn_like(Tensor self, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=None) -> Tensor"
   },
   {
-    "name": "aten::randn_like.out(Tensor self, *, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)"
+    "name": "aten::randn_like.generator(Tensor self, *, Generator? generator, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=None) -> Tensor"
   },
   {
-    "name": "aten::randn_like.generator(Tensor self, *, Generator? generator, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=None) -> Tensor"
+    "name": "aten::randn_like.out(Tensor self, *, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "aten::randn_like.generator_out(Tensor self, *, Generator? generator, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)"
@@ -5212,6 +5171,21 @@
     "name": "aten::randperm.generator_out(SymInt n, *, Generator? generator, Tensor(a!) out) -> Tensor(a!)"
   },
   {
+    "name": "aten::range.step(Scalar start, Scalar end, Scalar step=1, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor"
+  },
+  {
+    "name": "aten::range(Scalar start, Scalar end, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor"
+  },
+  {
+    "name": "aten::range.out(Scalar start, Scalar end, Scalar step=1, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::range.out_(Scalar start, Scalar end, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::ravel(Tensor(a) self) -> Tensor(a)"
+  },
+  {
     "name": "aten::real(Tensor(a) self) -> Tensor(a)"
   },
   {
@@ -5219,6 +5193,9 @@
   },
   {
     "name": "aten::reciprocal.out(Tensor self, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::reciprocal_(Tensor(a!) self) -> Tensor(a!)"
   },
   {
     "name": "aten::reflection_pad1d(Tensor self, SymInt[2] padding) -> Tensor",
@@ -5374,6 +5351,12 @@
     "category": "Shape"
   },
   {
+    "name": "aten::resize(Tensor self, SymInt[] size, *, MemoryFormat? memory_format=None) -> Tensor"
+  },
+  {
+    "name": "aten::resize.out(Tensor self, SymInt[] size, *, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
     "name": "aten::resize_(Tensor(a!) self, SymInt[] size, *, MemoryFormat? memory_format=None) -> Tensor(a!)"
   },
   {
@@ -5381,6 +5364,9 @@
   },
   {
     "name": "aten::resolve_neg(Tensor(a) self) -> Tensor(a)"
+  },
+  {
+    "name": "aten::retain_grad(Tensor(a!) self) -> ()"
   },
   {
     "name": "aten::reverse.t(t[](a!) self) -> ()"
@@ -5446,7 +5432,12 @@
     "name": "aten::round_.decimals(Tensor(a!) self, *, int decimals) -> Tensor(a!)"
   },
   {
-    "name": "aten::rrelu(Tensor self, Scalar lower=0.125, Scalar upper=0.33333333333333331, bool training=False, Generator? generator=None) -> Tensor"
+    "name": "aten::rrelu(Tensor self, Scalar lower=0.125, Scalar upper=0.33333333333333331, bool training=False, Generator? generator=None) -> Tensor",
+    "category": "Activation"
+  },
+  {
+    "name": "aten::rrelu_(Tensor(a!) self, Scalar lower=0.125, Scalar upper=0.33333333333333331, bool training=False, Generator? generator=None) -> Tensor(a!)",
+    "category": "Activation"
   },
   {
     "name": "aten::rsqrt(Tensor self) -> Tensor"
@@ -5617,6 +5608,9 @@
     "name": "aten::set_grad_enabled(bool val) -> ()"
   },
   {
+    "name": "aten::set_num_threads(int nthreads) -> ()"
+  },
+  {
     "name": "aten::sigmoid(Tensor self) -> Tensor",
     "category": "Activation"
   },
@@ -5676,6 +5670,12 @@
   },
   {
     "name": "aten::sin.Scalar(Scalar a) -> Scalar"
+  },
+  {
+    "name": "aten::sinc(Tensor self) -> Tensor"
+  },
+  {
+    "name": "aten::sinc.out(Tensor self, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "aten::sinh(Tensor self) -> Tensor"
@@ -5813,6 +5813,24 @@
     "name": "aten::sort.any(t[](a!) self, bool reverse=False) -> ()"
   },
   {
+    "name": "aten::sorted.int(int[](a) input) -> int[]"
+  },
+  {
+    "name": "aten::sorted.float(float[](a) input) -> float[]"
+  },
+  {
+    "name": "aten::sorted.Tensor(Tensor[](a) input) -> Tensor[]"
+  },
+  {
+    "name": "aten::sorted.bool(bool[](a) input) -> bool[]"
+  },
+  {
+    "name": "aten::sorted.str(str[](a) input) -> str[]"
+  },
+  {
+    "name": "aten::sorted.any(t[](a) self) -> t[]"
+  },
+  {
     "name": "aten::sparse_bsr_tensor.crow_col_value_size(Tensor crow_indices, Tensor col_indices, Tensor values, int[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=False) -> Tensor"
   },
   {
@@ -5847,6 +5865,18 @@
   },
   {
     "name": "aten::special_expit.out(Tensor self, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::special_expm1(Tensor self) -> Tensor"
+  },
+  {
+    "name": "aten::special_expm1.out(Tensor self, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::special_logit(Tensor self, float? eps=None) -> Tensor"
+  },
+  {
+    "name": "aten::special_logit.out(Tensor self, float? eps=None, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "aten::split.Tensor(Tensor(a -> *) self, SymInt split_size, int dim=0) -> Tensor(a)[]",
@@ -6123,6 +6153,9 @@
     "name": "aten::swapaxes_(Tensor(a!) self, int axis0, int axis1) -> Tensor(a!)"
   },
   {
+    "name": "aten::sym_constrain_range_for_size(Scalar size, *, int? min=None, int? max=None) -> ()"
+  },
+  {
     "name": "aten::sym_size.int(Tensor self, int dim) -> SymInt"
   },
   {
@@ -6130,6 +6163,9 @@
   },
   {
     "name": "aten::t(Tensor(a) self) -> Tensor(a)"
+  },
+  {
+    "name": "aten::t_(Tensor(a!) self) -> Tensor(a!)"
   },
   {
     "name": "aten::take(Tensor self, Tensor index) -> Tensor",
@@ -6328,14 +6364,14 @@
     "name": "aten::transpose_copy.int_out(Tensor self, int dim0, int dim1, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
-    "name": "aten::tril(Tensor self, int diagonal=0) -> Tensor",
+    "name": "aten::tril(Tensor self, SymInt diagonal=0) -> Tensor",
     "category": "Layer"
   },
   {
-    "name": "aten::tril.out(Tensor self, int diagonal=0, *, Tensor(a!) out) -> Tensor(a!)"
+    "name": "aten::tril.out(Tensor self, SymInt diagonal=0, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
-    "name": "aten::tril_(Tensor(a!) self, int diagonal=0) -> Tensor(a!)"
+    "name": "aten::tril_(Tensor(a!) self, SymInt diagonal=0) -> Tensor(a!)"
   },
   {
     "name": "aten::tril_indices(int row, int col, int offset=0, *, ScalarType? dtype=4, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor",
@@ -6345,13 +6381,13 @@
     "name": "aten::tril_indices.out(int row, int col, int offset=0, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
-    "name": "aten::triu(Tensor self, int diagonal=0) -> Tensor"
+    "name": "aten::triu(Tensor self, SymInt diagonal=0) -> Tensor"
   },
   {
-    "name": "aten::triu.out(Tensor self, int diagonal=0, *, Tensor(a!) out) -> Tensor(a!)"
+    "name": "aten::triu.out(Tensor self, SymInt diagonal=0, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
-    "name": "aten::triu_(Tensor(a!) self, int diagonal=0) -> Tensor(a!)"
+    "name": "aten::triu_(Tensor(a!) self, SymInt diagonal=0) -> Tensor(a!)"
   },
   {
     "name": "aten::triu_indices(int row, int col, int offset=0, *, ScalarType? dtype=4, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor"
@@ -6375,6 +6411,12 @@
     "name": "aten::true_divide_.Scalar(Tensor(a!) self, Scalar other) -> Tensor(a!)"
   },
   {
+    "name": "aten::trunc(Tensor self) -> Tensor"
+  },
+  {
+    "name": "aten::trunc.out(Tensor self, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
     "name": "aten::type_as(Tensor self, Tensor other) -> Tensor"
   },
   {
@@ -6393,6 +6435,12 @@
   },
   {
     "name": "aten::unfold(Tensor(a) self, int dimension, int size, int step) -> Tensor(a)"
+  },
+  {
+    "name": "aten::unfold_copy(Tensor self, int dimension, int size, int step) -> Tensor"
+  },
+  {
+    "name": "aten::unfold_copy.out(Tensor self, int dimension, int size, int step, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "aten::uniform_(Tensor(a!) self, float from=0., float to=1., *, Generator? generator=None) -> Tensor(a!)"
@@ -6468,7 +6516,8 @@
     "category": "Layer"
   },
   {
-    "name": "aten::upsample_bicubic2d.out(Tensor self, SymInt[2] output_size, bool align_corners, float? scales_h=None, float? scales_w=None, *, Tensor(a!) out) -> Tensor(a!)"
+    "name": "aten::upsample_bicubic2d.out(Tensor self, SymInt[2] output_size, bool align_corners, float? scales_h=None, float? scales_w=None, *, Tensor(a!) out) -> Tensor(a!)",
+    "category": "Layer"
   },
   {
     "name": "aten::upsample_bilinear2d(Tensor self, SymInt[2] output_size, bool align_corners, float? scales_h=None, float? scales_w=None) -> Tensor",
@@ -6479,25 +6528,32 @@
     "category": "Layer"
   },
   {
-    "name": "aten::upsample_bilinear2d.out(Tensor self, SymInt[2] output_size, bool align_corners, float? scales_h=None, float? scales_w=None, *, Tensor(a!) out) -> Tensor(a!)"
+    "name": "aten::upsample_bilinear2d.out(Tensor self, SymInt[2] output_size, bool align_corners, float? scales_h=None, float? scales_w=None, *, Tensor(a!) out) -> Tensor(a!)",
+    "category": "Layer"
   },
   {
-    "name": "aten::upsample_bilinear2d.vec_out(Tensor input, SymInt[]? output_size, bool align_corners, float[]? scale_factors, *, Tensor(a!) out) -> Tensor(a!)"
+    "name": "aten::upsample_bilinear2d.vec_out(Tensor input, SymInt[]? output_size, bool align_corners, float[]? scale_factors, *, Tensor(a!) out) -> Tensor(a!)",
+    "category": "Layer"
   },
   {
-    "name": "aten::upsample_bilinear2d_backward(Tensor grad_output, SymInt[2] output_size, SymInt[4] input_size, bool align_corners, float? scales_h=None, float? scales_w=None) -> Tensor"
+    "name": "aten::upsample_bilinear2d_backward(Tensor grad_output, SymInt[2] output_size, SymInt[4] input_size, bool align_corners, float? scales_h=None, float? scales_w=None) -> Tensor",
+    "category": "Layer"
   },
   {
-    "name": "aten::upsample_bilinear2d_backward.grad_input(Tensor grad_output, SymInt[2] output_size, SymInt[4] input_size, bool align_corners, float? scales_h=None, float? scales_w=None, *, Tensor(a!) grad_input) -> Tensor(a!)"
+    "name": "aten::upsample_bilinear2d_backward.grad_input(Tensor grad_output, SymInt[2] output_size, SymInt[4] input_size, bool align_corners, float? scales_h=None, float? scales_w=None, *, Tensor(a!) grad_input) -> Tensor(a!)",
+    "category": "Layer"
   },
   {
-    "name": "aten::upsample_linear1d(Tensor self, SymInt[1] output_size, bool align_corners, float? scales=None) -> Tensor"
+    "name": "aten::upsample_linear1d(Tensor self, SymInt[1] output_size, bool align_corners, float? scales=None) -> Tensor",
+    "category": "Layer"
   },
   {
-    "name": "aten::upsample_linear1d.vec(Tensor input, SymInt[]? output_size, bool align_corners, float[]? scale_factors) -> Tensor"
+    "name": "aten::upsample_linear1d.vec(Tensor input, SymInt[]? output_size, bool align_corners, float[]? scale_factors) -> Tensor",
+    "category": "Layer"
   },
   {
-    "name": "aten::upsample_linear1d.out(Tensor self, SymInt[1] output_size, bool align_corners, float? scales=None, *, Tensor(a!) out) -> Tensor(a!)"
+    "name": "aten::upsample_linear1d.out(Tensor self, SymInt[1] output_size, bool align_corners, float? scales=None, *, Tensor(a!) out) -> Tensor(a!)",
+    "category": "Layer"
   },
   {
     "name": "aten::upsample_nearest1d(Tensor self, SymInt[1] output_size, float? scales=None) -> Tensor",
@@ -6698,6 +6754,30 @@
     "name": "aten::where.self_out(Tensor condition, Tensor self, Tensor other, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
+    "name": "aten::xlogy.Tensor(Tensor self, Tensor other) -> Tensor"
+  },
+  {
+    "name": "aten::xlogy.Scalar_Other(Tensor self, Scalar other) -> Tensor"
+  },
+  {
+    "name": "aten::xlogy.Scalar_Self(Scalar self, Tensor other) -> Tensor"
+  },
+  {
+    "name": "aten::xlogy.OutTensor(Tensor self, Tensor other, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::xlogy.OutScalar_Self(Scalar self, Tensor other, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::xlogy.OutScalar_Other(Tensor self, Scalar other, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::xlogy_.Tensor(Tensor(a!) self, Tensor other) -> Tensor(a!)"
+  },
+  {
+    "name": "aten::xlogy_.Scalar_Other(Tensor(a!) self, Scalar other) -> Tensor(a!)"
+  },
+  {
     "name": "aten::zero_(Tensor(a!) self) -> Tensor(a!)"
   },
   {
@@ -6719,10 +6799,46 @@
     "name": "aten::zeros_like.out(Tensor self, *, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)"
   },
   {
+    "name": "cadence::quantize_per_tensor.out(Tensor input, float scale, int zero_point, int quant_min, int quant_max, ScalarType dtype, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "cortex_m::dequantize_per_tensor.out(Tensor input, float scale, int zero_point, int quant_min, int quant_max, ScalarType dtype, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "cortex_m::maximum.out(Tensor self, Tensor other, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "cortex_m::minimum.out(Tensor self, Tensor other, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "cortex_m::quantize_per_tensor.out(Tensor input, float scale, int zero_point, int quant_min, int quant_max, ScalarType dtype, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "cortex_m::quantized_add.out(Tensor self, Scalar self_zero_point, Scalar self_multiplier, Scalar self_shift, Tensor other, Scalar other_zero_point, Scalar other_multiplier, Scalar other_shift, Scalar output_zero_point, Scalar output_multiplier, Scalar output_shift, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "cortex_m::quantized_conv2d.out(Tensor input, Tensor weight, Tensor? bias, int[] stride, int[] padding, int[] dilation, int input_offset, int output_offset, Tensor requantize_multipliers, Tensor requantize_shifts, int activation_min, int activation_max, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "cortex_m::quantized_linear.out(Tensor input, Tensor weights, Tensor? bias, Tensor? kernel_sum, Scalar input_offset, Scalar filter_offset, Scalar output_offset, int[] requantize_multipliers, int[] requantize_shifts, Scalar activation_max, Scalar activation_min, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "cortex_m::quantized_mul.out(Tensor self, Scalar self_zero_point, Tensor other, Scalar other_zero_point, Scalar output_zero_point, Scalar output_multiplier, Scalar output_shift, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "cortex_m::transpose.out(Tensor input, int[] perm, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "cuda::_current_device() -> int"
+  },
+  {
     "name": "detectron2::nms_rotated(Tensor boxes, Tensor scores, float iou_threshold) -> Tensor"
   },
   {
     "name": "detectron2::roi_align_rotated_forward(Tensor input, Tensor rois, float spatial_scale, int pooled_height, int pooled_width, int sampling_ratio) -> Tensor"
+  },
+  {
+    "name": "dim_order_ops::_clone_dim_order.out(Tensor self, *, bool non_blocking=False, int[]? dim_order=None, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "dim_order_ops::_empty_dim_order.out(int[] size, *, int[]? dim_order=None, Tensor(a!) out) -> Tensor(a!)"
@@ -6734,16 +6850,181 @@
     "name": "executorch_prim::add.Scalar(Scalar a, Scalar b) -> Scalar"
   },
   {
+    "name": "executorch_prim::ceil.Scalar(Scalar a) -> Scalar"
+  },
+  {
+    "name": "executorch_prim::eq.Scalar(Scalar a, Scalar b) -> bool"
+  },
+  {
+    "name": "executorch_prim::et_copy_index.tensor(Tensor(a!) copy_to, Tensor copy_from, int index) -> Tensor(a!)"
+  },
+  {
     "name": "executorch_prim::et_view.default(Tensor self, int[] size) -> (Tensor out)"
   },
   {
     "name": "executorch_prim::floordiv.Scalar(Scalar a, Scalar b) -> Scalar"
   },
   {
+    "name": "executorch_prim::ge.Scalar(Scalar a, Scalar b) -> bool"
+  },
+  {
+    "name": "executorch_prim::gt.Scalar(Scalar a, Scalar b) -> bool"
+  },
+  {
+    "name": "executorch_prim::le.Scalar(Scalar a, Scalar b) -> bool"
+  },
+  {
+    "name": "executorch_prim::lt.Scalar(Scalar a, Scalar b) -> bool"
+  },
+  {
+    "name": "executorch_prim::mod.Scalar(SymInt a, SymInt b) -> SymInt"
+  },
+  {
     "name": "executorch_prim::mul.Scalar(Scalar a, Scalar b) -> Scalar"
   },
   {
+    "name": "executorch_prim::neg.Scalar(Scalar a) -> Scalar"
+  },
+  {
+    "name": "executorch_prim::round.Scalar(Scalar a) -> Scalar"
+  },
+  {
     "name": "executorch_prim::sub.Scalar(Scalar a, Scalar b) -> Scalar"
+  },
+  {
+    "name": "executorch_prim::sym_float.Scalar(Scalar a) -> Scalar"
+  },
+  {
+    "name": "executorch_prim::sym_max.Scalar(Scalar a, Scalar b) -> Scalar"
+  },
+  {
+    "name": "executorch_prim::sym_min.Scalar(Scalar a, Scalar b) -> Scalar"
+  },
+  {
+    "name": "executorch_prim::truediv.Scalar(Scalar a, Scalar b) -> Scalar"
+  },
+  {
+    "name": "executorch_prim::trunc.Scalar(Scalar a) -> Scalar"
+  },
+  {
+    "name": "fbgemm::asynchronous_complete_cumsum(Tensor t_in) -> Tensor"
+  },
+  {
+    "name": "fbgemm::bf16i4bf16_rowwise(Tensor X, Tensor WQ, Tensor w_scale, Tensor w_zp) -> Tensor"
+  },
+  {
+    "name": "fbgemm::car_init(int rank, int world_size, Tensor local_barrier, Tensor[] all_barrier_handles, Tensor local_buffer, Tensor[] all_buffer_handles) -> ()"
+  },
+  {
+    "name": "fbgemm::car_ipc_handle(Tensor buffer) -> Tensor"
+  },
+  {
+    "name": "fbgemm::car_tensor() -> Tensor"
+  },
+  {
+    "name": "fbgemm::dequantize_fp8_cache(Tensor cache_K, Tensor cache_V, Tensor kv_seqlen, Tensor? qparam_k=None, Tensor? qparam_v=None) -> (Tensor, Tensor)"
+  },
+  {
+    "name": "fbgemm::dequantize_int4_cache(Tensor cache_K, Tensor cache_V, Tensor kv_seqlen, int? num_groups=1) -> (Tensor, Tensor)"
+  },
+  {
+    "name": "fbgemm::f8f8bf16(Tensor XQ, Tensor WQ, Tensor scale, bool use_fast_accum=True) -> Tensor"
+  },
+  {
+    "name": "fbgemm::f8f8bf16_blockwise(Tensor XQ, Tensor WQ, Tensor x_scale, Tensor w_scale, int block_m=128, int block_n=128, int block_k=128) -> Tensor"
+  },
+  {
+    "name": "fbgemm::f8f8bf16_cublas(Tensor A, Tensor B, Tensor? Ainvs=None, Tensor? Binvs=None, bool use_fast_accum=True, Tensor(a!)? output=None) -> Tensor"
+  },
+  {
+    "name": "fbgemm::f8f8bf16_rowwise(Tensor XQ, Tensor WQ, Tensor x_scale, Tensor w_scale, Tensor? bias=None, bool use_fast_accum=True, Tensor(a!)? output=None) -> Tensor"
+  },
+  {
+    "name": "fbgemm::f8f8bf16_tensorwise(Tensor XQ, Tensor WQ, float scale, bool use_fast_accum=True) -> Tensor"
+  },
+  {
+    "name": "fbgemm::f8i4bf16_rowwise(Tensor XQ, Tensor WQ, Tensor x_scale, Tensor w_scale, Tensor w_zp) -> Tensor"
+  },
+  {
+    "name": "fbgemm::get_fp8_per_tensor_scale(Tensor input, Tensor? bs=None, Tensor? scale_ub=None) -> Tensor"
+  },
+  {
+    "name": "fbgemm::gqa_attn_splitk(Tensor XQ, Tensor cache_K, Tensor cache_V, Tensor seq_positions, float qk_scale, int num_split_ks, int kv_cache_quant_num_groups=1, bool use_tensor_cores=True, int cache_logical_dtype_int=0) -> (Tensor, Tensor, Tensor)"
+  },
+  {
+    "name": "fbgemm::i8i8bf16(Tensor XQ, Tensor WQ, float scale, int split_k=1) -> Tensor"
+  },
+  {
+    "name": "fbgemm::i8i8bf16_dynamic(Tensor XQ, Tensor WQ, Tensor scale, int split_k=1) -> Tensor"
+  },
+  {
+    "name": "fbgemm::jagged_to_padded_dense(Tensor values, Tensor[] offsets, SymInt[] max_lengths, float padding_value=0.) -> Tensor"
+  },
+  {
+    "name": "fbgemm::mqa_attn(Tensor XQ, Tensor cache_K, Tensor cache_V, Tensor seq_positions, float qk_scale, int? num_groups=1, int cache_logical_dtype_int=0) -> Tensor"
+  },
+  {
+    "name": "fbgemm::nccl_allgather(Tensor dst, Tensor src, int comm_idx=0) -> ()"
+  },
+  {
+    "name": "fbgemm::nccl_allreduce(Tensor dst, Tensor src, Tensor? bias=None, int comm_idx=0) -> ()"
+  },
+  {
+    "name": "fbgemm::nccl_alltoall(Tensor dst, Tensor src, int world_size, int comm_idx=0) -> ()"
+  },
+  {
+    "name": "fbgemm::nccl_comm_init_rank(int world_size, int rank, Tensor id_, int comm_idx=0) -> ()"
+  },
+  {
+    "name": "fbgemm::nccl_get_unique_id() -> Tensor"
+  },
+  {
+    "name": "fbgemm::nccl_init(int rank, int world_size, str rendevouz, int comm_idx=0) -> ()"
+  },
+  {
+    "name": "fbgemm::nccl_reducescatter(Tensor dst, Tensor src, int comm_idx=0) -> ()"
+  },
+  {
+    "name": "fbgemm::one_shot_car_allreduce(Tensor dst, Tensor src, Tensor? bias=None, int comm_idx=0) -> ()"
+  },
+  {
+    "name": "fbgemm::per_tensor_dynamic_quantize_i8(Tensor X) -> (Tensor, Tensor)"
+  },
+  {
+    "name": "fbgemm::per_tensor_quantize_i8(Tensor X, float scale) -> Tensor"
+  },
+  {
+    "name": "fbgemm::quantize_fp8_per_col(Tensor input, Tensor? bs=None, Tensor? scale_ub=None) -> Tensor[]"
+  },
+  {
+    "name": "fbgemm::quantize_fp8_per_row(Tensor input, Tensor? bs=None, Tensor? scale_ub=None, ScalarType? output_dtype=None, bool stochastic_rounding=False) -> Tensor[]"
+  },
+  {
+    "name": "fbgemm::quantize_fp8_per_tensor(Tensor input, Tensor? bs=None, Tensor? scale_ub=None, bool stochastic_rounding=False) -> Tensor[]"
+  },
+  {
+    "name": "fbgemm::quantize_fp8_per_tensor_fixed_scale(Tensor input, Tensor scale, Tensor? bs=None, bool stochatic_rounding=False) -> Tensor"
+  },
+  {
+    "name": "fbgemm::rope_qkv_decoding(Tensor XQ, Tensor XK, Tensor XV, Tensor(a!) cache_K, Tensor(b!) cache_V, Tensor seqpos, float theta, int? num_groups=1, Tensor? block_tables=None, int page_size=64, Tensor? actual_batch_size=None, Tensor? batch=None, Tensor? cache_seqpos=None, int cache_logical_dtype_int=0, bool rope_scaling=False, int old_context_len=8192, float scaling_factor=16., float lo_freq_factor=1., float hi_freq_factor=32., Tensor? qparam_k=None, Tensor? qparam_v=None) -> Tensor"
+  },
+  {
+    "name": "fbgemm::rope_qkv_varseq_prefill(Tensor XQ, Tensor XK, Tensor XV, Tensor(a!) cache_K, Tensor(b!) cache_V, Tensor varseq_batch, Tensor varseq_seqpos, float theta, int? num_groups=1, Tensor? block_tables=None, int page_size=64, Tensor? varseq_cache_seqpos=None, int cache_logical_dtype_int=0, bool rope_scaling=False, int old_context_len=8192, float scaling_factor=16., float lo_freq_factor=1., float hi_freq_factor=32., Tensor? qparam_k=None, Tensor? qparam_v=None) -> Tensor"
+  },
+  {
+    "name": "fbgemm::segment_sum_csr(SymInt batch_size, Tensor csr_seg, Tensor values) -> Tensor"
+  },
+  {
+    "name": "fbgemm::silu_mul_quantize_i8(Tensor X1, Tensor X2, float scale) -> Tensor"
+  },
+  {
+    "name": "fbgemm::two_shot_car_allreduce(Tensor dst, Tensor src, Tensor? bias=None, int comm_idx=0) -> ()"
+  },
+  {
+    "name": "fbgemm::xpos_qkv_decoding(Tensor XQ, Tensor XK, Tensor XV, Tensor(a!) cache_K, Tensor(b!) cache_V, Tensor seqpos, float theta, float gamma, float scale_base, float exponent_offset, int? num_groups=1, Tensor? block_tables=None, int page_size=64, Tensor? actual_batch_size=None, Tensor? batch=None, Tensor? cache_seqpos=None, int cache_logical_dtype_int=0, bool rope_scaling=False, int old_context_len=8192, float scaling_factor=16., float lo_freq_factor=1., float hi_freq_factor=32., Tensor? qparam_k=None, Tensor? qparam_v=None) -> Tensor"
+  },
+  {
+    "name": "fbgemm::xpos_qkv_varseq_prefill(Tensor XQ, Tensor XK, Tensor XV, Tensor(a!) cache_K, Tensor(b!) cache_V, Tensor varseq_batch, Tensor varseq_seqpos, float theta, float gamma, float scale_base, float exponent_offset, int? num_groups=1, Tensor? block_tables=None, int page_size=64, Tensor? varseq_cache_seqpos=None, int cache_logical_dtype_int=0, bool rope_scaling=False, int old_context_len=8192, float scaling_factor=16., float lo_freq_factor=1., float hi_freq_factor=32., Tensor? qparam_k=None, Tensor? qparam_v=None) -> Tensor"
   },
   {
     "name": "horizon::scale_quanti(Tensor x, Tensor scale, Tensor zero_point, int d, int min, int max, bool flag1, bool flat2, str str1, str str2) -> Tensor"
@@ -7227,6 +7508,9 @@
     "category": "Layer"
   },
   {
+    "name": "prepacked::conv2d_transpose_clamp_prepack(Tensor W, Tensor? B, int[2] stride, int[2] padding, int[2] output_padding, int[2] dilation, int groups, Scalar? output_min=None, Scalar? output_max=None) -> __torch__.torch.classes.xnnpack.TransposeConv2dOpContext"
+  },
+  {
     "name": "prepacked::conv2d_transpose_clamp_run(Tensor X, __torch__.torch.classes.xnnpack.TransposeConv2dOpContext W_prepack) -> Tensor Y",
     "category": "Layer"
   },
@@ -7254,6 +7538,12 @@
   },
   {
     "name": "prim::BroadcastSizes(...) -> int[]"
+  },
+  {
+    "name": "prim::ConstantChunk(...) -> ..."
+  },
+  {
+    "name": "prim::ConstantMKLDNNTensor(...) -> ..."
   },
   {
     "name": "prim::EnumName(AnyEnumType enum) -> str"
@@ -7463,6 +7753,9 @@
     "name": "prim::min.self_bool(bool[] self) -> bool"
   },
   {
+    "name": "prim::mkldnn_convolution(Tensor input, Tensor weight, Tensor? bias, int[] stride, int[] padding, int[] dilation, int groups) -> Tensor"
+  },
+  {
     "name": "prim::name(Tensor a) -> str?"
   },
   {
@@ -7488,6 +7781,15 @@
   },
   {
     "name": "prim::unchecked_unwrap_optional(t(a)? optional) -> t(a)"
+  },
+  {
+    "name": "prims::collapse(Tensor a, int start, int end) -> Tensor"
+  },
+  {
+    "name": "profiler::_record_function_enter(str name, str? args=None) -> Tensor"
+  },
+  {
+    "name": "profiler::_record_function_enter_new(str name, str? args=None) -> __torch__.torch.classes.profiler._RecordFunction"
   },
   {
     "name": "quantized::add(Tensor qa, Tensor qb, float scale, int zero_point) -> Tensor qc"
@@ -7708,13 +8010,28 @@
     "name": "quantized::conv_transpose2d_unpack(__torch__.torch.classes.quantized.Conv2dPackedParamsBase packed_weights) -> (Tensor unpacked_weights, Tensor? B_origin)"
   },
   {
-    "name": "quantized::embedding_bag_4bit_rowwise_offsets(Tensor weight, Tensor indices, Tensor? offsets=None, bool scale_grad_by_freq=False, int mode=0, bool pruned_weights=False, Tensor? per_sample_weights=None, Tensor? compressed_indices_mapping=None, bool include_last_offset=False) -> Tensor"
+    "name": "quantized::conv_transpose3d_prepack(Tensor weight, Tensor? bias, int[] stride, int[] padding, int[] output_padding, int[] dilation, int groups) -> __torch__.torch.classes.quantized.Conv3dPackedParamsBase"
   },
   {
-    "name": "quantized::embedding_bag_byte_rowwise_offsets(Tensor weight, Tensor indices, Tensor? offsets=None, bool scale_grad_by_freq=False, int mode=0, bool pruned_weights=False, Tensor? per_sample_weights=None, Tensor? compressed_indices_mapping=None, bool include_last_offset=False) -> Tensor"
+    "name": "quantized::dropout(Tensor self, float output_scale, int output_zero_point, Scalar p=0.5, bool training=False) -> Tensor"
   },
   {
-    "name": "quantized::embedding_byte(__torch__.torch.classes.quantized.EmbeddingPackedParamsBase weight, Tensor indices, bool pruned_weights=False) -> Tensor"
+    "name": "quantized::embedding_bag_4bit_rowwise_offsets(Tensor weight, Tensor indices, Tensor? offsets=None, bool scale_grad_by_freq=False, int mode=0, bool pruned_weights=False, Tensor? per_sample_weights=None, Tensor? compressed_indices_mapping=None, bool include_last_offset=False) -> Tensor",
+    "category": "Transform"
+  },
+  {
+    "name": "quantized::embedding_bag_byte_rowwise_offsets(Tensor weight, Tensor indices, Tensor? offsets=None, bool scale_grad_by_freq=False, int mode=0, bool pruned_weights=False, Tensor? per_sample_weights=None, Tensor? compressed_indices_mapping=None, bool include_last_offset=False) -> Tensor",
+    "category": "Transform"
+  },
+  {
+    "name": "quantized::embedding_bag_prepack(Tensor weight) -> __torch__.torch.classes.quantized.EmbeddingPackedParamsBase W_prepack"
+  },
+  {
+    "name": "quantized::embedding_bag_unpack(__torch__.torch.classes.quantized.EmbeddingPackedParamsBase W_prepack) -> Tensor W_origin"
+  },
+  {
+    "name": "quantized::embedding_byte(__torch__.torch.classes.quantized.EmbeddingPackedParamsBase weight, Tensor indices, bool pruned_weights=False) -> Tensor",
+    "category": "Transform"
   },
   {
     "name": "quantized::hardswish(Tensor input, float output_scale, int output_zero_point) -> Tensor",
@@ -7891,19 +8208,19 @@
     "name": "quantized_decomposed::choose_qparams_per_token_asymmetric(Tensor input, ScalarType dtype) -> (Tensor, Tensor)"
   },
   {
+    "name": "quantized_decomposed::choose_qparams_per_token_asymmetric.out(Tensor input, ScalarType dtype, *, Tensor(a!) scale_out, Tensor(b!) zero_point_out) -> (Tensor(a!), Tensor(b!))"
+  },
+  {
     "name": "quantized_decomposed::choose_qparams_symmetric.tensor(Tensor input, int quant_min, int quant_max, float eps, ScalarType dtype) -> (Tensor, Tensor)"
   },
   {
     "name": "quantized_decomposed::dequantize_per_channel(Tensor input, Tensor scales, Tensor? zero_points, int axis, int quant_min, int quant_max, ScalarType dtype, *, ScalarType? out_dtype=None) -> Tensor"
   },
   {
+    "name": "quantized_decomposed::dequantize_per_channel.out(Tensor input, Tensor scales, Tensor? zero_points, int axis, int quant_min, int quant_max, ScalarType dtype, *, ScalarType? out_dtype=None, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
     "name": "quantized_decomposed::dequantize_per_channel_group(Tensor input, Tensor scales, Tensor? zero_points, int quant_min, int quant_max, ScalarType dtype, int group_size, ScalarType output_dtype) -> Tensor"
-  },
-  {
-    "name": "quantized_decomposed::dequantize_per_tensor.Tensor_out(Tensor input, Tensor scale, Tensor zero_point, int quant_min, int quant_max, ScalarType dtype, *, ScalarType? out_dtype=None, Tensor(a!) out) -> Tensor(a!)"
-  },
-  {
-    "name": "quantized_decomposed::dequantize_per_tensor.out(Tensor input, float scale, int zero_point, int quant_min, int quant_max, ScalarType dtype, *, ScalarType? out_dtype=None, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "quantized_decomposed::dequantize_per_tensor(Tensor input, float scale, int zero_point, int quant_min, int quant_max, ScalarType dtype, *, ScalarType? out_dtype=None) -> Tensor"
@@ -7915,31 +8232,45 @@
     "name": "quantized_decomposed::dequantize_per_tensor.tensor2(Tensor input, Tensor scale, Tensor zero_point, Tensor quant_min, Tensor quant_max, ScalarType dtype, *, ScalarType? out_dtype=None) -> Tensor"
   },
   {
+    "name": "quantized_decomposed::dequantize_per_tensor.Tensor_out(Tensor input, Tensor scale, Tensor zero_point, int quant_min, int quant_max, ScalarType dtype, *, ScalarType? out_dtype=None, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
+    "name": "quantized_decomposed::dequantize_per_tensor.out(Tensor input, float scale, int zero_point, int quant_min, int quant_max, ScalarType dtype, *, ScalarType? out_dtype=None, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
     "name": "quantized_decomposed::dequantize_per_token(Tensor input, Tensor scales, Tensor zero_points, int quant_min, int quant_max, ScalarType dtype, ScalarType output_dtype) -> Tensor"
   },
   {
-    "name": "quantized_decomposed::embedding_4bit(Tensor weight, Tensor weight_scales, Tensor? weight_zero_points, int weight_quant_min, int weight_quant_max, Tensor indices) -> Tensor"
+    "name": "quantized_decomposed::embedding_4bit(Tensor weight, Tensor weight_scales, Tensor? weight_zero_points, int weight_quant_min, int weight_quant_max, Tensor indices) -> Tensor",
+    "category": "Transform"
   },
   {
-    "name": "quantized_decomposed::embedding_4bit.dtype(Tensor weight, Tensor weight_scales, Tensor? weight_zero_points, int weight_quant_min, int weight_quant_max, Tensor indices, *, ScalarType? dtype=None) -> Tensor"
+    "name": "quantized_decomposed::embedding_4bit.dtype(Tensor weight, Tensor weight_scales, Tensor? weight_zero_points, int weight_quant_min, int weight_quant_max, Tensor indices, *, ScalarType? dtype=None) -> Tensor",
+    "category": "Transform"
   },
   {
-    "name": "quantized_decomposed::embedding_4bit.out(Tensor weight, Tensor weight_scales, Tensor? weight_zero_points, int weight_quant_min, int weight_quant_max, Tensor indices, *, Tensor(a!) out) -> Tensor(a!)"
+    "name": "quantized_decomposed::embedding_4bit.out(Tensor weight, Tensor weight_scales, Tensor? weight_zero_points, int weight_quant_min, int weight_quant_max, Tensor indices, *, Tensor(a!) out) -> Tensor(a!)",
+    "category": "Transform"
   },
   {
-    "name": "quantized_decomposed::embedding_4bit.dtype_out(Tensor weight, Tensor weight_scales, Tensor? weight_zero_points, int weight_quant_min, int weight_quant_max, Tensor indices, *, ScalarType? dtype=None, Tensor(a!) out) -> Tensor(a!)"
+    "name": "quantized_decomposed::embedding_4bit.dtype_out(Tensor weight, Tensor weight_scales, Tensor? weight_zero_points, int weight_quant_min, int weight_quant_max, Tensor indices, *, ScalarType? dtype=None, Tensor(a!) out) -> Tensor(a!)",
+    "category": "Transform"
   },
   {
-    "name": "quantized_decomposed::embedding_byte.dtype_out(Tensor weight, Tensor weight_scales, Tensor? weight_zero_points, int weight_quant_min, int weight_quant_max, Tensor indices, *, ScalarType? dtype=None, Tensor(a!) out) -> Tensor(a!)"
+    "name": "quantized_decomposed::embedding_byte.dtype_out(Tensor weight, Tensor weight_scales, Tensor? weight_zero_points, int weight_quant_min, int weight_quant_max, Tensor indices, *, ScalarType? dtype=None, Tensor(a!) out) -> Tensor(a!)",
+    "category": "Transform"
   },
   {
-    "name": "quantized_decomposed::embedding_byte(Tensor weight, Tensor weight_scales, Tensor? weight_zero_points, int weight_quant_min, int weight_quant_max, Tensor indices) -> Tensor"
+    "name": "quantized_decomposed::embedding_byte(Tensor weight, Tensor weight_scales, Tensor? weight_zero_points, int weight_quant_min, int weight_quant_max, Tensor indices) -> Tensor",
+    "category": "Transform"
   },
   {
-    "name": "quantized_decomposed::embedding_byte.dtype(Tensor weight, Tensor weight_scales, Tensor? weight_zero_points, int weight_quant_min, int weight_quant_max, Tensor indices, *, ScalarType? dtype=None) -> Tensor"
+    "name": "quantized_decomposed::embedding_byte.dtype(Tensor weight, Tensor weight_scales, Tensor? weight_zero_points, int weight_quant_min, int weight_quant_max, Tensor indices, *, ScalarType? dtype=None) -> Tensor",
+    "category": "Transform"
   },
   {
-    "name": "quantized_decomposed::embedding_byte.out(Tensor weight, Tensor weight_scales, Tensor? weight_zero_points, int weight_quant_min, int weight_quant_max, Tensor indices, *, Tensor(a!) out) -> Tensor(a!)"
+    "name": "quantized_decomposed::embedding_byte.out(Tensor weight, Tensor weight_scales, Tensor? weight_zero_points, int weight_quant_min, int weight_quant_max, Tensor indices, *, Tensor(a!) out) -> Tensor(a!)",
+    "category": "Transform"
   },
   {
     "name": "quantized_decomposed::fake_quant_per_channel(Tensor input, Tensor scales, Tensor zero_points, int axis, int quant_min, int quant_max) -> Tensor"
@@ -7957,9 +8288,6 @@
     "name": "quantized_decomposed::quantize_per_channel_group(Tensor input, Tensor scales, Tensor zero_points, int quant_min, int quant_max, ScalarType dtype, int group_size) -> Tensor"
   },
   {
-    "name": "quantized_decomposed::quantize_per_tensor.out(Tensor input, float scale, int zero_point, int quant_min, int quant_max, ScalarType dtype, *, Tensor(a!) out) -> Tensor(a!)"
-  },
-  {
     "name": "quantized_decomposed::quantize_per_tensor(Tensor input, float scale, int zero_point, int quant_min, int quant_max, ScalarType dtype) -> Tensor"
   },
   {
@@ -7969,7 +8297,13 @@
     "name": "quantized_decomposed::quantize_per_tensor.tensor2(Tensor input, Tensor scale, Tensor zero_point, Tensor quant_min, Tensor quant_max, ScalarType dtype) -> Tensor"
   },
   {
+    "name": "quantized_decomposed::quantize_per_tensor.out(Tensor input, float scale, int zero_point, int quant_min, int quant_max, ScalarType dtype, *, Tensor(a!) out) -> Tensor(a!)"
+  },
+  {
     "name": "quantized_decomposed::quantize_per_token(Tensor input, Tensor scales, Tensor zero_points, int quant_min, int quant_max, ScalarType dtype) -> Tensor"
+  },
+  {
+    "name": "sgl_kernel::extend_attention_cpu(Tensor q_extend, Tensor k_extend, Tensor v_extend, Tensor(a!) o_extend, Tensor k_buffer, Tensor v_buffer, Tensor req_to_token, Tensor req_pool_indices, Tensor seq_lens, Tensor extend_seq_lens, Tensor extend_start_loc, int max_len_extend, float sm_scale, float logit_cap) -> ()"
   },
   {
     "name": "tensorrt::execute_engine(Tensor[] inputs, __torch__.torch.classes.tensorrt.Engine engine) -> Tensor[]"
@@ -8086,10 +8420,28 @@
     "name": "torch_sparse::spmm_sum(Tensor? _0, Tensor _1, Tensor _2, Tensor? _3, Tensor? _4, Tensor? _5, Tensor _6) -> Tensor _0"
   },
   {
+    "name": "torchao::choose_qparams_affine(Tensor? input, str mapping_type, SymInt[] block_size, ScalarType target_dtype, Scalar? quant_min=None, Scalar? quant_max=None, float? eps=None, ScalarType? scale_dtype=None, ScalarType? zero_point_dtype=None, bool keepdim=False) -> (Tensor, Tensor)"
+  },
+  {
+    "name": "torchao::dequantize_affine(Tensor input, SymInt[] block_size, Tensor scale, Tensor? zero_point, ScalarType input_dtype, Scalar? quant_min=None, Scalar? quant_max=None, ScalarType output_dtype=6) -> Tensor"
+  },
+  {
+    "name": "torchao::quantize_affine(Tensor input, SymInt[] block_size, Tensor scale, Tensor? zero_point, ScalarType output_dtype, Scalar? quant_min=None, Scalar? quant_max=None) -> Tensor"
+  },
+  {
+    "name": "torchaudio::forced_align(Tensor log_probs, Tensor targets, Tensor input_lengths, Tensor target_lengths, int blank) -> (Tensor, Tensor)"
+  },
+  {
     "name": "torchaudio::sox_effects_apply_effects_tensor(Tensor tensor, int sample_rate, str[][] effects, bool channels_first=True) -> (Tensor, int)"
   },
   {
+    "name": "torchvision::_interpolate_bilinear2d_aa(Tensor input, int[] size, bool align_corners) -> Tensor"
+  },
+  {
     "name": "torchvision::deform_conv2d(Tensor input, Tensor weight, Tensor offset, Tensor mask, Tensor bias, SymInt stride_h, SymInt stride_w, SymInt pad_h, SymInt pad_w, SymInt dilation_h, SymInt dilation_w, SymInt groups, SymInt offset_groups, bool use_mask) -> Tensor"
+  },
+  {
+    "name": "torchvision::deform_conv2d.out(Tensor input, Tensor weight, Tensor offset, Tensor mask, Tensor bias, SymInt stride_h, SymInt stride_w, SymInt pad_h, SymInt pad_w, SymInt dilation_h, SymInt dilation_w, SymInt groups, SymInt offset_groups, bool use_mask, *, Tensor(a!) out) -> Tensor(a!)"
   },
   {
     "name": "torchvision::nms(Tensor dets, Tensor scores, float iou_threshold) -> Tensor"
@@ -8102,5 +8454,411 @@
   },
   {
     "name": "vai::fix_neuron(Tensor input, int valmin, int valmax, float valamp, int zero_point, int method, int device_id, int inplace) -> Tensor"
+  },
+  {
+    "name": "__torch__.torch.classes.rnn.CellParamsBase",
+    "inputs": [
+      { "name": "type", "type": "string" },
+      { "name": "tensors", "type": "Tensor[]" },
+      { "name": "doubles", "type": "float64[]" },
+      { "name": "longs", "type": "int64[]" },
+      { "name": "packed_params", "type": "__torch__.torch.classes.quantized.LinearPackedParamsBase[]" }
+    ]
+  },
+  {
+    "name": "__torch__.torch.classes.xnnpack.Conv2dOpContext",
+    "inputs": [
+      { "name": "weight", "type": "Tensor" },
+      { "name": "bias", "type": "Tensor", "optional": true },
+      { "name": "stride", "type": "int64[]" },
+      { "name": "padding", "type": "int64[]" },
+      { "name": "dilation", "type": "int64[]" },
+      { "name": "groups", "type": "int64" },
+      { "name": "output_min", "type": "int64[]", "optional": true },
+      { "name": "output_max", "type": "int64[]", "optional": true }
+    ]
+  },
+  {
+    "name": "__torch__.torch.classes.xnnpack.LinearOpContext",
+    "inputs": [
+      { "name": "weight", "type": "Tensor" },
+      { "name": "bias", "type": "Tensor", "optional": true },
+      { "name": "output_min", "type": "int64[]", "optional": true },
+      { "name": "output_max", "type": "int64[]", "optional": true }
+    ]
+  },
+  {
+    "name": "torch.nn.modules.activation.ELU",
+    "category": "Activation"
+  },
+  {
+    "name": "torch.nn.modules.activation.GELU",
+    "category": "Activation"
+  },
+  {
+    "name": "torch.nn.modules.activation.GLU",
+    "category": "Activation"
+  },
+  {
+    "name": "torch.nn.modules.activation.Hardsigmoid",
+    "category": "Activation"
+  },
+  {
+    "name": "torch.nn.modules.activation.Hardswish",
+    "category": "Activation"
+  },
+  {
+    "name": "torch.nn.modules.activation.Hardtanh",
+    "category": "Activation"
+  },
+  {
+    "name": "torch.nn.modules.activation.LeakyReLU",
+    "category": "Activation"
+  },
+  {
+    "name": "torch.nn.modules.activation.LogSoftmax",
+    "category": "Activation"
+  },
+  {
+    "name": "torch.nn.modules.activation.PReLU",
+    "category": "Activation"
+  },
+  {
+    "name": "torch.nn.modules.activation.ReLU",
+    "category": "Activation",
+    "inputs": [
+      { "name": "inplace", "default": false, "visible": false },
+      { "name": "threshold", "default": 0 },
+      { "name": "value", "default": 0 }
+    ]
+  },
+  {
+    "name": "torch.nn.modules.activation.ReLU6",
+    "category": "Activation"
+  },
+  {
+    "name": "torch.nn.modules.activation.SiLU",
+    "category": "Activation"
+  },
+  {
+    "name": "torch.nn.modules.activation.Sigmoid",
+    "category": "Activation"
+  },
+  {
+    "name": "torch.nn.modules.activation.Softmax",
+    "category": "Activation"
+  },
+  {
+    "name": "torch.nn.modules.activation.Softmax2d",
+    "category": "Activation"
+  },
+  {
+    "name": "torch.nn.modules.activation.Softplus",
+    "category": "Activation"
+  },
+  {
+    "name": "torch.nn.modules.activation.Tanh",
+    "category": "Activation"
+  },
+  {
+    "name": "torch.nn.modules.batchnorm.BatchNorm1d",
+    "category": "Normalization"
+  },
+  {
+    "name": "torch.nn.modules.batchnorm.BatchNorm2d",
+    "category": "Normalization",
+    "inputs": [
+      { "name": "input" },
+      { "name": "weight" },
+      { "name": "bias" },
+      { "name": "running_mean" },
+      { "name": "running_var" },
+      { "name": "num_batches_tracked", "visible": false },
+      { "name": "eps", "default": 1e-05 },
+      { "name": "momentum", "default": 0.1 },
+      { "name": "affine", "default": true },
+      { "name": "track_running_stats", "default": true }
+    ]
+  },
+  {
+    "name": "torch.nn.modules.conv.Conv1d",
+    "category": "Layer",
+    "inputs": [
+      { "name": "input" },
+      { "name": "weight" },
+      { "name": "bias" },
+      { "name": "output_padding", "visible": false },
+      { "name": "in_channels", "visible": false },
+      { "name": "out_channels", "visible": false },
+      { "name": "groups", "default": 1 },
+      { "name": "transposed", "default": false },
+      { "name": "padding", "default": [   0 ] },
+      { "name": "dilation", "default": [   1 ] },
+      { "name": "stride", "default": [   1 ] }
+    ]
+  },
+  {
+    "name": "torch.nn.modules.conv.Conv2d",
+    "category": "Layer",
+    "inputs": [
+      { "name": "input" },
+      { "name": "weight" },
+      { "name": "bias" },
+      { "name": "output_padding", "visible": false },
+      { "name": "in_channels", "visible": false },
+      { "name": "out_channels", "visible": false },
+      { "name": "groups", "default": 1 },
+      { "name": "transposed", "default": false },
+      { "name": "padding", "default": [   0,   0 ] },
+      { "name": "dilation", "default": [   1,   1 ] },
+      { "name": "stride", "default": [   1,   1 ] }
+    ]
+  },
+  {
+    "name": "torch.nn.modules.conv.Conv3d",
+    "category": "Layer"
+  },
+  {
+    "name": "torch.nn.modules.conv.ConvTranspose1d",
+    "category": "Layer",
+    "inputs": [
+      { "name": "input" },
+      { "name": "weight" },
+      { "name": "bias" },
+      { "name": "output_padding", "visible": false },
+      { "name": "in_channels", "visible": false },
+      { "name": "out_channels", "visible": false },
+      { "name": "groups", "default": 1 },
+      { "name": "transposed", "default": true },
+      { "name": "padding", "default": [   0 ] },
+      { "name": "dilation", "default": [   1 ] },
+      { "name": "stride", "default": [   1 ] }
+    ]
+  },
+  {
+    "name": "torch.nn.modules.conv.ConvTranspose2d",
+    "category": "Layer",
+    "inputs": [
+      { "name": "input" },
+      { "name": "weight" },
+      { "name": "bias" },
+      { "name": "output_padding", "visible": false },
+      { "name": "in_channels", "visible": false },
+      { "name": "out_channels", "visible": false },
+      { "name": "groups", "default": 1 },
+      { "name": "transposed", "default": true },
+      { "name": "padding", "default": [   0,   0 ] },
+      { "name": "dilation", "default": [   1,   1 ] },
+      { "name": "stride", "default": [   1,   1 ] }
+    ]
+  },
+  {
+    "name": "torch.nn.modules.conv.ConvTranspose3d",
+    "category": "Layer"
+  },
+  {
+    "name": "torch.nn.modules.dropout.Dropout",
+    "category": "Dropout",
+    "inputs": [
+      { "name": "inplace", "default": false, "visible": false },
+      { "name": "p", "default": 0.5 }
+    ]
+  },
+  {
+    "name": "torch.nn.modules.dropout.Dropout2d",
+    "category": "Dropout",
+    "inputs": [
+      { "name": "inplace", "default": false, "visible": false },
+      { "name": "p", "default": 0.5 }
+    ]
+  },
+  {
+    "name": "torch.nn.modules.instancenorm.InstanceNorm1d"
+  },
+  {
+    "name": "torch.nn.modules.instancenorm.InstanceNorm2d"
+  },
+  {
+    "name": "torch.nn.modules.instancenorm.InstanceNorm3d"
+  },
+  {
+    "name": "torch.nn.modules.linear.Linear",
+    "category": "Layer"
+  },
+  {
+    "name": "torch.nn.modules.normalization.CrossMapLRN2d",
+    "category": "Normalization",
+    "inputs": [
+      { "name": "alpha", "default": 0.0001 },
+      { "name": "beta", "default": 0.75 },
+      { "name": "k", "default": 1 }
+    ]
+  },
+  {
+    "name": "torch.nn.modules.normalization.GroupNorm",
+    "category": "Normalization"
+  },
+  {
+    "name": "torch.nn.modules.normalization.LayerNorm",
+    "category": "Normalization"
+  },
+  {
+    "name": "torch.nn.modules.padding.ConstantPad1d",
+    "category": "Tensor"
+  },
+  {
+    "name": "torch.nn.modules.padding.ConstantPad2d",
+    "category": "Tensor"
+  },
+  {
+    "name": "torch.nn.modules.padding.ConstantPad3d",
+    "category": "Tensor"
+  },
+  {
+    "name": "torch.nn.modules.padding.ReflectionPad1d",
+    "category": "Tensor"
+  },
+  {
+    "name": "torch.nn.modules.padding.ReflectionPad2d",
+    "category": "Tensor"
+  },
+  {
+    "name": "torch.nn.modules.padding.ReplicationPad1d",
+    "category": "Tensor"
+  },
+  {
+    "name": "torch.nn.modules.padding.ReplicationPad2d",
+    "category": "Tensor"
+  },
+  {
+    "name": "torch.nn.modules.padding.ReplicationPad3d",
+    "category": "Tensor"
+  },
+  {
+    "name": "torch.nn.modules.padding.ZeroPad2d",
+    "category": "Tensor"
+  },
+  {
+    "name": "torch.nn.modules.pixelshuffle.PixelShuffle"
+  },
+  {
+    "name": "torch.nn.modules.pooling.AdaptiveAvgPool1d",
+    "category": "Pool"
+  },
+  {
+    "name": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+    "category": "Pool"
+  },
+  {
+    "name": "torch.nn.modules.pooling.AdaptiveAvgPool3d",
+    "category": "Pool"
+  },
+  {
+    "name": "torch.nn.modules.pooling.AdaptiveMaxPool1d",
+    "category": "Pool"
+  },
+  {
+    "name": "torch.nn.modules.pooling.AdaptiveMaxPool2d",
+    "category": "Pool"
+  },
+  {
+    "name": "torch.nn.modules.pooling.AdaptiveMaxPool3d",
+    "category": "Pool"
+  },
+  {
+    "name": "torch.nn.modules.pooling.AvgPool2d",
+    "category": "Pool",
+    "inputs": [
+      { "name": "padding", "default": 0 },
+      { "name": "count_include_pad", "default": true },
+      { "name": "ceil_mode", "visible": false }
+    ]
+  },
+  {
+    "name": "torch.nn.modules.pooling.AvgPool3d",
+    "category": "Pool"
+  },
+  {
+    "name": "torch.nn.modules.pooling.MaxPool1d",
+    "category": "Pool"
+  },
+  {
+    "name": "torch.nn.modules.pooling.MaxPool2d",
+    "category": "Pool",
+    "inputs": [
+      { "name": "input" },
+      { "name": "padding", "default": 0 },
+      { "name": "dilation", "default": 1 },
+      { "name": "return_indices", "default": false },
+      { "name": "ceil_mode", "visible": false }
+    ]
+  },
+  {
+    "name": "torch.nn.modules.pooling.MaxPool3d",
+    "category": "Pool"
+  },
+  {
+    "name": "torch.nn.modules.pooling.MaxUnpool1d",
+    "category": "Pool"
+  },
+  {
+    "name": "torch.nn.modules.pooling.MaxUnpool2d",
+    "category": "Pool"
+  },
+  {
+    "name": "torch.nn.modules.pooling.MaxUnpool3d",
+    "category": "Pool"
+  },
+  {
+    "name": "torch.nn.modules.rnn.GRU",
+    "category": "Layer"
+  },
+  {
+    "name": "torch.nn.modules.rnn.GRUCell",
+    "category": "Layer"
+  },
+  {
+    "name": "torch.nn.modules.rnn.LSTM",
+    "category": "Layer",
+    "inputs": [
+      { "name": "input" },
+      { "name": "weight_ih_l0", "visible": false },
+      { "name": "weight_hh_l0", "visible": false },
+      { "name": "bias_ih_l0", "visible": false },
+      { "name": "bias_hh_l0", "visible": false },
+      { "name": "weight_ih_l1", "visible": false },
+      { "name": "weight_hh_l1", "visible": false },
+      { "name": "bias_ih_l1", "visible": false },
+      { "name": "bias_hh_l1", "visible": false },
+      { "name": "dropout", "default": 0 },
+      { "name": "dropout_state", "default": {} },
+      { "name": "num_layers", "default": 1 },
+      { "name": "batch_first", "visible": false },
+      { "name": "bidirectional", "visible": false },
+      { "name": "bias", "visible": false }
+    ]
+  },
+  {
+    "name": "torch.nn.modules.rnn.LSTMCell",
+    "category": "Layer"
+  },
+  {
+    "name": "torch.nn.modules.rnn.RNN",
+    "category": "Layer"
+  },
+  {
+    "name": "torch.nn.modules.sparse.Embedding",
+    "category": "Transform",
+    "inputs": [
+      { "name": "norm_type", "default": 2 },
+      { "name": "scale_grad_by_freq", "default": false },
+      { "name": "sparse", "default": false },
+      { "name": "max_norm", "default": null },
+      { "name": "padding_idx", "default": null }
+    ]
+  },
+  {
+    "name": "torch.nn.modules.upsampling.Upsample",
+    "category": "Data"
   }
 ]

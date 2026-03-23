@@ -24,11 +24,11 @@ espresso.ModelFactory = class {
         return null;
     }
 
-    filter(context, type) {
-        if (context.type === 'espresso.net' && (type === 'espresso.weights' || type === 'espresso.shape' || type === 'coreml.metadata.mlmodelc')) {
+    filter(context, match) {
+        if (context.type === 'espresso.net' && (match.type === 'espresso.weights' || match.type === 'espresso.shape' || match.type === 'coreml.metadata.mlmodelc')) {
             return false;
         }
-        if (context.type === 'espresso.shape' && (type === 'espresso.weights' || type === 'coreml.metadata.mlmodelc')) {
+        if (context.type === 'espresso.shape' && (match.type === 'espresso.weights' || match.type === 'coreml.metadata.mlmodelc')) {
             return false;
         }
         return true;
@@ -64,7 +64,7 @@ espresso.Model = class {
     constructor(metadata, reader) {
         this.format = reader.format;
         this.metadata = [];
-        this.graphs = [new espresso.Graph(metadata, reader)];
+        this.modules = [new espresso.Graph(metadata, reader)];
         if (reader.version) {
             this.version = reader.version;
         }
@@ -120,24 +120,24 @@ espresso.Graph = class {
 
 espresso.Argument = class {
 
-    constructor(name, value, type, visible) {
+    constructor(name, value, type = null, visible = true) {
         this.name = name;
         this.value = value;
-        this.type = type || null;
-        this.visible = visible !== false;
+        this.type = type;
+        this.visible = visible;
     }
 };
 
 espresso.Value = class {
 
-    constructor(name, type, description, initializer) {
+    constructor(name, type, description = null, initializer = null) {
         if (typeof name !== 'string') {
             throw new espresso.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
         }
         this.name = name;
         this.type = !type && initializer ? initializer.type : type;
-        this.description = description || null;
-        this.initializer = initializer || null;
+        this.description = description;
+        this.initializer = initializer;
         this.quantization = initializer ? initializer.quantization : null;
     }
 };
@@ -332,6 +332,15 @@ espresso.Reader = class {
                         this._weights(obj, data, [data.nC, data.nB]);
                         if (data.has_biases) {
                             obj.inputs.push(this._initializer('biases', data.blob_biases, 'float32', [data.nC]));
+                        }
+                        delete data.has_biases;
+                        delete data.blob_biases;
+                        break;
+                    }
+                    case 'conv3d': {
+                        this._weights(obj, data, null);
+                        if (data.has_biases) {
+                            obj.inputs.push(this._initializer('biases', data.blob_biases, 'float32', null));
                         }
                         delete data.has_biases;
                         delete data.blob_biases;

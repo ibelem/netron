@@ -1,7 +1,7 @@
 
 const base = {};
 
-base.Complex64 = class Complex {
+base.Complex = class Complex {
 
     constructor(real, imaginary) {
         this.real = real;
@@ -9,19 +9,9 @@ base.Complex64 = class Complex {
     }
 
     toString(/* radix */) {
-        return `${this.real} + ${this.imaginary}i`;
-    }
-};
-
-base.Complex128 = class Complex {
-
-    constructor(real, imaginary) {
-        this.real = real;
-        this.imaginary = imaginary;
-    }
-
-    toString(/* radix */) {
-        return `${this.real} + ${this.imaginary}i`;
+        const sign = this.imaginary < 0 ? '-' : '+';
+        const imaginary = Math.abs(this.imaginary);
+        return `${this.real} ${sign} ${imaginary}i`;
     }
 };
 
@@ -29,7 +19,7 @@ base.Complex128 = class Complex {
 
 BigInt.prototype.toNumber = function() {
     if (this > Number.MAX_SAFE_INTEGER || this < Number.MIN_SAFE_INTEGER) {
-        throw new Error('64-bit value exceeds safe integer.');
+        throw new Error(`64-bit value 0x${this.toString(16)} exceeds safe integer.`);
     }
     return Number(this);
 };
@@ -93,116 +83,204 @@ if (!DataView.prototype.setFloat16) {
 
 if (!DataView.prototype.getBfloat16) {
     DataView.prototype.getBfloat16 = function(byteOffset, littleEndian) {
-        if (littleEndian) {
-            DataView.__bfloat16_get_uint16_le[1] = this.getUint16(byteOffset, littleEndian);
-            return DataView.__bfloat16_get_float32_le[0];
-        }
-        DataView.__bfloat16_uint16_be[0] = this.getUint16(byteOffset, littleEndian);
-        return DataView.__bfloat16_get_float32_be[0];
+        const value = this.getUint16(byteOffset, littleEndian);
+        DataView.__bfloat16_get_u32[0] = (value << 16) >>> 0;
+        return DataView.__bfloat16_get_f32[0];
     };
-    DataView.__bfloat16_get_float32_le = new Float32Array(1);
-    DataView.__bfloat16_get_float32_be = new Float32Array(1);
-    DataView.__bfloat16_get_uint16_le = new Uint16Array(DataView.__bfloat16_get_float32_le.buffer, DataView.__bfloat16_get_float32_le.byteOffset, 2);
-    DataView.__bfloat16_get_uint16_be = new Uint16Array(DataView.__bfloat16_get_float32_be.buffer, DataView.__bfloat16_get_float32_be.byteOffset, 2);
+    DataView.__bfloat16_get_f32 = new Float32Array(1);
+    DataView.__bfloat16_get_u32 = new Uint32Array(DataView.__bfloat16_get_f32.buffer);
 }
 
-DataView.__float4e2m1_float32 = new Float32Array([0, 0.5, 1, 1.5, 2, 3, 4, 6, -0, -0.5, -1, -1.5, -2, -3, -4, -6]);
-DataView.prototype.getFloat4e2m1 = function(byteOffset) {
-    let value = this.getUint8(byteOffset >> 1);
-    value = byteOffset & 1 ? value >> 4 : value & 0x0F;
-    return DataView.__float4e2m1_float32[value];
-};
+if (!DataView.prototype.getFloat4e2m1) {
+    DataView.__float4e2m1_float32 = new Float32Array([0, 0.5, 1, 1.5, 2, 3, 4, 6, -0, -0.5, -1, -1.5, -2, -3, -4, -6]);
+    DataView.prototype.getFloat4e2m1 = function(byteOffset) {
+        let value = this.getUint8(byteOffset >> 1);
+        value = byteOffset & 1 ? value >> 4 : value & 0x0F;
+        return DataView.__float4e2m1_float32[value];
+    };
+}
 
-DataView.__float8e4m3_float32 = new Float32Array(1);
-DataView.__float8e4m3_uint32 = new Uint32Array(DataView.__float8e4m3_float32.buffer, DataView.__float8e4m3_float32.byteOffset, 1);
-DataView.prototype.getFloat8e4m3 = function(byteOffset, fn, uz) {
-    const value = this.getUint8(byteOffset);
-    let exponent_bias = 7;
-    if (uz) {
-        exponent_bias = 8;
-        if (value === 0x80) {
-            return NaN;
+if (!DataView.prototype.getFloat8e4m3) {
+    DataView.__float8e4m3_float32 = new Float32Array(1);
+    DataView.__float8e4m3_uint32 = new Uint32Array(DataView.__float8e4m3_float32.buffer, DataView.__float8e4m3_float32.byteOffset, 1);
+    DataView.prototype.getFloat8e4m3 = function(byteOffset, fn, uz, bias) {
+        const value = this.getUint8(byteOffset);
+        const exponent_bias = bias || (uz ? 8 : 7);
+        if (uz) {
+            if (value === 0x80) {
+                return NaN;
+            }
+        } else if (fn) {
+            if (value === 255) {
+                return -NaN;
+            } else if (value === 0x7f) {
+                return NaN;
+            }
+        } else {
+            const expo = (value & 0x78) >> 3;
+            const mant = value & 0x07;
+            if (expo === 15) {
+                if (mant === 0) {
+                    return (value & 0x80) ? -Infinity : Infinity;
+                }
+                return NaN;
+            }
         }
-    } else if (value === 255) {
-        return -NaN;
-    } else if (value === 0x7f) {
-        return NaN;
-    }
-    let expo = (value & 0x78) >> 3;
-    let mant = value & 0x07;
-    const sign = value & 0x80;
-    let res = sign << 24;
-    if (expo === 0) {
-        if (mant > 0) {
-            expo = 0x7F - exponent_bias;
-            if (mant & 0x4 === 0) {
-                mant &= 0x3;
-                mant <<= 1;
-                expo -= 1;
+        let expo = (value & 0x78) >> 3;
+        let mant = value & 0x07;
+        const sign = value & 0x80;
+        let res = sign << 24;
+        if (expo === 0) {
+            if (mant > 0) {
+                expo = 0x7F - exponent_bias;
+                if ((mant & 0x4) === 0) {
+                    mant &= 0x3;
+                    mant <<= 1;
+                    expo -= 1;
+                }
+                if ((mant & 0x4) === 0) {
+                    mant &= 0x3;
+                    mant <<= 1;
+                    expo -= 1;
+                }
+                res |= (mant & 0x3) << 21;
+                res |= expo << 23;
             }
-            if (mant & 0x4 === 0) {
-                mant &= 0x3;
-                mant <<= 1;
-                expo -= 1;
-            }
-            res |= (mant & 0x3) << 21;
+        } else {
+            res |= mant << 20;
+            expo += 0x7F - exponent_bias;
             res |= expo << 23;
         }
-    } else {
-        res |= mant << 20;
-        expo += 0x7F - exponent_bias;
-        res |= expo << 23;
-    }
-    DataView.__float8e4m3_uint32[0] = res;
-    return DataView.__float8e4m3_float32[0];
-};
+        DataView.__float8e4m3_uint32[0] = res;
+        return DataView.__float8e4m3_float32[0];
+    };
+}
 
-DataView.__float8e5m2_float32 = new Float32Array(1);
-DataView.__float8e5m2_uint32 = new Uint32Array(DataView.__float8e5m2_float32.buffer, DataView.__float8e5m2_float32.byteOffset, 1);
-DataView.prototype.getFloat8e5m2 = function(byteOffset, fn, uz) {
-    const value = this.getUint8(byteOffset);
-    let exponent_bias = NaN;
-    if (fn && uz) {
-        if (value === 0x80) {
+if (!DataView.prototype.getFloat8e5m2) {
+    DataView.__float8e5m2_float32 = new Float32Array(1);
+    DataView.__float8e5m2_uint32 = new Uint32Array(DataView.__float8e5m2_float32.buffer, DataView.__float8e5m2_float32.byteOffset, 1);
+    DataView.prototype.getFloat8e5m2 = function(byteOffset, fn, uz) {
+        const value = this.getUint8(byteOffset);
+        let exponent_bias = NaN;
+        if (fn && uz) {
+            if (value === 0x80) {
+                return NaN;
+            }
+            exponent_bias = 16;
+        } else if (!fn && !uz) {
+            if (value >= 253 && value <= 255) {
+                return -NaN;
+            }
+            if (value >= 126 && value <= 127) {
+                return NaN;
+            }
+            if (value === 252) {
+                return -Infinity;
+            }
+            if (value === 124) {
+                return Infinity;
+            }
+            exponent_bias = 15;
+        }
+        let expo = (value & 0x7C) >> 2;
+        let mant = value & 0x03;
+        let res = (value & 0x80) << 24;
+        if (expo === 0) {
+            if (mant > 0) {
+                expo = 0x7F - exponent_bias;
+                if ((mant & 0x2) === 0) {
+                    mant &= 0x1;
+                    mant <<= 1;
+                    expo -= 1;
+                }
+                res |= (mant & 0x1) << 22;
+                res |= expo << 23;
+            }
+        } else {
+            res |= mant << 21;
+            expo += 0x7F - exponent_bias;
+            res |= expo << 23;
+        }
+        DataView.__float8e5m2_uint32[0] = res;
+        return DataView.__float8e5m2_float32[0];
+    };
+}
+
+if (!DataView.prototype.getFloat8e3m4) {
+    DataView.__float8e3m4_float32 = new Float32Array(1);
+    DataView.__float8e3m4_uint32 = new Uint32Array(DataView.__float8e3m4_float32.buffer, DataView.__float8e3m4_float32.byteOffset, 1);
+    DataView.prototype.getFloat8e3m4 = function(byteOffset) {
+        const value = this.getUint8(byteOffset);
+        const exponent_bias = 3;
+        if (value === 0x7f) {
             return NaN;
         }
-        exponent_bias = 16;
-    } else if (!fn && !uz) {
-        if (value >= 253 && value <= 255) {
+        if (value === 0xff) {
             return -NaN;
         }
-        if (value >= 126 && value <= 127) {
-            return NaN;
-        }
-        if (value === 252) {
-            return -Infinity;
-        }
-        if (value === 124) {
-            return Infinity;
-        }
-        exponent_bias = 15;
-    }
-    let expo = (value & 0x7C) >> 2;
-    let mant = value & 0x03;
-    let res = (value & 0x80) << 24;
-    if (expo === 0) {
-        if (mant > 0) {
-            expo = 0x7F - exponent_bias;
-            if (mant & 0x2 === 0) {
-                mant &= 0x1;
-                mant <<= 1;
-                expo -= 1;
+        let expo = (value & 0x70) >> 4;
+        let mant = value & 0x0F;
+        const sign = value & 0x80;
+        let res = sign << 24;
+        if (expo === 0) {
+            if (mant > 0) {
+                expo = 0x7F - exponent_bias;
+                if ((mant & 0x8) === 0) {
+                    mant &= 0x7;
+                    mant <<= 1;
+                    expo -= 1;
+                }
+                if ((mant & 0x8) === 0) {
+                    mant &= 0x7;
+                    mant <<= 1;
+                    expo -= 1;
+                }
+                if ((mant & 0x8) === 0) {
+                    mant &= 0x7;
+                    mant <<= 1;
+                    expo -= 1;
+                }
+                res |= (mant & 0x7) << 20;
+                res |= expo << 23;
             }
-            res |= (mant & 0x1) << 22;
+        } else {
+            res |= mant << 19;
+            expo += 0x7F - exponent_bias;
             res |= expo << 23;
         }
+        DataView.__float8e3m4_uint32[0] = res;
+        return DataView.__float8e3m4_float32[0];
+    };
+}
+
+if (!DataView.prototype.getFloat8e8m0fnu) {
+    DataView.__float8e8m0fnu_float32 = new Float32Array(1);
+    DataView.__float8e8m0fnu_uint32 = new Uint32Array(DataView.__float8e8m0fnu_float32.buffer, DataView.__float8e8m0fnu_float32.byteOffset, 1);
+    DataView.prototype.getFloat8e8m0fnu = function(byteOffset) {
+        const value = this.getUint8(byteOffset);
+        if (value === 255) {
+            return NaN;
+        }
+        DataView.__float8e8m0fnu_uint32[0] = value << 23;
+        return DataView.__float8e8m0fnu_float32[0];
+    };
+}
+
+DataView.prototype.getInt48 = DataView.prototype.getInt48 || function(offset, littleEndian) {
+    let value = 0;
+    if (littleEndian) {
+        const low = this.getUint32(offset, true);
+        const high = this.getUint16(offset + 4, true);
+        value = low + high * 0x100000000;
     } else {
-        res |= mant << 21;
-        expo += 0x7F - exponent_bias;
-        res |= expo << 23;
+        const high = this.getUint16(offset, false);
+        const low = this.getUint32(offset + 2, false);
+        value = high * 0x100000000 + low;
     }
-    DataView.__float8e5m2_uint32[0] = res;
-    return DataView.__float8e5m2_float32[0];
+    if (value >= 0x800000000000) {
+        value -= 0x1000000000000;
+    }
+    return value;
 };
 
 DataView.prototype.getIntBits = DataView.prototype.getUintBits || function(offset, bits, littleEndian) {
@@ -235,13 +313,35 @@ DataView.prototype.getUintBits = DataView.prototype.getUintBits || function(offs
     return value & ((1 << bits) - 1);
 };
 
-DataView.prototype.getComplex64 = DataView.prototype.getComplex64 || function(byteOffset, littleEndian) {
-    const real = littleEndian ? this.getFloat32(byteOffset, littleEndian) : this.getFloat32(byteOffset + 4, littleEndian);
-    const imaginary = littleEndian ? this.getFloat32(byteOffset + 4, littleEndian) : this.getFloat32(byteOffset, littleEndian);
-    return new base.Complex64(real, imaginary);
+DataView.prototype.getComplexInt32 = DataView.prototype.getComplexInt32 || function(byteOffset, littleEndian) {
+    const real = littleEndian ? this.getInt32(byteOffset, littleEndian) : this.getInt32(byteOffset + 4, littleEndian);
+    const imaginary = littleEndian ? this.getInt32(byteOffset + 4, littleEndian) : this.getInt32(byteOffset, littleEndian);
+    return new base.Complex(real, imaginary);
 };
 
-DataView.prototype.setComplex64 = DataView.prototype.setComplex64 || function(byteOffset, value, littleEndian) {
+DataView.prototype.getComplexFloat16 = DataView.prototype.getComplexFloat16 || function(byteOffset, littleEndian) {
+    const real = littleEndian ? this.getFloat16(byteOffset, littleEndian) : this.getFloat16(byteOffset + 2, littleEndian);
+    const imaginary = littleEndian ? this.getFloat16(byteOffset + 2, littleEndian) : this.getFloat16(byteOffset, littleEndian);
+    return new base.Complex(real, imaginary);
+};
+
+DataView.prototype.setComplexFloat16 = DataView.prototype.setComplexFloat16 || function(byteOffset, value, littleEndian) {
+    if (littleEndian) {
+        this.setFloat16(byteOffset, value.real, littleEndian);
+        this.setFloat16(byteOffset + 2, value.imaginary, littleEndian);
+    } else {
+        this.setFloat16(byteOffset + 2, value.real, littleEndian);
+        this.setFloat16(byteOffset, value.imaginary, littleEndian);
+    }
+};
+
+DataView.prototype.getComplexFloat32 = DataView.prototype.getComplexFloat32 || function(byteOffset, littleEndian) {
+    const real = littleEndian ? this.getFloat32(byteOffset, littleEndian) : this.getFloat32(byteOffset + 4, littleEndian);
+    const imaginary = littleEndian ? this.getFloat32(byteOffset + 4, littleEndian) : this.getFloat32(byteOffset, littleEndian);
+    return new base.Complex(real, imaginary);
+};
+
+DataView.prototype.setComplexFloat32 = DataView.prototype.setComplexFloat32 || function(byteOffset, value, littleEndian) {
     if (littleEndian) {
         this.setFloat32(byteOffset, value.real, littleEndian);
         this.setFloat32(byteOffset + 4, value.imaginary, littleEndian);
@@ -251,13 +351,13 @@ DataView.prototype.setComplex64 = DataView.prototype.setComplex64 || function(by
     }
 };
 
-DataView.prototype.getComplex128 = DataView.prototype.getComplex128 || function(byteOffset, littleEndian) {
+DataView.prototype.getComplexFloat64 = DataView.prototype.getComplexFloat64 || function(byteOffset, littleEndian) {
     const real = littleEndian ? this.getFloat64(byteOffset, littleEndian) : this.getFloat64(byteOffset + 8, littleEndian);
     const imaginary = littleEndian ? this.getFloat64(byteOffset + 8, littleEndian) : this.getFloat64(byteOffset, littleEndian);
-    return new base.Complex128(real, imaginary);
+    return new base.Complex(real, imaginary);
 };
 
-DataView.prototype.setComplex128 = DataView.prototype.setComplex128 || function(byteOffset, value, littleEndian) {
+DataView.prototype.setComplexFloat64 = DataView.prototype.setComplexFloat64 || function(byteOffset, value, littleEndian) {
     if (littleEndian) {
         this.setFloat64(byteOffset, value.real, littleEndian);
         this.setFloat64(byteOffset + 8, value.imaginary, littleEndian);
@@ -266,15 +366,6 @@ DataView.prototype.setComplex128 = DataView.prototype.setComplex128 || function(
         this.setFloat64(byteOffset, value.imaginary, littleEndian);
     }
 };
-
-if (typeof Element !== 'undefined' && Element.prototype && !Element.prototype.replaceChildren) {
-    Element.prototype.replaceChildren = function(...args) {
-        while (this.lastChild) {
-            this.removeChild(this.lastChild);
-        }
-        this.append(...args);
-    };
-}
 
 /* eslint-enable no-extend-native */
 
@@ -301,14 +392,14 @@ base.BinaryStream = class {
 
     seek(position) {
         this._position = position >= 0 ? position : this._length + position;
-        if (this._position > this._buffer.length) {
+        if (this._position > this._buffer.length || this._position < 0) {
             throw new Error(`Expected ${this._position - this._buffer.length} more bytes. The file might be corrupted. Unexpected end of file.`);
         }
     }
 
     skip(offset) {
         this._position += offset;
-        if (this._position > this._buffer.length) {
+        if (this._position > this._buffer.length || this._position < 0) {
             throw new Error(`Expected ${this._position - this._buffer.length} more bytes. The file might be corrupted. Unexpected end of file.`);
         }
     }
@@ -606,11 +697,11 @@ base.Tensor = class {
             ['qint8', 1], ['qint16', 2], ['qint32', 4],
             ['quint8', 1], ['quint16', 2], ['quint32', 4],
             ['xint8', 1],
-            ['int8', 1], ['int16', 2], ['int32', 4], ['int64', 8],
+            ['int8', 1], ['int16', 2], ['int32', 4], ['int48', 6], ['int64', 8], ['int128', 16],
             ['uint8', 1], ['uint16', 2], ['uint32', 4,], ['uint64', 8],
             ['float16', 2], ['float32', 4], ['float64', 8], ['bfloat16', 2],
-            ['complex64', 8], ['complex128', 16],
-            ['float8e4m3fn', 1], ['float8e4m3fnuz', 1], ['float8e5m2', 1], ['float8e5m2fnuz', 1]
+            ['complex<float32>', 8], ['complex<float64>', 16], ['complex<int32>', 8],
+            ['float8e4m3fn', 1], ['float8e4m3fnuz', 1], ['float8e5m2', 1], ['float8e5m2fnuz', 1], ['float8e4m3b11fnuz', 1], ['float8e3m4', 1], ['float8e4m3', 1], ['float4e2m1fn', 1], ['float6e2m3fn', 1], ['float6e3m2fn', 1], ['float8e8m0fnu', 1]
         ]);
     }
 
@@ -739,8 +830,8 @@ base.Tensor = class {
                 for (let i = 0; i < dimensions; i++) {
                     const stride = strides[i];
                     const dimension = data[i];
-                    for (let i = 0; i < indices.length; i++) {
-                        indices[i] += dimension[i].toNumber() * stride;
+                    for (let j = 0; j < indices.length; j++) {
+                        indices[j] += dimension[j].toNumber() * stride;
                     }
                 }
                 context.data = this._decodeSparse(dataType, context.dimensions, indices, values);
@@ -757,7 +848,7 @@ base.Tensor = class {
                             const itemsize = base.Tensor._dataTypes.get(dataType);
                             const length = context.data.length;
                             const stride = context.stride;
-                            if (length < (itemsize * shape.reduce((a, v) => a * v, 1))) {
+                            if (length < (itemsize * shape.reduce((a, v) => a * v, 1)) && !stride.every((v) => v === 0)) {
                                 const max = stride.reduce((a, v, i) => v > stride[i] ? i : a, 0);
                                 if (length !== (itemsize * stride[max] * shape[max])) {
                                     throw new Error('Invalid tensor data size.');
@@ -784,7 +875,8 @@ base.Tensor = class {
                     }
                     case '|': {
                         context.data = this.values;
-                        if (!base.Tensor._dataTypes.has(dataType) && dataType !== 'string' && dataType !== 'object' && dataType !== 'void') {
+                        const integer = (dataType.startsWith('int') && !isNaN(parseInt(dataType.substring(3), 10))) || (dataType.startsWith('uint') && !isNaN(parseInt(dataType.substring(4), 10)));
+                        if (!base.Tensor._dataTypes.has(dataType) && dataType !== 'string' && dataType !== 'object' && dataType !== 'datetime' && dataType !== 'void' && !integer) {
                             throw new Error(`Tensor data type '${dataType}' is not implemented.`);
                         }
                         const size = context.dimensions.reduce((a, v) => a * v, 1);
@@ -794,7 +886,7 @@ base.Tensor = class {
                         break;
                     }
                     default: {
-                        throw new base.Tensor(`Unsupported tensor encoding '${this.encoding}'.`);
+                        throw new Error(`Unsupported tensor encoding '${this.encoding}'.`);
                     }
                 }
             }
@@ -840,123 +932,157 @@ base.Tensor = class {
         if (dimension === shape.length - 1) {
             const ellipsis = (context.count + size) > context.limit;
             const length = ellipsis ? context.limit - context.count : size;
-            const max = offset + (length * stride);
             switch (dataType) {
                 case 'boolean':
-                    for (; offset < max; offset += stride) {
+                    for (let i = 0; i < length; i++, offset += stride) {
                         results.push(view.getUint8(offset) !== 0);
                     }
                     break;
                 case 'qint8':
                 case 'xint8':
                 case 'int8':
-                    for (; offset < max; offset += stride) {
+                    for (let i = 0; i < length; i++, offset += stride) {
                         results.push(view.getInt8(offset));
                     }
                     break;
                 case 'qint16':
                 case 'int16':
-                    for (; offset < max; offset += stride) {
+                    for (let i = 0; i < length; i++, offset += stride) {
                         results.push(view.getInt16(offset, this._littleEndian));
                     }
                     break;
                 case 'qint32':
                 case 'int32':
-                    for (; offset < max; offset += stride) {
+                    for (let i = 0; i < length; i++, offset += stride) {
                         results.push(view.getInt32(offset, this._littleEndian));
                     }
                     break;
+                case 'int48':
+                    for (let i = 0; i < length; i++, offset += stride) {
+                        results.push(view.getInt48(offset, this._littleEndian));
+                    }
+                    break;
                 case 'int64':
-                    for (; offset < max; offset += stride) {
+                    for (let i = 0; i < length; i++, offset += stride) {
                         results.push(view.getBigInt64(offset, this._littleEndian));
                     }
                     break;
                 case 'int':
-                    for (; offset < max; offset += stride) {
+                    for (let i = 0; i < length; i++, offset += stride) {
                         results.push(view.getIntBits(offset, context.bits, this._littleEndian));
                     }
                     break;
                 case 'quint8':
                 case 'uint8':
-                    for (; offset < max; offset += stride) {
+                    for (let i = 0; i < length; i++, offset += stride) {
                         results.push(view.getUint8(offset));
                     }
                     break;
                 case 'quint16':
                 case 'uint16':
-                    for (; offset < max; offset += stride) {
-                        results.push(view.getUint16(offset, true));
+                    for (let i = 0; i < length; i++, offset += stride) {
+                        results.push(view.getUint16(offset, this._littleEndian));
                     }
                     break;
                 case 'quint32':
                 case 'uint32':
-                    for (; offset < max; offset += stride) {
-                        results.push(view.getUint32(offset, true));
+                    for (let i = 0; i < length; i++, offset += stride) {
+                        results.push(view.getUint32(offset, this._littleEndian));
                     }
                     break;
                 case 'uint64':
-                    for (; offset < max; offset += stride) {
-                        results.push(view.getBigUint64(offset, true));
+                    for (let i = 0; i < length; i++, offset += stride) {
+                        results.push(view.getBigUint64(offset, this._littleEndian));
                     }
                     break;
                 case 'uint':
-                    for (; offset < max; offset += stride) {
+                    for (let i = 0; i < length; i++, offset += stride) {
                         results.push(view.getUintBits(offset, context.bits, this._littleEndian));
                     }
                     break;
                 case 'float16':
-                    for (; offset < max; offset += stride) {
+                    for (let i = 0; i < length; i++, offset += stride) {
                         results.push(view.getFloat16(offset, this._littleEndian));
                     }
                     break;
                 case 'float32':
-                    for (; offset < max; offset += stride) {
+                    for (let i = 0; i < length; i++, offset += stride) {
                         results.push(view.getFloat32(offset, this._littleEndian));
                     }
                     break;
                 case 'float64':
-                    for (; offset < max; offset += stride) {
+                    for (let i = 0; i < length; i++, offset += stride) {
                         results.push(view.getFloat64(offset, this._littleEndian));
                     }
                     break;
                 case 'bfloat16':
-                    for (; offset < max; offset += stride) {
+                    for (let i = 0; i < length; i++, offset += stride) {
                         results.push(view.getBfloat16(offset, this._littleEndian));
                     }
                     break;
-                case 'complex64':
-                    for (; offset < max; offset += stride) {
-                        results.push(view.getComplex64(offset, this._littleEndian));
+                case 'complex<int32>':
+                    for (let i = 0; i < length; i++, offset += stride) {
+                        results.push(view.getComplexInt32(offset, this._littleEndian));
                     }
                     break;
-                case 'complex128':
-                    for (; offset < max; offset += stride) {
-                        results.push(view.getComplex128(offset, this._littleEndian));
+                case 'complex<float16>':
+                    for (let i = 0; i < length; i++, offset += stride) {
+                        results.push(view.getComplexFloat16(offset, this._littleEndian));
+                    }
+                    break;
+                case 'complex<float32>':
+                    for (let i = 0; i < length; i++, offset += stride) {
+                        results.push(view.getComplexFloat32(offset, this._littleEndian));
+                    }
+                    break;
+                case 'complex<float64>':
+                    for (let i = 0; i < length; i++, offset += stride) {
+                        results.push(view.getComplexFloat64(offset, this._littleEndian));
                     }
                     break;
                 case 'float4e2m1':
-                    for (; offset < max; offset += stride) {
+                    for (let i = 0; i < length; i++, offset += stride) {
                         results.push(view.getFloat4e2m1(offset));
                     }
                     break;
+                case 'float8e3m4':
+                    for (let i = 0; i < length; i++, offset += stride) {
+                        results.push(view.getFloat8e3m4(offset));
+                    }
+                    break;
+                case 'float8e4m3':
+                    for (let i = 0; i < length; i++, offset += stride) {
+                        results.push(view.getFloat8e4m3(offset, false, false));
+                    }
+                    break;
                 case 'float8e4m3fn':
-                    for (; offset < max; offset += stride) {
+                    for (let i = 0; i < length; i++, offset += stride) {
                         results.push(view.getFloat8e4m3(offset, true, false));
                     }
                     break;
                 case 'float8e4m3fnuz':
-                    for (; offset < max; offset += stride) {
+                    for (let i = 0; i < length; i++, offset += stride) {
                         results.push(view.getFloat8e4m3(offset, true, true));
                     }
                     break;
+                case 'float8e4m3b11fnuz':
+                    for (let i = 0; i < length; i++, offset += stride) {
+                        results.push(view.getFloat8e4m3(offset, true, true, 11));
+                    }
+                    break;
                 case 'float8e5m2':
-                    for (; offset < max; offset += stride) {
+                    for (let i = 0; i < length; i++, offset += stride) {
                         results.push(view.getFloat8e5m2(offset, false, false));
                     }
                     break;
                 case 'float8e5m2fnuz':
-                    for (; offset < max; offset += stride) {
+                    for (let i = 0; i < length; i++, offset += stride) {
                         results.push(view.getFloat8e5m2(offset, true, true));
+                    }
+                    break;
+                case 'float8e8m0fnu':
+                    for (let i = 0; i < length; i++, offset += stride) {
+                        results.push(view.getFloat8e8m0fnu(offset));
                     }
                     break;
                 default:
@@ -999,7 +1125,7 @@ base.Tensor = class {
                 }
                 switch (dataType) {
                     case 'boolean':
-                        results.push(data[position] === 0 ? false : true);
+                        results.push(data[position] === 0 || data[position] === false ? false : true);
                         break;
                     default:
                         results.push(data[position]);
@@ -1083,7 +1209,7 @@ base.Tensor = class {
                     break;
                 }
                 default: {
-                    throw new Error(`Unsupported tensor encoding '${this._encoding}'.`);
+                    throw new Error(`Unsupported tensor encoding '${this.encoding}'.`);
                 }
             }
             switch (this.layout) {
@@ -1260,22 +1386,23 @@ base.Metadata = class {
             'ort',
             'dnn', 'cmf',
             'gguf',
-            'hd5', 'hdf5', 'keras',
+            'hd5', 'hdf5',
+            'jax_export', 'jax_exported',
+            'keras',
             'tfl', 'circle', 'lite',
-            'mlnet', 'mar', 'maxviz', 'meta', 'nn', 'ngf', 'hn',
+            'mlir', 'mlirbc', 'mlnet', 'mar', 'maxviz', 'meta', 'nn', 'ngf', 'hn',
             'param', 'params',
             'paddle', 'pdiparams', 'pdmodel', 'pdopt', 'pdparams', 'nb',
             'pkl', 'pickle', 'joblib', 'safetensors',
             'ptl', 't7',
-            'dlc', 'uff', 'armnn', 'kann', 'kgraph',
-            'mnn', 'ms', 'ncnn', 'om', 'tm', 'mge', 'tmfile', 'tnnproto', 'xmodel', 'kmodel', 'rknn',
+            'dlc', 'uff', 'armnn', 'kann', 'kgraph', 'tosa',
+            'mnn', 'ms', 'ncnn', 'om', 'tm', 'mge', 'tmfile', 'tnnproto', 'xmodel', 'kmodel', 'rknn', 'espdl',
             'tar', 'zip'
         ];
     }
 };
 
-export const Complex64 = base.Complex64;
-export const Complex128 = base.Complex128;
+export const Complex = base.Complex;
 export const BinaryStream = base.BinaryStream;
 export const BinaryReader = base.BinaryReader;
 export const Tensor = base.Tensor;

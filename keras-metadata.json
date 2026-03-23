@@ -227,7 +227,7 @@
     "name": "AveragePooling2D",
     "module": "keras.layers",
     "category": "Pool",
-    "description": "Average pooling operation for 2D spatial data.\n\nDownsamples the input along its spatial dimensions (height and width)\nby taking the average value over an input window\n(of size defined by `pool_size`) for each channel of the input.\nThe window is shifted by `strides` along each dimension.\n\nThe resulting output when using the `\"valid\"` padding option has a spatial\nshape (number of rows or columns) of:\n`output_shape = math.floor((input_shape - pool_size) / strides) + 1`\n(when `input_shape >= pool_size`)\n\nThe resulting output shape when using the `\"same\"` padding option is:\n`output_shape = math.floor((input_shape - 1) / strides) + 1`",
+    "description": "Average pooling operation for 2D spatial data.\n\nDownsamples the input along its spatial dimensions (height and width)\nby taking the average value over an input window\n(of size defined by `pool_size`) for each channel of the input.\nThe window is shifted by `strides` along each dimension.\n\nThe resulting output when using the `\"valid\"` padding option has a spatial\nshape (number of rows or columns) of:\n`output_shape = math.floor((input_shape - pool_size) / strides) + 1`\n(when `input_shape >= pool_size`)\n\nThe resulting output shape when using the `\"same\"` padding option is:\n`output_shape = input_shape`",
     "attributes": [
       {
         "default": "channels_last",
@@ -574,15 +574,15 @@
         "name": "gamma_constraint"
       },
       {
-        "description": "Whether to use [Batch Renormalization](\n    https://arxiv.org/abs/1702.03275). This adds extra variables during\n      training. The inference is the same for either value of this parameter.",
+        "description": "Whether to use\n        [Batch Renormalization](https://arxiv.org/abs/1702.03275). This\n        adds extra variables during training. The inference is the same\n        for either value of this parameter.",
         "name": "renorm"
       },
       {
-        "description": "A dictionary that may map keys 'rmax', 'rmin', 'dmax' to\n    scalar `Tensors` used to clip the renorm correction. The correction `(r,\n    d)` is used as `corrected_value = normalized_value * r + d`, with `r`\n    clipped to [rmin, rmax], and `d` to [-dmax, dmax]. Missing rmax, rmin,\n    dmax are set to inf, 0, inf, respectively.",
+        "description": "Dictionary, valid only if `renorm = True`.\n        Maps optional keys `\"rmax\"`, `\"rmin\"`, `\"dmax\"` to floats used to\n        clip the renorm correction. The correction `(r, d)` is used as\n        `corrected_value = normalized_value * r + d`, with `r` clipped to\n        `[rmin, rmax]`, and `d` to `[-dmax, dmax]`. Missing `rmax`, `rmin`,\n        `dmax` are set to `inf`, `0`, `inf`, respectively.",
         "name": "renorm_clipping"
       },
       {
-        "description": "Momentum used to update the moving means and standard\n    deviations with renorm. Unlike `momentum`, this affects training and\n    should be neither too small (which would add noise) nor too large (which\n    would give stale estimates). Note that `momentum` is still applied to get\n    the means and variances for inference.",
+        "description": "Momentum used to update the moving means and standard\n        deviations with renorm. Valid only if `renorm= True`. Unlike\n        `momentum`, this affects training and should be neither too small\n        (which would add noise) nor too large (which would give stale\n        estimates). Note that `momentum` is still applied to get the means\n        and variances for inference.",
         "name": "renorm_momentum"
       },
       {
@@ -998,7 +998,7 @@
       },
       {
         "default": "channels_last",
-        "description": "string, either `\"channels_last\"` or `\"channels_first\"`.\n        The ordering of the dimensions in the inputs. `\"channels_last\"`\n        corresponds to inputs with shape\n        `(batch_size, height, width, channels)`\n        while `\"channels_first\"` corresponds to inputs with shape\n        `(batch_size, channels, height, width)`. It defaults to the\n        `image_data_format` value found in your Keras config file at\n        `~/.keras/keras.json`. If you never set it, then it will be\n        `\"channels_last\"`.",
+        "description": "string, either `\"channels_last\"` or `\"channels_first\"`.\n        The ordering of the dimensions in the inputs. `\"channels_last\"`\n        corresponds to inputs with shape\n        `(batch_size, height, width, channels)`\n        while `\"channels_first\"` corresponds to inputs with shape\n        `(batch_size, channels, height, width)`. It defaults to the\n        `image_data_format` value found in your Keras config file at\n        `~/.keras/keras.json`. If you never set it, then it will be\n        `\"channels_last\"`.\n     dilation_rate: An integer or tuple/list of 2 integers,\n        specifying the dilation rate for\n        all spatial dimensions for dilated convolution.\n        Specifying different dilation rates\n        for different dimensions is not supported.\n        Currently, specifying any `dilation_rate` value != 1 is\n        incompatible with specifying any stride value != 1.",
         "name": "data_format"
       },
       {
@@ -1062,7 +1062,7 @@
         "name": "bias_constraint"
       },
       {
-        "description": "An integer or tuple/list of 2 integers,\n    specifying the amount of padding along the height and width\n    of the output tensor.\n    Can be a single integer to specify the same value for all\n    spatial dimensions.\n    The amount of output padding along a given dimension must be\n    lower than the stride along that same dimension.\n    If set to `None` (default), the output shape is inferred.",
+        "description": "An integer or tuple/list of 2 integers,\n        specifying the amount of padding along the height and width\n        of the output tensor.\n        Can be a single integer to specify the same value for all\n        spatial dimensions.\n        The amount of output padding along a given dimension must be\n        lower than the stride along that same dimension.\n        If set to `None` (default), the output shape is inferred.",
         "name": "output_padding"
       }
     ],
@@ -1713,7 +1713,7 @@
     "name": "Dense",
     "module": "keras.layers",
     "category": "Layer",
-    "description": "Just your regular densely-connected NN layer.\n\n`Dense` implements the operation:\n`output = activation(dot(input, kernel) + bias)`\nwhere `activation` is the element-wise activation function\npassed as the `activation` argument, `kernel` is a weights matrix\ncreated by the layer, and `bias` is a bias vector created by the layer\n(only applicable if `use_bias` is `True`).\n\nNote: If the input to the layer has a rank greater than 2, `Dense`\ncomputes the dot product between the `inputs` and the `kernel` along the\nlast axis of the `inputs` and axis 0 of the `kernel` (using `tf.tensordot`).\nFor example, if input has dimensions `(batch_size, d0, d1)`, then we create\na `kernel` with shape `(d1, units)`, and the `kernel` operates along axis 2\nof the `input`, on every sub-tensor of shape `(1, 1, d1)` (there are\n`batch_size * d0` such sub-tensors). The output in this case will have\nshape `(batch_size, d0, units)`.",
+    "description": "Just your regular densely-connected NN layer.\n\n`Dense` implements the operation:\n`output = activation(dot(input, kernel) + bias)`\nwhere `activation` is the element-wise activation function\npassed as the `activation` argument, `kernel` is a weights matrix\ncreated by the layer, and `bias` is a bias vector created by the layer\n(only applicable if `use_bias` is `True`). When this layer is\nfollowed by a `BatchNormalization` layer, it is recommended to set\n`use_bias=False` as `BatchNormalization` has its own bias term.\n\nNote: If the input to the layer has a rank greater than 2, `Dense`\ncomputes the dot product between the `inputs` and the `kernel` along the\nlast axis of the `inputs` and axis 0 of the `kernel` (using `tf.tensordot`).\nFor example, if input has dimensions `(batch_size, d0, d1)`, then we create\na `kernel` with shape `(d1, units)`, and the `kernel` operates along axis 2\nof the `input`, on every sub-tensor of shape `(1, 1, d1)` (there are\n`batch_size * d0` such sub-tensors). The output in this case will have\nshape `(batch_size, d0, units)`.",
     "attributes": [
       {
         "description": "Positive integer, dimensionality of the output space.",
@@ -1898,7 +1898,7 @@
     "description": "Computes element-wise dot product of two tensors.\n\nIt takes a list of inputs of size 2, and the axes\ncorresponding to each input along with the dot product\nis to be performed.\n\nLet's say `x` and `y` are the two input tensors with shapes\n`(2, 3, 5)` and `(2, 10, 3)`. The batch dimension should be\nof same size for both the inputs, and `axes` should correspond\nto the dimensions that have the same size in the corresponding\ninputs. e.g. with `axes=(1, 2)`, the dot product of `x`, and `y`\nwill result in a tensor with shape `(2, 5, 10)`",
     "attributes": [
       {
-        "description": "Integer or tuple of integers, axis or axes along which to\n        take the dot product. If a tuple, should be two integers\n        corresponding to the desired axis from the first input and the\n        desired axis from the second input, respectively. Note that the\n        size of the two selected axes must match.",
+        "description": "Integer or tuple of integers, axis or axes along which to\n        take the dot product. If a tuple, should be two integers\n        corresponding to the desired axis from the first input and the\n        desired axis from the second input, respectively. Note that the\n        size of the two selected axes must match, and that\n        axis `0` (the batch axis) cannot be included.",
         "name": "axes"
       },
       {
@@ -3439,6 +3439,10 @@
       {
         "name": "flash_attention",
         "description": "If `None`, the layer attempts to use flash\n        attention for faster and more memory-efficient attention\n        computations when possible. This behavior can be configured using\n        `keras.config.enable_flash_attention()` or\n        `keras.config.disable_flash_attention()`."
+      },
+      {
+        "name": "use_gate",
+        "description": "Boolean, whether to apply a gated attention mechanism.\n        When True, an additional gating branch is added based on the\n        (Gated Attention for Large Language Models)[https://arxiv.org/abs/2505.06708].\n        It applies a sigmoid-activated linear projection to the query\n        which then gates the attention output. This helps improve training\n        stability and eliminates \"attention sinks\"."
       }
     ],
     "examples": [
@@ -3632,13 +3636,13 @@
     "description": "Layer that reshapes inputs into the given shape.",
     "attributes": [
       {
-        "description": "Target shape. Tuple of integers, does not include the\n        samples dimension (batch size).",
+        "description": "Target shape. Tuple of integers, does not include the\n        samples dimension (batch size). One element of the `target_shape`\n        can be -1 in which case the missing value is inferred from the\n        size of the array and remaining dimensions.",
         "name": "target_shape"
       }
     ],
     "inputs": [
       {
-        "description": "Arbitrary, although all dimensions in the input shape must be\nknown/fixed. Use the keyword argument `input_shape` (tuple of integers,\ndoes not include the samples/batch size axis) when using this layer as\nthe first layer in a model.",
+        "description": "Arbitrary, but required to be compatible with `target_shape`.",
         "name": "input"
       }
     ],
@@ -3653,7 +3657,7 @@
         "code": ">>> x = keras.Input(shape=(12,))\n>>> y = keras.layers.Reshape((3, 4))(x)\n>>> y.shape\n(None, 3, 4)"
       },
       {
-        "code": ">>> # also supports shape inference using `-1` as dimension\n>>> y = keras.layers.Reshape((-1, 2, 2))(x)\n>>> y.shape\n(None, 3, 2, 2)"
+        "code": ">>> # another example with shape inference using `-1` as dimension\n>>> y = keras.layers.Reshape((-1, 2, 2))(x)\n>>> y.shape\n(None, 3, 2, 2)"
       }
     ]
   },

@@ -10,7 +10,7 @@ paddle.ModelFactory = class {
 
     async match(context) {
         const identifier = context.identifier;
-        const extension = identifier.split('.').pop().toLowerCase();
+        const extension = identifier.lastIndexOf('.') > 0 ? identifier.split('.').pop().toLowerCase() : '';
         if (identifier === '__model__' || extension === '__model__' || extension === 'paddle' || extension === 'pdmodel') {
             const tags = await context.tags('pb');
             if (tags.get(1) === 2) {
@@ -46,11 +46,11 @@ paddle.ModelFactory = class {
         return null;
     }
 
-    filter(context, type) {
-        if (context.type === 'paddle.pb' && (type === 'paddle.params' || type === 'paddle.pickle')) {
+    filter(context, match) {
+        if (context.type === 'paddle.pb' && (match.type === 'paddle.params' || match.type === 'paddle.pickle')) {
             return false;
         }
-        if (context.type === 'paddle.naive.model' && type === 'paddle.naive.param') {
+        if (context.type === 'paddle.naive.model' && match.type === 'paddle.naive.param') {
             return false;
         }
         return true;
@@ -101,6 +101,8 @@ paddle.ModelFactory = class {
                                 reader.field = function(tag, message) {
                                     if (message instanceof paddle.proto.VarType && tag === 'lod_tensor') {
                                         message.dense_tensor = paddle.proto.VarType.DenseTensorDesc.decodeText(reader);
+                                    } else if (message instanceof paddle.proto.VarType.DenseTensorDesc && tag === 'lod_level') {
+                                        message.legacy_lod_level = reader.int32();
                                     } else {
                                         throw new Error(`Unknown field '${tag}' ${this.location()}`);
                                     }
@@ -216,7 +218,8 @@ paddle.ModelFactory = class {
                         };
                         const openNumPyArrayPickle = (stream) => {
                             const execution = new python.Execution();
-                            const unpickler = execution.invoke('pickle.Unpickler', [stream]);
+                            const pickle = execution.__import__('pickle');
+                            const unpickler = new pickle.Unpickler(stream);
                             const obj = unpickler.load();
                             const container = new paddle.Pickle(obj);
                             return container.weights || new Map();
@@ -284,7 +287,7 @@ paddle.Model = class {
     constructor(metadata, format, desc, tensors) {
         desc = desc && Array.isArray(desc.blocks) ? desc : { blocks: [null] };
         this.format = format;
-        this.graphs = desc.blocks.map((block) => new paddle.Graph(metadata, block, tensors));
+        this.modules = desc.blocks.map((block) => new paddle.Graph(metadata, block, tensors));
     }
 };
 
@@ -351,19 +354,25 @@ paddle.Graph = class {
             for (const op of block.ops) {
                 if (op.type === 'feed') {
                     let name = '';
-                    if (op.kind === 'op') {
-                        name = op.attrs.filter((attr) => attr.name === 'col')[0].irValue.toString();
-                    } else {
-                        name = op.attrs.filter((attr) => attr.name === 'col')[0].i.toString();
+                    const attr = op.attrs.find((attr) => attr.name === 'col');
+                    if (attr) {
+                        if (op.kind === 'op') {
+                            name = attr.irValue.toString();
+                        } else {
+                            name = attr.i.toString();
+                        }
                     }
                     const argument = new paddle.Argument(name, op.outputs[0].arguments.map((id) => values.get(id)));
                     this.inputs.push(argument);
                 } else if (op.type === 'fetch') {
                     let name = '';
-                    if (op.kind === 'op') {
-                        name = op.attrs.filter((attr) => attr.name === 'col')[0].irValue.toString();
-                    } else {
-                        name = op.attrs.filter((attr) => attr.name === 'col')[0].i.toString();
+                    const attr = op.attrs.find((attr) => attr.name === 'col');
+                    if (attr) {
+                        if (op.kind === 'op') {
+                            name = attr.irValue.toString();
+                        } else {
+                            name = attr.i.toString();
+                        }
                     }
                     const argument = new paddle.Argument(name, op.inputs[0].arguments.map((id) => values.get(id)));
                     this.outputs.push(argument);
@@ -432,13 +441,13 @@ paddle.Argument = class {
 
 paddle.Value = class {
 
-    constructor(name, type, initializer) {
+    constructor(name, type, initializer = null) {
         if (typeof name !== 'string') {
             throw new paddle.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
         }
         this.name = name;
         this.type = !type && initializer ? initializer.type : type;
-        this.initializer = initializer || null;
+        this.initializer = initializer;
     }
 };
 
@@ -585,10 +594,10 @@ paddle.Node = class {
 
 paddle.Tensor = class {
 
-    constructor(type, data, category) {
+    constructor(type, data, category = '') {
         this.type = type;
         this.values = data;
-        this.category = category || '';
+        this.category = category;
     }
 };
 
@@ -752,7 +761,7 @@ paddle.NaiveBuffer = class {
         const stream = context.stream;
         if (stream && stream.length > 4) {
             const buffer = stream.peek(4);
-            if (buffer[0] > 2 || buffer[1] !== 0x00 || buffer[2] !== 0x76 || buffer[2] !== 0x32) {
+            if (buffer[0] > 2 || buffer[1] !== 0x00 || buffer[2] !== 0x76 || buffer[3] !== 0x32) {
                 if (context.identifier === '__model__.nb') {
                     return new paddle.NaiveBuffer('paddle.naive.model', stream, -1);
                 }
@@ -781,7 +790,7 @@ paddle.NaiveBuffer = class {
         const decoder = new TextDecoder('utf-8');
         const opt_version = reader.read(16);
         const version = decoder.decode(opt_version.slice(0, opt_version.indexOf(0x00)));
-        this.format = `Paddle Lite${version && version.match(/^v\d+\.\d+.\d+$/) ? ` ${version}` : ''}`;
+        this.format = `Paddle Lite${version && version.match(/^v\d+\.\d+\.\d+$/) ? ` ${version}` : ''}`;
         const topo_size = reader.uint64().toNumber();
         const openProgramDesc = (buffer) => {
             const reader = flatbuffers.BinaryReader.open(buffer);
@@ -841,12 +850,8 @@ paddle.Utility = class {
             paddle.Utility._dataTypes = new Array(length);
             const types = new Map([
                 ['bool', 'boolean'],
-                ['bf16', 'bfloat16'],
-                ['fp16', 'float16'],
-                ['fp32', 'float32'],
-                ['fp64', 'float64'],
-                ['fp8_e4m3fn', 'float8e4m3fn'],
-                ['fp8_e5m2', 'float8e5m2']
+                ['bf16', 'bfloat16'], ['fp16', 'float16'], ['fp32', 'float32'], ['fp64', 'float64'],
+                ['fp8_e4m3fn', 'float8e4m3fn'], ['fp8_e5m2', 'float8e5m2']
             ]);
             for (const [name, index] of Object.entries(paddle.DataType)) {
                 const key = name.toLowerCase();
@@ -1250,8 +1255,8 @@ paddle.IR = class {
             case 'i16': return 'int16';
             case 'i32': return 'int32';
             case 'i64': return 'int64';
-            case 'c64': return 'complex64';
-            case 'c128': return 'complex128';
+            case 'c64': return 'complex<float32>';
+            case 'c128': return 'complex<float64>';
             case 'str': return 'string';
             default: return type;
         }

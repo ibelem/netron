@@ -64,7 +64,7 @@ mnn.Model = class {
             throw new mnn.Error(`Unsupported model source '${net.sourceType}'.`);
         }
         this.source = sources.get(net.sourceType);
-        this.graphs = [new mnn.Graph(metadata, net)];
+        this.modules = [new mnn.Graph(metadata, net)];
     }
 };
 
@@ -165,11 +165,10 @@ mnn.Node = class {
                 this.inputs.push(argument);
                 parameters.splice(0, parameters.length);
             } else if (param instanceof mnn.schema.Convolution2D) {
-                const common = param.common;
-                const outputCount = common.outputCount;
-                const inputCount = common.inputCount;
-                const kernelX = common.kernelX;
-                const kernelY = common.kernelY;
+                const outputCount = param.common ? param.common.outputCount : 0;
+                const inputCount = param.common ? param.common.inputCount : 0;
+                const kernelX = param.common ? param.common.kernelX : 0;
+                const kernelY = param.common ? param.common.kernelY : 0;
                 this._buildTensor('weight', mnn.schema.DataType.DT_FLOAT, [outputCount, inputCount, kernelX, kernelY], param.weight);
                 this._buildTensor('bias', mnn.schema.DataType.DT_FLOAT, [outputCount], param.bias);
                 delete param.weight;
@@ -178,7 +177,7 @@ mnn.Node = class {
                 delete param.symmetricQuan;
             } else if (param instanceof mnn.schema.InnerProduct) {
                 const outputCount = param.outputCount;
-                const inputCount = param.weightSize / outputCount;
+                const inputCount = outputCount > 0 ? param.weightSize / outputCount : 0;
                 this._buildTensor('weight', mnn.schema.DataType.DT_FLOAT, [outputCount, inputCount], param.weight);
                 this._buildTensor('bias', mnn.schema.DataType.DT_FLOAT, [outputCount], param.bias);
                 delete param.weight;
@@ -247,19 +246,19 @@ mnn.Node = class {
 
 mnn.Argument = class {
 
-    constructor(name, value, type) {
+    constructor(name, value, type = null) {
         this.name = name;
         this.value = value;
-        this.type = type || null;
+        this.type = type;
     }
 };
 
 mnn.Value = class {
 
-    constructor(name, type, initializer) {
+    constructor(name, type, initializer = null) {
         this.name = name;
         this.type = !type && initializer ? initializer.type : type;
-        this.initializer = initializer || null;
+        this.initializer = initializer;
     }
 };
 
@@ -334,7 +333,7 @@ mnn.Utility = class {
             case mnn.schema.DataType.DT_INT16: return 'int16';
             case mnn.schema.DataType.DT_INT8: return 'int8';
             case mnn.schema.DataType.DT_STRING: return 'string';
-            case mnn.schema.DataType.DT_COMPLEX64: return 'complex64';
+            case mnn.schema.DataType.DT_COMPLEX64: return 'complex<float32>';
             case mnn.schema.DataType.DT_INT64: return 'int64';
             case mnn.schema.DataType.DT_BOOL: return 'boolean';
             case mnn.schema.DataType.DT_QINT8: return 'qint8';
@@ -344,7 +343,7 @@ mnn.Utility = class {
             case mnn.schema.DataType.DT_QINT16: return 'qint16';
             case mnn.schema.DataType.DT_QUINT16: return 'quint16';
             case mnn.schema.DataType.DT_UINT16: return 'uint16';
-            case mnn.schema.DataType.DT_COMPLEX128: return 'complex128';
+            case mnn.schema.DataType.DT_COMPLEX128: return 'complex<float64>';
             case mnn.schema.DataType.DT_HALF: return 'float16';
             case mnn.schema.DataType.DT_RESOURCE: return 'resource';
             case mnn.schema.DataType.DT_VARIANT: return 'variant';

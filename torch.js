@@ -39,7 +39,7 @@ torch.Model = class {
 
     constructor(metadata, graphs) {
         this.format = 'Torch v7';
-        this.graphs = graphs.map((graph, index) => new torch.Graph(metadata, index.toString(), graph));
+        this.modules = graphs.map((graph, index) => new torch.Graph(metadata, index.toString(), graph));
     }
 };
 
@@ -70,11 +70,11 @@ torch.Graph = class {
 
 torch.Argument = class {
 
-    constructor(name, value, type, visible) {
+    constructor(name, value, type = null, visible = true) {
         this.name = name;
         this.value = value;
-        this.type = type || null;
-        this.visible = visible !== false;
+        this.type = type;
+        this.visible = visible;
     }
 };
 
@@ -133,7 +133,7 @@ torch.Node = class {
                 const nodes = obj.map((module) => new torch.Node(metadata, module, '', values));
                 const argument = new torch.Argument(name, nodes, 'object[]');
                 this.inputs.push(argument);
-            } else if ((Array.isArray(obj) && obj.every((obj) => typeof obj === 'number' || typeof obj === 'string' && typeof obj === 'boolean')) ||
+            } else if ((Array.isArray(obj) && obj.every((obj) => typeof obj === 'number' || typeof obj === 'string' || typeof obj === 'boolean')) ||
                 typeof obj === 'number' || typeof obj === 'string' || typeof obj === 'boolean') {
                 let visible = name === 'train' ? false : true;
                 const schema = metadata.attribute(type, name);

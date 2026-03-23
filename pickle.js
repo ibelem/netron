@@ -15,7 +15,9 @@ pickle.ModelFactory = class {
         const obj = await context.peek('pkl');
         if (obj !== undefined) {
             const name = obj && obj.__class__ && obj.__class__.__module__ && obj.__class__.__name__ ? `${obj.__class__.__module__}.${obj.__class__.__name__}` : '';
-            if (!name.startsWith('__torch__.')) {
+            if (!name.startsWith('__torch__.') &&
+                !name.startsWith('catboost.') &&
+                !name.startsWith('autogluon.tabular.models.catboost.')) {
                 return context.set('pickle', obj);
             }
         }
@@ -34,6 +36,7 @@ pickle.ModelFactory = class {
                 ['cuml.ensemble.randomforestclassifier.RandomForestClassifier', 'cuML'],
                 ['shap.explainers._linear.LinearExplainer', 'SHAP'],
                 ['gensim.models.word2vec.Word2Vec', 'Gensim'],
+                ['ray.rllib.algorithms.ppo.ppo.PPOConfig', 'Ray RLlib'],
                 ['builtins.bytearray', 'Pickle'],
                 ['builtins.dict', 'Pickle'],
                 ['collections.OrderedDict', 'Pickle'],
@@ -54,14 +57,14 @@ pickle.Model = class {
 
     constructor(value, format) {
         this.format = format;
-        this.graphs = [new pickle.Graph(null, value)];
+        this.modules = [new pickle.Module(null, value)];
     }
 };
 
-pickle.Graph = class {
+pickle.Module = class {
 
-    constructor(type, obj) {
-        this.type = type || '';
+    constructor(type = '', obj = null) {
+        this.type = type;
         this.inputs = [];
         this.outputs = [];
         this.nodes = [];
@@ -104,7 +107,7 @@ pickle.Node = class {
         const weights = pickle.Utility.weights(obj);
         if (weights) {
             const type = this.type.name;
-            this.type = new pickle.Graph('weights', weights);
+            this.type = new pickle.Module('weights', weights);
             this.type.name = type;
             return;
         }
@@ -168,23 +171,23 @@ pickle.Node = class {
 
 pickle.Argument = class {
 
-    constructor(name, value, type, visible) {
+    constructor(name, value, type = null, visible = true) {
         this.name = name.toString();
         this.value = value;
-        this.type = type || null;
-        this.visible = visible !== false;
+        this.type = type;
+        this.visible = visible;
     }
 };
 
 pickle.Value = class {
 
-    constructor(name, type, initializer) {
+    constructor(name, type, initializer = null) {
         if (typeof name !== 'string') {
             throw new pickle.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
         }
         this.name = name;
         this.type = initializer && initializer.type ? initializer.type : type || null;
-        this.initializer = initializer || null;
+        this.initializer = initializer;
     }
 };
 
@@ -231,8 +234,8 @@ pickle.Tensor = class {
             const array = obj;
             this.type = new pickle.TensorType(array.dtype.__name__, new pickle.TensorShape(array.shape));
             this.stride = Array.isArray(array.strides) ? array.strides.map((stride) => stride / array.itemsize) : null;
-            this.encoding = this.type.dataType === 'string' || this.type.dataType === 'object' ? '|' : array.dtype.byteorder;
-            this.values = this.type.dataType === 'string' || this.type.dataType === 'object' || this.type.dataType === 'void' ? array.flatten().tolist() : array.tobytes();
+            this.encoding = this.type.dataType === 'string' || this.type.dataType === 'object' || this.type.dataType === 'datetime' ? '|' : array.dtype.byteorder;
+            this.values = this.type.dataType === 'string' || this.type.dataType === 'object' || this.type.dataType === 'datetime' || this.type.dataType === 'void' ? array.flatten().tolist() : array.tobytes();
         }
     }
 };

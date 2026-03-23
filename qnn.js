@@ -7,7 +7,7 @@ qnn.ModelFactory = class {
 
     async match(context) {
         const obj = await context.peek('json');
-        if (obj && obj['model.cpp'] && obj.graph) {
+        if (obj && obj['model.cpp'] !== undefined && obj.graph) {
             return context.set('qnn.json', obj);
         }
         const entries = await context.peek('tar');
@@ -81,7 +81,7 @@ qnn.Model = class {
         if (obj.copyright_str) {
             this.metadata.push(new qnn.Argument('License', obj.copyright_str));
         }
-        this.graphs = [new qnn.Graph(metadata, obj.graph, weights)];
+        this.modules = [new qnn.Graph(metadata, obj.graph, weights)];
     }
 };
 
@@ -144,11 +144,11 @@ qnn.Graph = class {
 
 qnn.Argument = class {
 
-    constructor(name, value, type, visible) {
+    constructor(name, value, type = null, visible = true) {
         this.name = name;
         this.value = value;
         this.type = type;
-        this.visible = visible !== false;
+        this.visible = visible;
     }
 };
 
@@ -200,7 +200,7 @@ qnn.Node = class {
             const argument = new qnn.Argument(outputs.length === 1 ? 'output' : 'outputs', outputs);
             this.outputs.push(argument);
         }
-        for (const [name, value] of Object.entries(obj.scalar_params)) {
+        for (const [name, value] of Object.entries(obj.scalar_params || {})) {
             const entries = Object.entries(value);
             if (entries.length === 1 && name !== 'packageName') {
                 const dataType = qnn.Utility.dataType(parseInt(entries[0][0], 10));
@@ -208,7 +208,7 @@ qnn.Node = class {
                 this.attributes.push(argument);
             }
         }
-        for (const [name, value] of Object.entries(obj.tensor_params)) {
+        for (const [name, value] of Object.entries(obj.tensor_params || {})) {
             const entries = Object.entries(value);
             if (entries.length === 1 && name !== 'packageName') {
                 const tensor = new qnn.Tensor(name, null, entries[0][1]);

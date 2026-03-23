@@ -1530,7 +1530,7 @@ tensorflow.AttrValue = class AttrValue {
     static decodeJson(obj) {
         const message = new tensorflow.AttrValue();
         if ('s' in obj) {
-            message.s = typeof source === 'string' ? Uint8Array.from(atob(obj.s), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.s);
+            message.s = typeof obj.s === 'string' ? Uint8Array.from(atob(obj.s), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.s);
         }
         if ('i' in obj) {
             message.i = BigInt(obj.i);
@@ -1910,7 +1910,7 @@ tensorflow.TensorProto = class TensorProto {
             message.version_number = Number(obj.versionNumber);
         }
         if ('tensorContent' in obj) {
-            message.tensor_content = typeof source === 'string' ? Uint8Array.from(atob(obj.tensorContent), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.tensorContent);
+            message.tensor_content = typeof obj.tensorContent === 'string' ? Uint8Array.from(atob(obj.tensorContent), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.tensorContent);
         }
         if ('halfVal' in obj) {
             message.half_val = obj.halfVal.map((obj) => Number(obj));
@@ -1952,7 +1952,7 @@ tensorflow.TensorProto = class TensorProto {
             message.uint64_val = obj.uint64Val.map((obj) => BigInt(obj));
         }
         if ('float8Val' in obj) {
-            message.float8_val = typeof source === 'string' ? Uint8Array.from(atob(obj.float8Val), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.float8Val);
+            message.float8_val = typeof obj.float8Val === 'string' ? Uint8Array.from(atob(obj.float8Val), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.float8Val);
         }
         return message;
     }
@@ -2022,7 +2022,7 @@ tensorflow.VariantTensorDataProto = class VariantTensorDataProto {
             message.type_name = obj.typeName;
         }
         if ('metadata' in obj) {
-            message.metadata = typeof source === 'string' ? Uint8Array.from(atob(obj.metadata), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.metadata);
+            message.metadata = typeof obj.metadata === 'string' ? Uint8Array.from(atob(obj.metadata), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.metadata);
         }
         if ('tensors' in obj) {
             message.tensors = obj.tensors.map((obj) => tensorflow.TensorProto.decodeJson(obj));
@@ -2340,6 +2340,9 @@ tensorflow.DataType = {
     "DT_FLOAT8_E5M2FNUZ": 28,
     "DT_INT4": 29,
     "DT_UINT4": 30,
+    "DT_INT2": 31,
+    "DT_UINT2": 32,
+    "DT_FLOAT4_E2M1FN": 33,
     "DT_FLOAT_REF": 101,
     "DT_DOUBLE_REF": 102,
     "DT_INT32_REF": 103,
@@ -2369,7 +2372,10 @@ tensorflow.DataType = {
     "DT_FLOAT8_E4M3B11FNUZ_REF": 127,
     "DT_FLOAT8_E5M2FNUZ_REF": 128,
     "DT_INT4_REF": 129,
-    "DT_UINT4_REF": 130
+    "DT_UINT4_REF": 130,
+    "DT_INT2_REF": 131,
+    "DT_UINT2_REF": 132,
+    "DT_FLOAT4_E2M1FN_REF": 133
 };
 
 tensorflow.SerializedDType = class SerializedDType {
@@ -6209,9 +6215,9 @@ tensorflow.TensorSliceProto = class TensorSliceProto {
 
 tensorflow.TensorSliceProto.Extent = class Extent {
 
-    get has_length() {
-        tensorflow.TensorSliceProto.Extent.has_lengthSet = tensorflow.TensorSliceProto.Extent.has_lengthSet || new Set(["length"]);
-        return Object.keys(this).find((key) => tensorflow.TensorSliceProto.Extent.has_lengthSet.has(key) && this[key] !== null);
+    get has_length_hack() {
+        tensorflow.TensorSliceProto.Extent.has_length_hackSet = tensorflow.TensorSliceProto.Extent.has_length_hackSet || new Set(["length"]);
+        return Object.keys(this).find((key) => tensorflow.TensorSliceProto.Extent.has_length_hackSet.has(key) && this[key] !== null);
     }
 
     static decode(reader, length) {
@@ -6639,7 +6645,7 @@ tensorflow.Event = class Event {
             message.file_version = obj.fileVersion;
         }
         if ('graphDef' in obj) {
-            message.graph_def = typeof source === 'string' ? Uint8Array.from(atob(obj.graphDef), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.graphDef);
+            message.graph_def = typeof obj.graphDef === 'string' ? Uint8Array.from(atob(obj.graphDef), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.graphDef);
         }
         if ('summary' in obj) {
             message.summary = tensorflow.Summary.decodeJson(obj.summary);
@@ -6654,7 +6660,7 @@ tensorflow.Event = class Event {
             message.tagged_run_metadata = tensorflow.TaggedRunMetadata.decodeJson(obj.taggedRunMetadata);
         }
         if ('metaGraphDef' in obj) {
-            message.meta_graph_def = typeof source === 'string' ? Uint8Array.from(atob(obj.metaGraphDef), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.metaGraphDef);
+            message.meta_graph_def = typeof obj.metaGraphDef === 'string' ? Uint8Array.from(atob(obj.metaGraphDef), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.metaGraphDef);
         }
         if ('sourceMetadata' in obj) {
             message.source_metadata = tensorflow.SourceMetadata.decodeJson(obj.sourceMetadata);
@@ -6902,7 +6908,7 @@ tensorflow.TaggedRunMetadata = class TaggedRunMetadata {
             message.tag = obj.tag;
         }
         if ('runMetadata' in obj) {
-            message.run_metadata = typeof source === 'string' ? Uint8Array.from(atob(obj.runMetadata), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.runMetadata);
+            message.run_metadata = typeof obj.runMetadata === 'string' ? Uint8Array.from(atob(obj.runMetadata), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.runMetadata);
         }
         return message;
     }
@@ -7328,7 +7334,7 @@ tensorflow.SummaryMetadata.PluginData = class PluginData {
             message.plugin_name = obj.pluginName;
         }
         if ('content' in obj) {
-            message.content = typeof source === 'string' ? Uint8Array.from(atob(obj.content), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.content);
+            message.content = typeof obj.content === 'string' ? Uint8Array.from(atob(obj.content), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.content);
         }
         return message;
     }
@@ -7459,7 +7465,7 @@ tensorflow.Summary.Image = class Image {
             message.colorspace = Number(obj.colorspace);
         }
         if ('encodedImageString' in obj) {
-            message.encoded_image_string = typeof source === 'string' ? Uint8Array.from(atob(obj.encodedImageString), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.encodedImageString);
+            message.encoded_image_string = typeof obj.encodedImageString === 'string' ? Uint8Array.from(atob(obj.encodedImageString), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.encodedImageString);
         }
         return message;
     }
@@ -7542,7 +7548,7 @@ tensorflow.Summary.Audio = class Audio {
             message.length_frames = BigInt(obj.lengthFrames);
         }
         if ('encodedAudioString' in obj) {
-            message.encoded_audio_string = typeof source === 'string' ? Uint8Array.from(atob(obj.encodedAudioString), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.encodedAudioString);
+            message.encoded_audio_string = typeof obj.encodedAudioString === 'string' ? Uint8Array.from(atob(obj.encodedAudioString), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.encodedAudioString);
         }
         if ('contentType' in obj) {
             message.content_type = obj.contentType;
@@ -7661,7 +7667,7 @@ tensorflow.Summary.Value = class Value {
             message.simple_value = Number(obj.simpleValue);
         }
         if ('obsoleteOldStyleHistogram' in obj) {
-            message.obsolete_old_style_histogram = typeof source === 'string' ? Uint8Array.from(atob(obj.obsoleteOldStyleHistogram), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.obsoleteOldStyleHistogram);
+            message.obsolete_old_style_histogram = typeof obj.obsoleteOldStyleHistogram === 'string' ? Uint8Array.from(atob(obj.obsoleteOldStyleHistogram), (c) => c.charCodeAt(0)) : Uint8Array.from(obj.obsoleteOldStyleHistogram);
         }
         if ('image' in obj) {
             message.image = tensorflow.Summary.Image.decodeJson(obj.image);
@@ -8956,6 +8962,12 @@ tensorflow.ConfigProto.Experimental = class Experimental {
                 case 34:
                     message.finalize_resource_manager = reader.bool();
                     break;
+                case 35:
+                    message.tf2xla_dump_dir = reader.string();
+                    break;
+                case 36:
+                    message.online_cost_analysis = reader.bool();
+                    break;
                 default:
                     reader.skipType(tag & 7);
                     break;
@@ -9060,6 +9072,12 @@ tensorflow.ConfigProto.Experimental = class Experimental {
                 case "finalize_resource_manager":
                     message.finalize_resource_manager = reader.bool();
                     break;
+                case "tf2xla_dump_dir":
+                    message.tf2xla_dump_dir = reader.string();
+                    break;
+                case "online_cost_analysis":
+                    message.online_cost_analysis = reader.bool();
+                    break;
                 default:
                     reader.field(tag, message);
                     break;
@@ -9160,6 +9178,12 @@ tensorflow.ConfigProto.Experimental = class Experimental {
         if ('finalizeResourceManager' in obj) {
             message.finalize_resource_manager = obj.finalizeResourceManager;
         }
+        if ('tf2xlaDumpDir' in obj) {
+            message.tf2xla_dump_dir = obj.tf2xlaDumpDir;
+        }
+        if ('onlineCostAnalysis' in obj) {
+            message.online_cost_analysis = obj.onlineCostAnalysis;
+        }
         return message;
     }
 };
@@ -9194,6 +9218,8 @@ tensorflow.ConfigProto.Experimental.prototype.disable_optimize_for_static_graph 
 tensorflow.ConfigProto.Experimental.prototype.disable_eager_executor_streaming_enqueue = false;
 tensorflow.ConfigProto.Experimental.prototype.finalize_function_library_runtime = false;
 tensorflow.ConfigProto.Experimental.prototype.finalize_resource_manager = false;
+tensorflow.ConfigProto.Experimental.prototype.tf2xla_dump_dir = "";
+tensorflow.ConfigProto.Experimental.prototype.online_cost_analysis = false;
 
 tensorflow.ConfigProto.Experimental.MlirBridgeRollout = {
     "MLIR_BRIDGE_ROLLOUT_UNSPECIFIED": 0,

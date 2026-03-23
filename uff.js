@@ -5,7 +5,7 @@ uff.ModelFactory = class {
 
     async match(context) {
         const identifier = context.identifier;
-        const extension = identifier.split('.').pop().toLowerCase();
+        const extension = identifier.lastIndexOf('.') > 0 ? identifier.split('.').pop().toLowerCase() : '';
         if (extension === 'uff' || extension === 'pb') {
             const tags = await context.tags('pb');
             if (tags.size > 0 &&
@@ -74,7 +74,7 @@ uff.Model = class {
                 }
             }
         }
-        this.graphs = meta_graph.graphs.map((graph) => new uff.Graph(metadata, graph));
+        this.modules = meta_graph.graphs.map((graph) => new uff.Graph(metadata, graph));
     }
 };
 
@@ -137,24 +137,22 @@ uff.Graph = class {
 
 uff.Argument = class {
 
-    constructor(name, value, type) {
+    constructor(name, value, type = null) {
         this.name = name;
         this.value = value;
-        if (type) {
-            this.type = type;
-        }
+        this.type = type;
     }
 };
 
 uff.Value = class {
 
-    constructor(name, type, initializer) {
+    constructor(name, type = null, initializer = null) {
         if (typeof name !== 'string') {
             throw new uff.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
         }
         this.name = name;
-        this.type = type || null;
-        this.initializer = initializer || null;
+        this.type = type;
+        this.initializer = initializer;
     }
 };
 

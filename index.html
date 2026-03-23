@@ -5,8 +5,8 @@
 <meta name="description" content="Visualizer for neural network, deep learning and machine learning models." />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="script-src 'self'">
-<meta name="version" content="0.0.0">
-<meta name="date" content="">
+<meta name="version" content="8.9.6">
+<meta name="date" content="2026-03-20 13:40:05">
 <title>Netron</title>
 <link rel="stylesheet" type="text/css" href="grapher.css">
 <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
@@ -14,7 +14,6 @@
 <link rel="apple-touch-icon" type="image/png" href="icon.png">
 <link rel="apple-touch-icon-precomposed" type="image/png" href="icon.png">
 <link rel="fluid-icon" type="image/png" href="icon.png">
-<script src="jszip.min.js"></script>
 <script type="text/javascript" src="index.js"></script>
 <style>
 html { touch-action: none; overflow: hidden; width: 100%; height: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; text-rendering: optimizeLegibility; -webkit-text-rendering: optimizeLegibility; -moz-text-rendering: optimizeLegibility; -ms-text-rendering: optimizeLegibility; -o-text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; -moz-font-smoothing: antialiased; -ms-font-smoothing: antialiased; -o-font-smoothing: antialiased; }
@@ -22,12 +21,12 @@ body { touch-action: none; overflow: hidden; width: 100%; height: 100%; margin: 
 button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "PingFang SC"; }
 .center { position: absolute; margin: auto; top: 0; right: 0; bottom: 0; left: 0; user-select: none; -webkit-user-select: none; -moz-user-select: none; }
 .select { user-select: text; -webkit-user-select: text; -moz-user-select: text; }
-.graph { display: flex; height: 100%; width: 100%; overflow: auto; outline: none; touch-action: pan-x pan-y; }
+.target { display: flex; height: 100%; width: 100%; overflow: auto; outline: none; touch-action: pan-x pan-y; }
 .canvas { margin: auto; flex-shrink: 0; text-rendering: geometricPrecision; user-select: none; -webkit-user-select: none; -moz-user-select: none; }
 .open-file-dialog { display: none; }
 .default { background-color: #ffffff; }
 .default .logo { display: none; }
-.default .graph { display: flex; opacity: 1; }
+.default .target { display: flex; opacity: 1; }
 .default .toolbar { display: flex; }
 .toolbar { display: flex; align-items: center; position: absolute; bottom: 10px; left: 10px; padding: 0; margin: 0; user-select: none; -webkit-user-select: none; -moz-user-select: none; }
 .toolbar button:focus { outline: 0; }
@@ -52,6 +51,9 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
 .toolbar-icon:hover .fill { fill: #000000; }
 .message { display: none; opacity: 0; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; justify-content: flex-start; }
 .message-text { display: inline; text-align: center; width: 562px; font-size: 13px; line-height: 20px; margin-top: 50vh; padding-top: 56px; padding-bottom: 20px; margin-left: auto; margin-right: auto; user-select: text; -webkit-user-select: text; -moz-user-select: text; }
+.welcome .message-text a { text-decoration: none; color: #666666; }
+.welcome .message-text a:visited { color: inherit; }
+.welcome .message-text a:hover { color: #242424; text-decoration: underline; }
 .message-button { display: inline; text-align: center; width: 125px; margin-left: auto; margin-right: auto; }
 .logo-text { top: -57px; width: 582px; transition: 0.1s; }
 .logo-name { top: -170px; width: 582px; transition: 0.1s; }
@@ -67,9 +69,6 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
 .logo-message { display: none; height: 0px; }
 .logo-github { display: none; }
 .open-file-button { top: 170px; left: 0px; width: 10.5em; }
-.logo-link { top: 260px; left: 0; font-size: 12px; line-height: 1.25; text-align: center; vertical-align: middle; min-width: 5em; height: 1.25em; transition: 0.1s; user-select: none; -webkit-user-select: none; -moz-user-select: none; }
-.logo-link a { color: #444444; text-decoration: none; font-weight: bold; }
-.logo-link a:hover { text-decoration: underline; }
 .progress { top: 120px; height: 2px; width: 400px; }
 .progress-bar { height: 100%; width: 0%; background-color: #444444; }
 .notification .logo-name { display: none; }
@@ -79,7 +78,7 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
 .welcome { background-color: #ececec; color: #242424; }
 .welcome .message-text { display: none; opacity: 0; }
 .welcome .message-button { display: none; opacity: 0; }
-.welcome .graph { display: none; opacity: 0; }
+.welcome .target { display: none; opacity: 0; }
 .welcome .menu { background-color: #ffffff; }
 .welcome.spinner .logo-spinner { display: block; -webkit-animation: orbit 0.5s infinite linear; animation: orbit 0.5s infinite linear; cursor: wait; }
 .welcome.spinner .menu-button { display: none; }
@@ -89,7 +88,7 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
 .notification .message-text { display: inline; opacity: 1; }
 .notification .message-button { display: inline; opacity: 1; }
 .alert { background-color: #ececec; color: #242424; }
-.alert .graph { display: none; opacity: 0; }
+.alert .target { display: none; opacity: 0; }
 .alert .toolbar { display: none; opacity: 0; }
 .alert .menu { display: none; opacity: 0; }
 .alert .logo { display: none; opacity: 0; }
@@ -138,13 +137,13 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
 .welcome.spinner .logo-spinner-stroke { stroke: #ececec; }
 .welcome.spinner .logo-name { display: none; }
 .welcome.spinner .open-file-button { display: none; }
-.welcome.spinner .graph { display: flex; opacity: 0; }
+.welcome.spinner .target { display: flex; opacity: 0; }
 .welcome .notification .logo-name { display: none; }
 .welcome .toolbar { display: none; }
 @media (prefers-color-scheme: dark) {
 :root { color-scheme: dark; }
 .default { background-color: #404040; }
-.graph { background-color: #404040; }
+.target { background-color: #404040; }
 .welcome { background-color: #1e1e1e; color: #888888; }
 .alert { background-color: #1e1e1e; color: #888888; }
 .logo-stroke { stroke: #888888; }
@@ -159,6 +158,9 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
 .about .logo { background-color: #1e1e1e; color: #888888; }
 .about a { color: #c6c6c6; }
 .about a:hover { color: #565656; }
+.welcome .message-text a { color: #c6c6c6; }
+.welcome .message-text a:visited { color: #c6c6c6; }
+.welcome .message-text a:hover { color: #565656; }
 .toolbar-icon .border { stroke: #333333; }
 .toolbar-icon .stroke { stroke: #aaaaaa; }
 .toolbar-icon .fill { fill: #aaaaaa; }
@@ -217,7 +219,9 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
 .sidebar-item-value b { font-weight: bold; }
 .sidebar-item-value code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; overflow: auto; white-space: pre-wrap; word-wrap: break-word; }
 .sidebar-item-value pre { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; margin: 0; overflow: auto; white-space: pre; word-wrap: normal; display: block; }
-.sidebar-item-value-line { padding: 4px 6px 4px 6px; }
+.sidebar-item-value-line { padding: 4px 6px 4px 6px; overflow-x: auto; white-space: pre; }
+.sidebar-item-value-line-wrap { white-space: pre-wrap; overflow-x: hidden; overflow-wrap: break-word; }
+.sidebar-item-value-line-break { padding: 4px 6px 4px 6px; overflow-x: auto; white-space: pre; }
 .sidebar-item-value-line-link { padding: 4px 6px 4px 6px; cursor: default; overflow-x: auto; white-space: nowrap; }
 .sidebar-item-value-line-link:hover { text-decoration: underline; }
 .sidebar-item-value-line-border { padding: 4px 6px 4px 6px; border-top: 1px solid rgba(27, 31, 35, 0.05); }
@@ -374,92 +378,17 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
  #webnn-closebutton:hover {
      color: #242424;
  }
-.export-tensors {
-    background-color: #ffffff;
-    border: 1px solid rgba(27, 31, 35, 0.05);
-    margin: 0 auto;
-    margin-top: -1px;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: 1fr;
-    grid-column-gap: 10px;
-    grid-row-gap: 0px;
-    align-items: center;
-    padding: 5px 0;
-}
-.export-tensors div {
-    padding: 0.2rem 0;
-}
-@media all and (max-width: 640px) {
-    .export-tensors {
-        grid-template-rows: repeat(2, 1fr);
-        grid-template-columns: 1fr;
-        grid-column-gap: 0px;
-        grid-row-gap: 10px;
-    }
-}
-.export-tensors .info {
-    justify-self: end;
-}
-.export-tensors .action {
-    justify-self: start;
-}
-.action button {
-    height: auto !important;
-    padding: 0.2rem 1rem;
-}
-.external-links {
-    margin-top: -1px;
-    background-color: #ffffff;
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
-    padding: 5px 0;
-    font-weight: bold;
-    justify-items: center;
-    align-items: center;
-    border: 1px solid rgba(27, 31, 35, 0.05);
-}
-
-.external-links a {
-    color: rgba(0, 123, 255, 1);
-    text-decoration: none;
-}
-.external-links a:hover {
-    color: rgba(255, 0, 129, 1);
-    text-decoration: dashed;
-}
-.alias {
-    max-width: 200px;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-}
 </style>
 </head>
 <body class="welcome spinner">
 <div id="webnn" class="showNone">
     <div id="map" class="map">
         <div id="map-table"></div>
-        <div class="export-tensors">
-            <div class="info">Use WebNN with Vanilla JavaScript</div>
-            <div class="action">
-                <button id="export-button" class="logo-button export-button" title="Export graph and weights">Graph and Weights</button>
-                <button id="read-bin-json-button" class="logo-button read-bin-button" title="Read weights and biases in .bin and JSON format">Weights Reader</button>
-                <!-- <button id="export-npy-zip-button" class="logo-button export-npy-zip-button" title="Export weights and biases in .npy format (compressed as ZIP)">.npy</button> -->
-            </div>
-        </div>
-        <div class="external-links">
-            <div>
-                <a href="https://github.com/huningxin/onnx2webnn" title="Exports the ONNX file to a WebNN JavaScript file and a bin file containing weights.">ONNX2WebNN</a> · <a href="https://ibelem.github.io/webnn-code-generator/" title="Generate WebNN API code in vanilla JavaScript from ONNX, TensorFlow Lite, or other model formats.">WebNN Code Generator</a> 
-            </div>
-        </div>
     </div>
 
     <a id="webnn-closebutton">×</a>
 </div>
-<div id="graph" class="graph" tabindex="0">
-    <svg id="canvas" class="canvas" preserveaspectratio="xMidYMid meet" width="100%" height="100%"></svg>
+<div id="target" class="target" tabindex="0">
 </div>
 <div id="sidebar" class="sidebar">
     <h1 id="sidebar-title" class="sidebar-title"></h1>
@@ -511,7 +440,7 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
             <line class="stroke" x1="78" y1="78" x2="82" y2="82" stroke-width="8" stroke-linecap="square"></line>
         </svg>
     </button>
-    <button id="sidebar-document-button" class="toolbar-button" title="Model Properties">
+    <button id="sidebar-model-button" class="toolbar-button" title="Model Properties">
         <svg class="toolbar-icon" viewbox="0 0 100 100">
             <rect class="border" x="12" y="12" width="76" height="76" rx="16" ry="16" stroke-width="8"></rect>
             <line class="border" x1="28" y1="37" x2="32" y2="37" stroke-width="8" stroke-linecap="round" stroke="#fff"></line>
@@ -532,17 +461,11 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
     <button id="sidebar-target-button" class="toolbar-button" title="Target Properties">
         <svg class="toolbar-icon" viewBox="0 0 100 100">
             <rect class="border" x="12" y="12" width="76" height="76" rx="16" ry="16" stroke-width="8"></rect>
-            <circle class="border" cx="35" cy="50" r="8" stroke-width="8"></circle>
-            <circle class="border" cx="65" cy="35" r="8" stroke-width="8"></circle>
-            <circle class="border" cx="65" cy="65" r="8" stroke-width="8"></circle>
-            <line class="border" x1="41.6" y1="46.8" x2="58.4" y2="38.2" stroke-width="8" />
-            <line class="border" x1="41.6" y1="53.2" x2="58.4" y2="61.8" stroke-width="8" />
+            <circle class="border" cx="50" cy="50" r="18" stroke-width="8"></circle>
+            <circle class="border" cx="50" cy="50" r="3" stroke-width="8"></circle>
             <rect class="stroke" x="12" y="12" width="76" height="76" rx="16" ry="16" stroke-width="4"></rect>
-            <circle class="stroke fill" cx="35" cy="50" r="8" stroke-width="4"></circle>
-            <circle class="stroke fill" cx="65" cy="35" r="8" stroke-width="4"></circle>
-            <circle class="stroke fill" cx="65" cy="65" r="8" stroke-width="4"></circle>
-            <line class="stroke" x1="41.6" y1="46.8" x2="58.4" y2="38.2" stroke-width="4" />
-            <line class="stroke" x1="41.6" y1="53.2" x2="58.4" y2="61.8" stroke-width="4" />
+            <circle class="stroke" cx="50" cy="50" r="18" stroke-width="4"></circle>
+            <circle class="stroke fill" cx="50" cy="50" r="3" stroke-width="4"></circle>
         </svg>
     </button>
     <div id="toolbar-navigator" class="toolbar-select">
@@ -710,11 +633,6 @@ button { font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI"
         </svg>
     </a>
     <button id="open-file-button" class="center logo-button open-file-button" tabindex="0">Open Model&hellip;</button>
-    <div class="center logo-link">
-        Enhanced Netron for WebNN ·
-        <a id="onnx-to-webnn-button" href="https://github.com/huningxin/onnx2webnn" tabindex="1" title="Exports the ONNX file to a WebNN JavaScript file and a bin file containing weights.">ONNX2WebNN</a>
-        · <a id="webnn-code-generator-button" href="https://ibelem.github.io/webnn-code-generator" tabindex="2" title="Generate WebNN API code in vanilla JavaScript from ONNX, TensorFlow Lite, or other model formats.">WebNN Code Generator</a>
-    </div>
     <div class="center progress">
         <div id="progress-bar" class="progress-bar"></div>
     </div>

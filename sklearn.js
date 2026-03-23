@@ -53,7 +53,7 @@ sklearn.Model = class {
             ['hmmlearn', 'hmmlearn']
         ]);
         this.format = formats.get(type.split('.').shift());
-        this.graphs = [];
+        this.modules = [];
         const version = [];
         switch (type) {
             case 'sklearn':
@@ -62,7 +62,7 @@ sklearn.Model = class {
                 if (obj._sklearn_version) {
                     version.push(` v${obj._sklearn_version}`);
                 }
-                this.graphs.push(new sklearn.Graph(metadata, '', obj));
+                this.modules.push(new sklearn.Module(metadata, '', obj));
                 break;
             }
             case 'sklearn.list':
@@ -70,7 +70,7 @@ sklearn.Model = class {
                 const list = obj;
                 for (let i = 0; i < list.length; i++) {
                     const obj = list[i];
-                    this.graphs.push(new sklearn.Graph(metadata, i.toString(), obj));
+                    this.modules.push(new sklearn.Module(metadata, i.toString(), obj));
                     if (obj._sklearn_version) {
                         version.push(` v${obj._sklearn_version}`);
                     }
@@ -81,7 +81,7 @@ sklearn.Model = class {
             case 'scipy.map': {
                 const entries = obj instanceof Map ? Array.from(obj) : Object.entries(obj);
                 for (const [name, value] of entries) {
-                    this.graphs.push(new sklearn.Graph(metadata, name, value));
+                    this.modules.push(new sklearn.Module(metadata, name, value));
                     if (value._sklearn_version) {
                         version.push(` v${value._sklearn_version}`);
                     }
@@ -98,10 +98,10 @@ sklearn.Model = class {
     }
 };
 
-sklearn.Graph = class {
+sklearn.Module = class {
 
-    constructor(metadata, name, obj) {
-        this.name = name || '';
+    constructor(metadata, name = '', obj = null) {
+        this.name = name;
         this.nodes = [];
         this.inputs = [];
         this.outputs = [];
@@ -112,23 +112,23 @@ sklearn.Graph = class {
 
 sklearn.Argument = class {
 
-    constructor(name, value, type, visible) {
+    constructor(name, value, type = null, visible = true) {
         this.name = name;
         this.value = value;
         this.type = type;
-        this.visible = visible !== false;
+        this.visible = visible;
     }
 };
 
 sklearn.Value = class {
 
-    constructor(name, type, initializer) {
+    constructor(name, type, initializer = null) {
         if (typeof name !== 'string') {
             throw new sklearn.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
         }
         this.name = name;
         this.type = initializer ? initializer.type : type;
-        this.initializer = initializer || null;
+        this.initializer = initializer;
     }
 };
 

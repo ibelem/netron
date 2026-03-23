@@ -14,7 +14,7 @@ numpy.ModelFactory = class {
             return context.set('npy');
         }
         const entries = await context.peek('npz');
-        if (entries && entries.size > 0) {
+        if (entries instanceof Map && entries.size > 0) {
             return context.set('npz', entries);
         }
         return null;
@@ -22,26 +22,28 @@ numpy.ModelFactory = class {
 
     async open(context) {
         let format = '';
-        const graphs = [];
+        const modules = [];
         switch (context.type) {
             case 'npy': {
                 format = 'NumPy Array';
                 const unresolved = new Set();
                 const execution = new python.Execution();
-                execution.on('resolve', (_, name) => unresolved.add(name));
+                execution.on('resolve', (sender, name) => unresolved.add(name));
                 const stream = context.stream;
-                const bytes = execution.invoke('io.BytesIO', [stream]);
-                const array = execution.invoke('numpy.load', [bytes]);
+                const io = execution.__import__('io');
+                const np = execution.__import__('numpy');
+                const bytes = new io.BytesIO(stream);
+                const array = np.load(bytes);
                 if (unresolved.size > 0) {
                     const name = unresolved.values().next().value;
                     throw new numpy.Error(`Unknown type name '${name}'.`);
                 }
                 const layer = { type: 'numpy.ndarray', parameters: [{ name: 'value', tensor: { name: '', array } }] };
-                graphs.push({ layers: [layer] });
+                modules.push({ layers: [layer] });
                 break;
             }
             case 'npz': {
-                format = 'NumPy Zip';
+                format = 'NumPy Archive';
                 const layers = new Map();
                 const entries = Array.from(context.value);
                 const separator = entries.every(([name]) => name.endsWith('.weight.npy')) ? '.' : '/';
@@ -59,26 +61,26 @@ numpy.ModelFactory = class {
                         tensor: { name, array }
                     });
                 }
-                graphs.push({ layers: Array.from(layers.values()) });
+                modules.push({ layers: Array.from(layers.values()) });
                 break;
             }
             default: {
                 throw new numpy.Error(`Unsupported NumPy format '${context.type}'.`);
             }
         }
-        return new numpy.Model(format, graphs);
+        return new numpy.Model(format, modules);
     }
 };
 
 numpy.Model = class {
 
-    constructor(format, graphs) {
+    constructor(format, modules) {
         this.format = format;
-        this.graphs = graphs.map((graph) => new numpy.Graph(graph));
+        this.modules = modules.map((module) => new numpy.Module(module));
     }
 };
 
-numpy.Graph = class {
+numpy.Module = class {
 
     constructor(graph) {
         this.name = graph.name || '';
@@ -98,13 +100,13 @@ numpy.Argument = class {
 
 numpy.Value = class {
 
-    constructor(name, initializer) {
+    constructor(name, initializer = null) {
         if (typeof name !== 'string') {
             throw new numpy.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
         }
         this.name = name;
         this.type = initializer.type;
-        this.initializer = initializer || null;
+        this.initializer = initializer;
     }
 };
 
@@ -130,8 +132,9 @@ numpy.Tensor = class  {
     constructor(array) {
         this.type = new numpy.TensorType(array.dtype.__name__, new numpy.TensorShape(array.shape));
         this.stride = array.strides.map((stride) => stride / array.itemsize);
-        this.values = this.type.dataType === 'string' || this.type.dataType === 'object' || this.type.dataType === 'void' ? array.flatten().tolist() : array.tobytes();
-        this.encoding = this.type.dataType === 'string' || this.type.dataType === 'object' ? '|' : array.dtype.byteorder;
+        const list = this.type.dataType === 'string' || this.type.dataType === 'object' || this.type.dataType === 'void';
+        this.values = list ? array.flatten().tolist() : array.tobytes();
+        this.encoding = list ? '|' : array.dtype.byteorder;
     }
 };
 
@@ -201,8 +204,8 @@ numpy.Utility = class {
                             if (value && value.__class__ && value.__class__.__module__ && value.__class__.__name__) {
                                 weights.set(`${name}.__class__`, `${value.__class__.__module__}.${value.__class__.__name__}`);
                             }
-                            for (const [name, obj] of Object.entries(value)) {
-                                weights.set(`${name}.${name}`, obj);
+                            for (const [key, obj] of Object.entries(value)) {
+                                weights.set(`${name}.${key}`, obj);
                             }
                             continue;
                         }
@@ -258,7 +261,7 @@ numpy.Error = class extends Error {
 
     constructor(message) {
         super(message);
-        this.name = 'Error loading Chainer model.';
+        this.name = 'Error loading NumPy model.';
     }
 };
 

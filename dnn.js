@@ -34,7 +34,7 @@ dnn.Model = class {
     constructor(metadata, model) {
         this.name = model.name || '';
         this.format = `SnapML${model.version ? ` v${model.version}` : ''}`;
-        this.graphs = [new dnn.Graph(metadata, model)];
+        this.modules = [new dnn.Graph(metadata, model)];
     }
 };
 
@@ -82,9 +82,7 @@ dnn.Graph = class {
             }
         }
         if (this.inputs.length === 0 &&  model.input_shape && model.input_shape.length === 4 && model.node.length > 0 && model.node[0].input.length > 0) {
-            /* eslint-disable prefer-destructuring */
-            const name = model.node[0].input[0];
-            /* eslint-enable prefer-destructuring */
+            const [name] = model.node[0].input;
             const shape = model.input_shape;
             const type = new dnn.TensorType('float32', new dnn.TensorShape([shape[1], shape[3], shape[2], shape[0]]));
             const argument = new dnn.Argument(name, [values.map(name, type)]);
@@ -107,13 +105,13 @@ dnn.Argument = class {
 
 dnn.Value = class {
 
-    constructor(name, type, initializer, quantization) {
+    constructor(name, type = null, initializer = null, quantization = null) {
         if (typeof name !== 'string') {
             throw new dnn.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
         }
         this.name = name;
-        this.type = type || null;
-        this.initializer = initializer || null;
+        this.type = type;
+        this.initializer = initializer;
         if (quantization) {
             this.quantization = {
                 type: 'lookup',
@@ -198,7 +196,7 @@ dnn.Tensor = class {
         const itemsize = Math.floor(this.values.length / size);
         const remainder = this.values.length - (itemsize * size);
         if (remainder < 0 || remainder > itemsize) {
-            throw new dnn.Error('Invalid tensor data size.');
+            throw new dnn.Error(`Invalid tensor data size '${this.values.length}' tensor shape '[${shape.dimensions}]' '.`);
         }
         let dataType = '?';
         switch (itemsize) {

@@ -4,6 +4,7 @@ import * as grapher from './grapher.js';
 
 const view = {};
 const markdown = {};
+const png = {};
 const metadata = {};
 const metrics = {};
 
@@ -19,15 +20,16 @@ view.View = class {
             mousewheel: 'scroll'
         };
         this._options = { ...this._defaultOptions };
+        this._events = {};
+        this._events.selectionchange = () => this._selectionChangeHandler();
         this._model = null;
-        this._stack = [];
+        this._path = [];
         this._selection = [];
         this._sidebar = new view.Sidebar(this._host);
         this._find = null;
         this._modelFactoryService = new view.ModelFactoryService(this._host);
         this._modelFactoryService.import();
-        this._worker = this._host.environment('measure') ? null : new view.Worker(this._host);
-        this._webnnNow = new Date().toISOString();
+        this._worker = this._host.environment('serial') ? null : new view.Worker(this._host);
     }
 
     async start() {
@@ -39,8 +41,8 @@ view.View = class {
             for (const [name, value] of Object.entries(options)) {
                 this._options[name] = value;
             }
-            this._element('sidebar-document-button').addEventListener('click', () => {
-                this.showDocumentProperties();
+            this._element('sidebar-model-button').addEventListener('click', () => {
+                this.showModelProperties();
             });
             this._element('sidebar-target-button').addEventListener('click', () => {
                 this.showTargetProperties();
@@ -54,21 +56,6 @@ view.View = class {
             this._element('webnn-button').addEventListener('click', () => {
                 this.toggleWebnn();
             });
-            // this._element('export-bin-json-button').addEventListener('click', async () => {
-            //     await this.exportAllTensorsAsBinAndJson();
-            // });
-            this._element('export-button').addEventListener('click', async () => {
-                await this.exportGraphAndWeights();
-            });
-            this._element('read-bin-json-button').addEventListener('click', async () => {
-                location.href = './reader.html';
-            });
-            // this._element('export-graph-button').addEventListener('click', async () => {
-            //     await this.exportGraphAsJson();
-            // });
-            // this._element('export-npy-zip-button').addEventListener('click', async () => {
-            //     await this.exportAllTensorsAsZip();
-            // });
             this._element('webnn-closebutton').addEventListener('click', () => {
                 this.toggleWebnn();
             });
@@ -79,19 +66,32 @@ view.View = class {
                 if (e.shiftKey || e.ctrlKey) {
                     e.preventDefault();
                 }
-            }, { passive: true });
-            this._host.document.addEventListener('keydown', () => {
-                if (this._graph) {
-                    this._graph.select(null);
+            }, { passive: false });
+            this._host.document.addEventListener('keydown', (e) => {
+                if (this._target && !e.metaKey && !e.ctrlKey) {
+                    this._target.select(null);
+                }
+            });
+            this._host.document.addEventListener('copy', (e) => {
+                const selection = this._host.document.getSelection();
+                if (!selection || selection.toString().trim() === '') {
+                    if (this._target && this._target.selection.size > 0) {
+                        const names = [];
+                        for (const element of this._target.selection) {
+                            if (element.value && element.value.name) {
+                                names.push(element.value.name);
+                            }
+                        }
+                        if (names.length > 0) {
+                            e.clipboardData.setData('text/plain', names.join('\n'));
+                            e.preventDefault();
+                        }
+                    }
                 }
             });
             if (this._host.type === 'Electron') {
-                this._host.update({ 'can-copy': false });
-                this._host.document.addEventListener('selectionchange', () => {
-                    const selection = this._host.document.getSelection();
-                    const selected = selection.rangeCount === 0 || selection.toString().trim() !== '';
-                    this._host.update({ 'can-copy': selected });
-                });
+                this._host.update({ 'copy.enabled': false });
+                this._host.document.addEventListener('selectionchange', this._events.selectionchange);
             }
             const platform = this._host.environment('platform');
             this._menu = new view.Menu(this._host);
@@ -104,7 +104,9 @@ view.View = class {
                 execute: async () => await this.popTarget()
             });
             if (this._host.environment('menu')) {
-                this._menu.attach(this._element('menu'), this._element('menu-button'));
+                const menu = this._element('menu');
+                const button = this._element('menu-button');
+                this._menu.attach(menu, button);
                 const file = this._menu.group('&File');
                 file.add({
                     label: '&Open...',
@@ -195,19 +197,19 @@ view.View = class {
                     label: 'Zoom &In',
                     accelerator: 'Shift+Up',
                     execute: () => this.zoomIn(),
-                    enabled: () => this.activeTarget
+                    enabled: () => this.activeTarget && this.target
                 });
                 view.add({
                     label: 'Zoom &Out',
                     accelerator: 'Shift+Down',
                     execute: () => this.zoomOut(),
-                    enabled: () => this.activeTarget
+                    enabled: () => this.activeTarget && this.target
                 });
                 view.add({
                     label: 'Actual &Size',
                     accelerator: 'Shift+Backspace',
                     execute: () => this.resetZoom(),
-                    enabled: () => this.activeTarget
+                    enabled: () => this.activeTarget && this.target
                 });
                 view.add({});
                 view.add({
@@ -234,11 +236,18 @@ view.View = class {
                     execute: async () => await this._host.execute('about')
                 });
             }
-            this._select = new view.TargetSelector(this, this._element('toolbar-navigator'));
+            const navigator = this._element('toolbar-navigator');
+            this._select = new view.TargetSelector(this, navigator);
             this._select.on('change', (sender, target) => this._updateActiveTarget([target]));
             await this._host.start();
         } catch (error) {
             this.error(error, null, null);
+        }
+    }
+
+    dispose() {
+        if (this._worker) {
+            this._worker.cancel(true);
         }
     }
 
@@ -261,10 +270,10 @@ view.View = class {
         }
         this._host.document.body.classList.remove(...Array.from(this._host.document.body.classList).filter((_) => _ !== 'active'));
         this._host.document.body.classList.add(...page.split(' '));
-        if (page === 'default') {
-            this._activate();
-        } else {
-            this._deactivate();
+        if (this._target && page === 'default') {
+            this._target.register();
+        } else if (this._target) {
+            this._target.unregister();
         }
         if (page === 'welcome') {
             const element = this._element('open-file-button');
@@ -283,24 +292,24 @@ view.View = class {
     }
 
     find() {
-        if (this._graph && this._sidebar.identifier !== 'find') {
-            this._graph.select(null);
+        if (this._target && this._sidebar.identifier !== 'find') {
+            this._target.select(null);
             const sidebar = new view.FindSidebar(this, this._find, this.activeTarget, this.activeSignature);
             sidebar.on('state-changed', (sender, state) => {
                 this._find = state;
             });
             sidebar.on('select', (sender, value) => {
-                this.scrollTo(this._graph.select([value]));
+                this._target.scrollTo(this._target.select([value]));
             });
             sidebar.on('focus', (sender, value) => {
-                this._graph.focus([value]);
+                this._target.focus([value]);
             });
             sidebar.on('blur', (sender, value) => {
-                this._graph.blur([value]);
+                this._target.blur([value]);
             });
             sidebar.on('activate', (sender, value) => {
                 this._sidebar.close();
-                this.scrollTo(this._graph.activate(value));
+                this._target.scrollTo(this._target.activate(value));
             });
             this._sidebar.open(sidebar, 'Find');
         }
@@ -310,8 +319,36 @@ view.View = class {
         return this._model;
     }
 
+    set model(value) {
+        this._model = value;
+    }
+
     get options() {
         return this._options;
+    }
+
+    get target() {
+        return this._target;
+    }
+
+    set target(value) {
+        if (this._target !== value) {
+            if (this._target) {
+                this._target.off('selectionchange', this._events.selectionchange);
+                this._target.unregister();
+            }
+            const enabled = value ? true : false;
+            this._host.update({
+                'zoom-reset.enabled': enabled,
+                'zoom-in.enabled': enabled,
+                'zoom-out.enabled': enabled
+            });
+            this._target = value;
+            if (this._target) {
+                this._target.on('selectionchange', this._events.selectionchange);
+                this._target.register();
+            }
+        }
     }
 
     toggle(name) {
@@ -361,8 +398,8 @@ view.View = class {
 
     _reload() {
         this.show('welcome spinner');
-        if (this._model && this._stack.length > 0) {
-            this._updateTarget(this._model, this._stack).catch((error) => {
+        if (this._model && this._path.length > 0) {
+            this._updateTarget(this._model, this._path).catch((error) => {
                 if (error) {
                     this.error(error, 'Graph update failed.', 'welcome');
                 }
@@ -372,8 +409,17 @@ view.View = class {
 
     _timeout(delay) {
         return new Promise((resolve) => {
-            setTimeout(resolve, delay);
+            this._host.window.setTimeout(resolve, delay);
         });
+    }
+
+    _selectionChangeHandler() {
+        if (this._host.type === 'Electron') {
+            const selection = this._host.document.getSelection();
+            const text = selection.rangeCount === 0 || selection.toString().trim() !== '';
+            const graph = this._target && this._target.selection.size > 0;
+            this._host.update({ 'copy.enabled': text || graph });
+        }
     }
 
     _element(id) {
@@ -381,1466 +427,274 @@ view.View = class {
     }
 
     zoomIn() {
-        this._updateZoom(this._zoom * 1.1);
+        this._target.zoom *= 1.1;
     }
 
     zoomOut() {
-        this._updateZoom(this._zoom * 0.9);
+        this._target.zoom *= 0.9;
     }
 
     toggleWebnn() {
-        this._toggleWebNN();
-    }
-
-    // Function to prepare object for JSON serialization, handling both signed and unsigned BigInts
-    prepareForJson(obj) {
-        if (obj === null || typeof obj !== 'object') {
-            // Handle primitive values (including individual BigInts)
-            if (typeof obj === 'bigint') {
-                // Convert single BigInt to serializable format
-                return { type: 'bigint', value: obj.toString() };
-            }
-            return obj;
+        const webnn = this.host.document.querySelector('#webnn');
+        if (webnn) {
+            webnn.classList.toggle('showGrid');
+            webnn.classList.toggle('showNone');
         }
-
-        // Handle BigInt64Array specifically
-        if (obj instanceof BigInt64Array) {
-            return {
-                type: 'BigInt64Array',
-                value: Array.from(obj).map(n => n.toString())
-            };
-        }
-
-        // Handle BigUint64Array specifically
-        if (obj instanceof BigUint64Array) {
-            return {
-                type: 'BigUint64Array',
-                value: Array.from(obj).map(n => n.toString())
-            };
-        }
-
-        // Handle arrays of BigInts
-        if (Array.isArray(obj) && obj.length > 0 && obj.every(item => typeof item === 'bigint')) {
-            return {
-                type: 'bigint[]',
-                value: obj.map(n => n.toString())
-            };
-        }
-
-        // Handle regular arrays
-        if (Array.isArray(obj)) {
-            return obj.map(item => this.prepareForJson(item));
-        }
-
-        // Handle regular objects recursively
-        const result = {};
-        for (const [key, value] of Object.entries(obj)) {
-            result[key] = this.prepareForJson(value);
-        }
-        return result;
-    }
-
-    // Checking for either BigInt64Array or BigUint64Array
-    isBigIntTypedArray(value) {
-        return value instanceof BigInt64Array || value instanceof BigUint64Array;
-    }
-
-    // Specifically check for BigUint64Array
-    isBigUint64Array(value) {
-        return value instanceof BigUint64Array;
-    }
-
-    // Function to restore BigInt values from parsed JSON
-    restoreFromJson(obj) {
-        if (obj === null || typeof obj !== 'object') {
-            return obj;
-        }
-
-        // Check for our special type indicators
-        if (obj.type === 'bigint') {
-            return BigInt(obj.value);
-        }
-
-        if (obj.type === 'bigint[]') {
-            return obj.value.map(str => BigInt(str));
-        }
-
-        if (obj.type === 'BigInt64Array') {
-            return new BigInt64Array(obj.value.map(str => BigInt(str)));
-        }
-
-        // Handle arrays
-        if (Array.isArray(obj)) {
-            return obj.map(item => this.restoreFromJson(item));
-        }
-
-        // Handle regular objects
-        const result = {};
-        for (const [key, value] of Object.entries(obj)) {
-            result[key] = this.restoreFromJson(value);
-        }
-        return result;
-    }
-
-    // Parse JSON and restore BigInt values
-    deserializeWithBigInt(jsonString) {
-        const parsed = JSON.parse(jsonString);
-        return this.restoreFromJson(parsed);
-    }
-
-    collapseShortArrays(json, maxLength = 512) {
-        // First pass: collapse arrays of numbers/strings/short objects to one line if short enough
-        let result = json.replace(
-            /(\[\s+)((?:(?:-?\d+(?:\.\d+)?|"[^"]*"|true|false|null)\s*,\s*){1,20}(?:-?\d+(?:\.\d+)?|"[^"]*"|true|false|null)\s*)\s+\]/g,
-            (match, open, arr) => {
-                const oneLine = `[${arr.replace(/\s+/g, ' ')}]`;
-                return oneLine.length <= maxLength ? oneLine : match;
-            }
-        );
-        
-        // Second pass: collapse single-element arrays that are on multiple lines
-        result = result.replace(
-            /\[\s+(\d+|"[^"]*"|true|false|null)\s+\]/g,
-            (match, value) => `[${value}]`
-        );
-        
-        // Third pass: clean up any remaining space between last element and closing bracket
-        result = result.replace(/(\d+|"[^"]*"|true|false|null)\s+\]/g, '$1]');
-
-        // Fourth pass: collapse small objects (like "values" objects) to one line
-        result = result.replace(
-            /(\{\s+)((?:(?:"[^"]*"\s*:\s*(?:-?\d+(?:\.\d+)?|"[^"]*"|true|false|null))\s*,\s*){0,20}(?:"[^"]*"\s*:\s*(?:-?\d+(?:\.\d+)?|"[^"]*"|true|false|null))\s*)\s+\}/g,
-            (match, open, content) => {
-                const oneLine = `{${content.replace(/\s+/g, ' ')}}`;
-                return oneLine.length <= maxLength ? oneLine : match;
-            }
-        );
-        
-        // Fifth pass: clean up any remaining space between last key-value and closing brace
-        result = result.replace(/((?:-?\d+(?:\.\d+)?|"[^"]*"|true|false|null))\s+\}/g, '$1}');
-
-        return result;
-    }
-
-    async exportGraphAsJson() {
-        const weightBiasButtons = document.querySelectorAll('.action')[0];
-        if (!this._model || !this._model.graphs) {
-            console.warn('No model or graphs available to export tensors.');
-            weightBiasButtons.innerHTML = "No model or graphs available to export tensors.";
-            return;
-        }
-
-        let modelJson = {}, graphJson = {};
-        let model = this._model;
-
-        model?.identifier ? modelJson.identifier = model.identifier : null;
-        model.description ? modelJson.description = model.description : null;
-        model.name ? modelJson.name = model.name : null;
-        model.domain ? modelJson.domain = model.domain : null;
-        model.format ? modelJson.format = model.format : null;
-        model.producer ? modelJson.producer = model.producer : null;
-        model.source ? modelJson.source = model.source : undefined;
-        model.version ? modelJson.version = model.version : null;
-
-        if (model.functions) {
-            modelJson.functions = [];
-            for (const func of model.functions) {
-                modelJson.functions.push(func);
-            }
-        }
-
-        if (model.imports) {
-            modelJson.imports = [];
-            for (const impo of model.imports) {
-                modelJson.imports.push(impo);
-            }
-        }
-
-        if (model.metadata) {
-            modelJson.metadata = [];
-            for (const meta of model.metadata) {
-                modelJson.metadata.push(meta);
-            }
-        }
-
-        modelJson.graph = [];
-        for (const graph of model.graphs) {
-            graph?.name ? graphJson.name = graph.name : null;
-            graph.identifier ? graphJson.identifier = graph.identifier : null;
-            graphJson.inputs = [];
-            for (const input of graph.inputs) {
-                if (input) {
-                    const inputJson = {};
-                    input.name ? inputJson.name = input.name : null;
-                    input.identifier ? inputJson.identifier = input.identifier : null;
-                    input.type ? inputJson.type = input?.type : null;
-                    inputJson.value = [];
-                    for (const value of input.value) {
-                        const valueJson = {};
-                        if (value) {
-                            value.name ? valueJson.name = value.name : null;
-                            value.identifier ? valueJson.identifier = value.identifier : null;
-                            value.initializer ? valueJson.initializer = value.initializer : null;
-                            value.quantization ? valueJson.quantization = value.quantization : null;
-                            if (value.type) {
-                                const type = value.type;
-                                const typeJson = {};
-                                type.dataType ? typeJson.dataType = type.dataType : null;
-                                type.denotation ? typeJson.denotation = type.denotation : null;
-                                type.layout ? typeJson.layout = type.layout : null;
-                                if (type.shape) {
-                                    const shape = type.shape;
-                                    const shapeJson = {};
-                                    shape?.dimensions ? shapeJson.dimensions = shape.dimensions : [];
-                                    typeJson.shape = shapeJson;
-                                }
-                                valueJson.type = typeJson;
-                            }
-                        }
-                        inputJson.value.push(valueJson);
-                    }
-                    graphJson.inputs.push(inputJson);
-                }
-            }
-            graphJson.outputs = [];
-            for (const output of graph.outputs) {
-                if (output) {
-                    const outputJson = {};
-                    output.name ? outputJson.name = output.name : null;
-                    output.identifier ? outputJson.identifier = output.identifier : null;
-                    output.type ? outputJson.type = output.type : null;
-                    outputJson.value = [];
-                    for (const value of output.value) {
-                        const valueJson = {};
-                        if (value) {
-                            value.name ? valueJson.name = value.name : null;
-                            value.identifier ? valueJson.identifier = value.identifier : null;
-                            value.initializer ? valueJson.initializer = value.initializer : null;
-                            value.quantization ? valueJson.quantization = value.quantization : null;
-                            if (value.type) {
-                                const type = value.type;
-                                const typeJson = {};
-                                type.dataType ? typeJson.dataType = type.dataType : null;
-                                type.denotation ? typeJson.denotation = type.denotation : null;
-                                type.layout ? typeJson.layout = type.layout : null;
-                                if (type.shape) {
-                                    const shape = type.shape;
-                                    const shapeJson = {};
-                                    shape?.dimensions ? shapeJson.dimensions = shape.dimensions : [];
-                                    typeJson.shape = shapeJson;
-                                }
-                                valueJson.type = typeJson;
-                            }
-                        }
-                        outputJson.value.push(valueJson);
-                    }
-                    graphJson.outputs.push(outputJson);
-                }
-            }
-            graphJson.nodes = [];
-            let lastDataOffset = 0;
-            let lastByteLength = 0;
-            for (const node of graph.nodes) {
-                if (node) {
-                    const nodeJson = {};
-                    node.name ? nodeJson.name = node.name : null;
-                    node.identifier ? nodeJson.identifier = node.identifier : null;
-                    nodeJson.chain = [];
-                    if (node.chain) {
-                        for (const chain of node.chain) {
-                            nodeJson.chain.push(chain);
-                        }
-                    }
-                    nodeJson.metadata = [];
-                    if (node.metadata) {
-                        for (const metadata of node.metadata) {
-                            nodeJson.metadata.push(metadata);
-                        }
-                    }
-
-                    nodeJson.inputs = [];
-                    for (const input of node.inputs) {
-                        if (input) {
-                            const inputJson = {};
-                            input.name ? inputJson.name = input.name : null;
-                            input.identifier ? inputJson.identifier = input.identifier : null;
-                            input.type ? inputJson.type = input.type : null;
-                            inputJson.value = [];
-                            for (const value of input.value) {
-                                const valueJson = {};
-                                if (value) {
-                                    value.name ? valueJson.name = value.name : null;
-                                    value.identifier ? valueJson.identifier = value.identifier : null;
-                                    // value.initializer includes the Tensor weight and bias data
-                                    if (value.initializer) {
-                                        const initializerJson = {};
-                                        const initializer = value.initializer;
-                                        initializer.name ? initializerJson.name = initializer.name : null;
-                                        initializer.identifier ? initializerJson.identifier = initializer.identifier : null;
-                                        initializer.category ? initializerJson.category = initializer.category : null;
-                                        initializer.encoding ? initializerJson.encoding = initializer.encoding : null;
-
-                                        let meta;
-                                        // Inject tensor metadata into initializer
-                                        if (this._tensorMetaMap &&
-                                            (this._tensorMetaMap[initializer.name] || this._tensorMetaMap[value.name])) {
-                                            meta = this._tensorMetaMap[initializer.name] || this._tensorMetaMap[value.name];
-                                            initializerJson.dataType = meta.dataType;
-                                            if (meta) {
-                                                initializerJson.dataOffset = meta.dataOffset;
-                                                initializerJson.byteLength = meta.byteLength;
-                                                lastDataOffset = meta.dataOffset;
-                                                lastByteLength = meta.byteLength;
-                                            }
-                                        }
-
-                                        if(!meta) {
-                                            if (initializer.type) {
-                                                initializer.type.dataType ? initializerJson.dataType = initializer.type.dataType : null;
-                                            }
-
-                                            const initializerValues = initializer.values;
-                                            if (initializerValues && Array.isArray(initializerValues)) {
-                                                // Determine element size in bytes
-                                                let elementSize = 0;
-                                                switch (initializerJson.dataType) {
-                                                    case 'float32':
-                                                    case 'int32':
-                                                    case 'uint32':
-                                                        elementSize = 4;
-                                                        break;
-                                                    case 'float64':
-                                                    case 'int64':
-                                                    case 'uint64':
-                                                        elementSize = 8;
-                                                        break;
-                                                    case 'float16':
-                                                    case 'int16':
-                                                    case 'uint16':
-                                                        elementSize = 2;
-                                                        break;
-                                                    case 'int8':
-                                                    case 'uint8':
-                                                    case 'bool':
-                                                        elementSize = 1;
-                                                        break;
-                                                    default:
-                                                        elementSize = 0;
-                                                }
-                                                initializerJson.byteLength = elementSize * initializerValues.length;
-                                            } else {
-                                                initializerJson.byteLength = '';
-                                            }
-
-                                            if (typeof lastDataOffset === 'number' && typeof lastByteLength === 'number' && initializerJson.byteLength) {
-                                                initializerJson.dataOffset = lastDataOffset + lastByteLength;
-                                                lastDataOffset = initializerJson.dataOffset;
-                                                lastByteLength = initializerJson.byteLength;
-                                            } else {
-                                                initializerJson.dataOffset = '';
-                                            }
-                                        }
-
-                                        if (initializer.encoding === '|') {
-                                            // Only store initializer.values with byteLength less than 128
-                                            if (initializerJson.byteLength < 128) {
-                                                initializer.values ? initializerJson.values = initializer.values : [];
-                                            } else {
-                                                initializerJson.values = {};
-                                                initializerJson.valuesNote = "The byteLength of initializer.values is larger than 128, check the data in weights bin file via https://ibelem.github.io/netron/reader.html" 
-                                            }
-                                        }
-                                        initializer.indices ? initializerJson.indices = initializer.indices : null;
-                                        initializer.location ? initializerJson.location = initializer.location : null;
-
-                                        if (initializer.type) {
-                                            initializerJson.type = {}
-                                            initializer.type.dataType ? initializerJson.type.dataType = initializer.type.dataType : null;
-                                            if (initializer.type.shape) {
-                                                if (initializer.type.shape.dimensions.length === 1 &&
-                                                    initializer.type.shape.dimensions[0] === 1) {
-                                                    initializer.values ? initializerJson.values = initializer.values : [];
-                                                }
-                                                initializerJson.type.shape = {}
-                                                initializer.type.shape.dimensions ? initializerJson.type.shape.dimensions = initializer.type.shape.dimensions : null;
-
-                                                // Inject NCHW/NHWC shape and kernel layout information
-                                                if (this._tensorMetaMap &&
-                                                    (this._tensorMetaMap[initializer.name] || this._tensorMetaMap[value.name])) {
-                                                    const meta = this._tensorMetaMap[initializer.name] || this._tensorMetaMap[value.name];
-
-                                                    // Put nchw and nhwc at same level as shape
-                                                    if (meta.nchw) {
-                                                        initializerJson.type.nchw = meta.nchw;
-                                                    }
-                                                    if (meta.nhwc) {
-                                                        initializerJson.type.nhwc = meta.nhwc;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        valueJson.initializer = initializerJson;
-                                    }
-                                    value.quantization ? valueJson.quantization = value?.quantization : null;
-                                    if (value.type) {
-                                        const type = value.type;
-                                        const typeJson = {};
-                                        type.dataType ? typeJson.dataType = type.dataType : null;
-                                        type.denotation ? typeJson.denotation = type.denotation : null;
-                                        type.layout ? typeJson.layout = type.layout : null;
-                                        if (type.shape) {
-                                            const shape = type.shape;
-                                            const shapeJson = {};
-                                            shape?.dimensions ? shapeJson.dimensions = shape.dimensions : [];
-                                            typeJson.shape = shapeJson;
-                                        }
-                                        valueJson.type = typeJson;
-                                    }
-                                }
-                                inputJson.value.push(valueJson);
-                            }
-                            nodeJson.inputs.push(inputJson);
-                        }
-                    }
-
-                    nodeJson.outputs = [];
-                    for (const output of node.outputs) {
-                        if (output) {
-                            const outputJson = {};
-                            output.name ? outputJson.name = output.name : null;
-                            output.identifier ? outputJson.identifier = output.identifier : null;
-                            output.type ? outputJson.type = output.type : null;
-                            outputJson.value = [];
-                            for (const value of output.value) {
-                                const valueJson = {};
-                                if (value) {
-                                    value.name ? valueJson.name = value?.name : null;
-                                    // value.initializer includes the Tensor weight and bias data
-                                    if (value.initializer) {
-                                        const initializerJson = {};
-                                        const initializer = value.initializer;
-                                        initializer.name ? initializerJson.name = initializer.name : null;
-                                        initializer.identifier ? initializerJson.identifier = initializer.identifier : null;
-                                        initializer.category ? initializerJson.category = initializer.category : null;
-                                        initializer.encoding ? initializerJson.encoding = initializer.encoding : null;
-                                        initializer.indices ? initializerJson.indices = initializer.indices : null;
-                                        initializer.location ? initializerJson.location = initializer.location : null;
-                                        if (initializer.type) {
-                                            initializerJson.type = {}
-                                            initializer.type.dataType ? initializerJson.type.dataType = initializer.type.dataType : null;
-                                            if (initializer.type.shape) {
-                                                initializerJson.type.shape = {}
-                                                initializer.type.shape.dimensions ? initializerJson.type.shape.dimensions = initializer.type.shape.dimensions : null;
-                                            }
-                                        }
-                                        valueJson.initializer = initializerJson;
-                                    }
-                                    value.quantization ? valueJson.quantization = value.quantization : null;
-                                    if (value.type) {
-                                        const type = value.type;
-                                        const typeJson = {};
-                                        type.dataType ? typeJson.dataType = type.dataType : null;
-                                        type.denotation ? typeJson.denotation = type.denotation : null;
-                                        type.layout ? typeJson.layout = type.layout : null;
-                                        if (type.shape) {
-                                            const shape = type.shape;
-                                            const shapeJson = {};
-                                            shape?.dimensions ? shapeJson.dimensions = shape.dimensions : [];
-                                            typeJson.shape = shapeJson;
-                                        }
-                                        valueJson.type = typeJson;
-                                    }
-                                }
-                                outputJson.value.push(valueJson);
-                            }
-                            nodeJson.outputs.push(outputJson);
-                        }
-                    }
-
-                    nodeJson.attributes = [];
-                    for (const attribute of node.attributes) {
-                        if (attribute) {
-                            const attributeJson = {};
-                            attribute.name ? attributeJson.name = attribute.name : null;
-                            attribute.identifier ? attributeJson.identifier = attribute.identifier : null;
-                            attribute.type ? attributeJson.type = attribute.type : null;
-                            attribute.value ? attributeJson.value = attribute.value : null;
-                            nodeJson.attributes.push(attributeJson);
-                        }
-                    }
-
-                    node.type ? nodeJson.type = node.type : null;
-                    graphJson.nodes.push(nodeJson);
-                }
-            }
-        }
-
-        function removeExamplesAndDescriptions(obj) {
-            if (Array.isArray(obj)) {
-                return obj.map(removeExamplesAndDescriptions);
-            } else if (obj && typeof obj === 'object') {
-                const result = {};
-                for (const [key, value] of Object.entries(obj)) {
-                    if (key === 'examples' || key === 'description') continue; // Skip these keys
-                    result[key] = removeExamplesAndDescriptions(value);
-                }
-                return result;
-            }
-            return obj;
-        }
-
-        modelJson.graph.push(graphJson);
-        const cleanedModelJson = removeExamplesAndDescriptions(this.prepareForJson(modelJson));
-        const jsonName = `graph.json`;
-        await this._downloadModelWeightBiasJson(jsonName, cleanedModelJson);
-    }
-
-    async exportAllTensorsAsZip() {
-        const weightBiasButtons = document.querySelectorAll('.action')[0];
-        if (!this._model || !this._model.graphs) {
-            console.warn('No model or graphs available to export tensors.');
-            weightBiasButtons.innerHTML = "No model or graphs available to export tensors.";
-            return;
-        }
-
-        const jszip = new JSZip(); // Use JSZip library for zipping files
-        for (const graph of this._model.graphs) {
-            for (const node of graph.nodes) {
-                for (const input of node.inputs) {
-                    for (const value of input.value) {
-                        if (value && value.initializer) {
-                            const tensor = new base.Tensor(value.initializer);
-                            const defaultPath = tensor.name
-                                ? tensor.name.split('/').join('_').split(':').join('_').split('.').join('_')
-                                : 'tensor';
-                            let weightsBiasName = '';
-                            if (input.name.toLowerCase() === 'w') {
-                                weightsBiasName = 'weight';
-                            } else if (input.name.toLowerCase() === 'b') {
-                                weightsBiasName = 'bias';
-                            } else {
-                                weightsBiasName = defaultPath;
-                            }
-                            const fileName = `${node.name.toLowerCase()}_${weightsBiasName}.npy`;
-
-                            try {
-                                const npyData = await this._getTensorAsNpy(tensor);
-                                jszip.file(fileName, npyData); // Add the .npy file to the zip
-                                console.log(`Added to zip: ${fileName}`);
-                            } catch (error) {
-                                console.error(`Failed to add tensor to zip: ${fileName}`, error);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Generate the zip file and trigger download
-        jszip.generateAsync({ type: 'blob' }).then((blob) => {
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'tensors.zip';
-            link.click();
-            console.log('Downloaded tensors.zip');
-        }).catch((error) => {
-            console.error('Failed to generate zip file.', error);
-        });
-    }
-
-    _getJsonObject(nodeName, nodeIdentifier, nodeType, inputName, tensorName, tensorIdentifier, dataOffset, byteLength, dataType, shape) {
-        return {
-            nodeName: nodeName,
-            nodeIdentifier: nodeIdentifier,
-            nodeType: nodeType,
-            input: inputName,
-            name: tensorName,
-            identifier: tensorIdentifier,
-            dataOffset: dataOffset,
-            byteLength: byteLength,
-            dataType: dataType,
-            shape: shape
-        }
-    }
-
-    async _downloadModelWeightBiasJson(fileName, modelWeightBias) {
-        // Convert the JSON object to a string
-        let jsonString = JSON.stringify(modelWeightBias, null, 2);
-
-        jsonString = this.collapseShortArrays(jsonString);
-
-        // Create a Blob from the JSON string
-        const blob = new Blob([jsonString], { type: "application/json" });
-
-        // Create a temporary link element
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = fileName;
-
-        // Trigger the download
-        link.click();
-
-        // Clean up the URL object
-        URL.revokeObjectURL(link.href);
-
-        console.log(`Downloaded: ${fileName}`);
-    }
-
-    async _downloadModelWeightBiasBin(fileName, binaryData) {
-        // Calculate total length including potential padding bytes
-        let totalLength = 0;
-        for (const buffer of binaryData) {
-            // Add padding to ensure proper alignment for next tensor
-            totalLength += buffer.byteLength;
-            // Add padding to align to 8 bytes (largest TypedArray alignment requirement)
-            const padding = (8 - (totalLength % 8)) % 8;
-            totalLength += padding;
-        }
-
-        // Create concatenated buffer with alignment padding
-        const concatenatedBuffer = new Uint8Array(totalLength);
-        let offset = 0;
-
-        // Track tensor offsets for JSON file
-        const tensorOffsets = [];
-
-        for (const buffer of binaryData) {
-            // Store current offset for this tensor in the JSON
-            tensorOffsets.push(offset);
-
-            // Copy current buffer data
-            concatenatedBuffer.set(new Uint8Array(buffer), offset);
-            offset += buffer.byteLength;
-
-            // Add padding bytes to ensure next tensor starts at aligned offset
-            const padding = (8 - (offset % 8)) % 8;
-            offset += padding;
-        }
-
-        // Create a Blob from the concatenated binary data
-        const blob = new Blob([concatenatedBuffer], { type: "application/octet-stream" });
-
-        // Trigger the download
-        if (this._host && this._host.export) {
-            await this._host.export(fileName, blob);
-        } else {
-            console.error("Host export method is not available.");
-        }
-
-        // Return the offsets so they can be used in the JSON file
-        return tensorOffsets;
-    }
-
-    isDepthwiseConv(node) {
-        if (!node) return false;
-
-        // TFLite/TF: type name or attribute indicates depthwise
-        if (
-            node.type &&
-            typeof node.type.name === 'string' &&
-            node.type.name.toLowerCase().includes('depthwise')
-        ) {
-            return true;
-        }
-        if (
-            node.attributes &&
-            node.attributes.some(a =>
-                a.name === 'is_depthwise' ||
-                a.name === 'depthwise'
-            )
-        ) {
-            return true;
-        }
-
-        // ONNX/standard: group == inChannels && group > 1
-        const groupAttr = node.attributes && node.attributes.find(a => a.name === 'group' || a.name === 'groups');
-        if (groupAttr && node.inputs && node.inputs.length > 0) {
-            let groups = Number(Array.isArray(groupAttr.value) ? groupAttr.value[0] : groupAttr.value);
-            let inChannels = null;
-            const input = node.inputs[0];
-            if (
-                input && input.value && input.value[0] &&
-                input.value[0].type && input.value[0].type.shape &&
-                input.value[0].type.shape.dimensions
-            ) {
-                inChannels = input.value[0].type.shape.dimensions[1]; // NCHW: [N, C, H, W]
-            }
-            if (inChannels != null && groups === inChannels && groups > 1) {
-                console.log(`${node.name}: depthwise conv`);
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    isConvTranspose(node) {
-        if (!node || !node.type || typeof node.type.name !== 'string') return false;
-        const name = node.type.name.toLowerCase();
-        return name.includes('convtranspose') || name.includes('transposeconv');
-    }
-
-    isRegularConv(node) {
-        if (!node || !node.type || typeof node.type.name !== 'string') return false;
-
-        // Check if it's any type of conv but not depthwise or transpose
-        const name = node.type.name.toLowerCase();
-        if (name.includes('conv') &&
-            !name.includes('depthwise') &&
-            !name.includes('transpose') &&
-            !name.includes('convtranspose')) {
-            return true;
-        }
-
-        // Make sure it's not a depthwise conv by group attribute
-        if (this.isDepthwiseConv(node)) {
-            return false;
-        }
-
-        return false;
-    }
-
-    getTypedArray(array, dataType) {
-        let typedArray;
-        switch (dataType) {
-            case 'float':
-            case 'float32':
-                typedArray = new Float32Array(array.buffer, array.byteOffset, array.byteLength / Float32Array.BYTES_PER_ELEMENT);
-                break;
-            case 'uint8':
-                typedArray = new Uint8Array(array.buffer, array.byteOffset, array.byteLength / Uint8Array.BYTES_PER_ELEMENT);
-                break;
-            case 'int8':
-                typedArray = new Int8Array(array.buffer, array.byteOffset, array.byteLength / Int8Array.BYTES_PER_ELEMENT);
-                break;
-            case 'uint16':
-                typedArray = new Uint16Array(array.buffer, array.byteOffset, array.byteLength / Uint16Array.BYTES_PER_ELEMENT);
-                break;
-            case 'int16':
-                typedArray = new Int16Array(array.buffer, array.byteOffset, array.byteLength / Int16Array.BYTES_PER_ELEMENT);
-                break;
-            case 'int32':
-                typedArray = new Int32Array(array.buffer, array.byteOffset, array.byteLength / Int32Array.BYTES_PER_ELEMENT);
-                break;
-            case 'int64':
-                typedArray = new BigInt64Array(array.buffer, array.byteOffset, array.byteLength / BigInt64Array.BYTES_PER_ELEMENT);
-                break;
-            case 'float16':
-                typedArray = new Float16Array(array.buffer, array.byteOffset, array.byteLength / Float16Array.BYTES_PER_ELEMENT);
-                break;
-            case 'double':
-            case 'float64':
-                typedArray = new Float64Array(array.buffer, array.byteOffset, array.byteLength / Float64Array.BYTES_PER_ELEMENT);
-                break;
-            case 'uint32':
-                typedArray = new Uint32Array(array.buffer, array.byteOffset, array.byteLength / Uint32Array.BYTES_PER_ELEMENT);
-                break;
-            case 'uint64':
-                typedArray = new BigUint64Array(array.buffer, array.byteOffset, array.byteLength / BigUint64Array.BYTES_PER_ELEMENT);
-                break;
-            default:
-                typedArray = array;
-        }
-        return typedArray;
-    }
-
-    transpose4D(tensorData, shape, permutation) {
-        if (tensorData.length !== shape[0] * shape[1] * shape[2] * shape[3]) {
-            throw new Error(`Shape mismatch: tensorData.length=${tensorData.length}, shape=${shape.join('×')}, expected elements=${shape[0] * shape[1] * shape[2] * shape[3]}`);
-        }
-        if (!tensorData || !Array.isArray(shape) || shape.length !== 4) {
-            throw new Error('Invalid tensor data or shape for 4D transpose');
-        }
-        const [D0, D1, D2, D3] = shape;
-        const newShape = permutation.map(i => shape[i]);
-        const total = D0 * D1 * D2 * D3;
-        const dataType = tensorData.constructor;
-        const elementSize = tensorData.BYTES_PER_ELEMENT || 4;
-        const out = new dataType(total);
-
-        for (let i0 = 0; i0 < D0; i0++) {
-            for (let i1 = 0; i1 < D1; i1++) {
-                for (let i2 = 0; i2 < D2; i2++) {
-                    for (let i3 = 0; i3 < D3; i3++) {
-                        const srcIdx = ((i0 * D1 + i1) * D2 + i2) * D3 + i3;
-                        const idxs = [i0, i1, i2, i3];
-                        const j0 = idxs[permutation[0]];
-                        const j1 = idxs[permutation[1]];
-                        const j2 = idxs[permutation[2]];
-                        const j3 = idxs[permutation[3]];
-                        const dstIdx = ((j0 * newShape[1] + j1) * newShape[2] + j2) * newShape[3] + j3;
-                        out[dstIdx] = tensorData[srcIdx];
-                    }
-                }
-            }
-        }
-
-        console.log(out.byteLength);
-        return { data: out, elementSize, shape: newShape };
-    }
-
-    getInitialKernelLayout(node, layout = 'nchw') {
-        // layout: 'nchw' or 'nhwc'
-        if (!node) return '';
-
-        // Depthwise Conv || ConvTranspose
-        if (this.isDepthwiseConv(node) || this.isConvTranspose(node)) {
-            return layout === 'nhwc' ? 'IHWO' : 'OIHW';
-        }
-
-        // Regular Conv
-        if (node.type && node.type.name && node.type.name.toLowerCase().includes('conv')) {
-            return layout === 'nhwc' ? 'OHWI' : 'OIHW';
-        }
-        return '';
-    }
-
-    toBuffer(values, dataType) {
-        if (!Array.isArray(values)) return null;
-        switch (dataType) {
-            case 'float32': return new Float32Array(values).buffer;
-            case 'float64': return new Float64Array(values).buffer;
-            case 'int32':   return new Int32Array(values).buffer;
-            case 'uint32':  return new Uint32Array(values).buffer;
-            case 'int16':   return new Int16Array(values).buffer;
-            case 'uint16':  return new Uint16Array(values).buffer;
-            case 'int8':    return new Int8Array(values).buffer;
-            case 'uint8':   return new Uint8Array(values).buffer;
-            case 'bool':    return new Uint8Array(values).buffer;
-            case 'int64':   return new BigInt64Array(values).buffer;
-            case 'uint64':  return new BigUint64Array(values).buffer;
-            // Add more types as needed
-            default:        return null;
-        }
-    }
-
-    // Helper to check if a tensor is used as a kernel in a Conv/Depthwise/ConvTranspose op
-    _isKernelForConvRecursive(graph, tensorName, visited = new Set()) {
-        if (visited.has(tensorName)) return null;
-        visited.add(tensorName);
-
-        // 1. Direct use as kernel
-        for (const node of graph.nodes) {
-            for (const input of node.inputs) {
-                if (input && input.value && input.value.length > 0) {
-                    const value = input.value[0];
-                    if (value && value.name === tensorName) {
-                        if (this.isDepthwiseConv(node) || this.isConvTranspose(node)) {
-                            return { type: 'depthwise_or_transpose', node };
-                        } else if (node.type && typeof node.type.name === 'string' && node.type.name.toLowerCase().includes('conv')) {
-                            return { type: 'conv', node };
-                        }
-                    }
-                }
-            }
-        }
-
-        // 2. Indirect use: tensor is input to a node, whose output is used as kernel
-        for (const node of graph.nodes) {
-            for (const input of node.inputs) {
-                if (input && input.value && input.value.length > 0) {
-                    const value = input.value[0];
-                    if (value && value.name === tensorName) {
-                        // Check all outputs of this node
-                        if (node.outputs && node.outputs.length > 0) {
-                            for (const output of node.outputs) {
-                                if (output.value && output.value.length > 0) {
-                                    const outValue = output.value[0];
-                                    if (outValue && outValue.name) {
-                                        // Recursively check if output is used as kernel
-                                        const result = this._isKernelForConvRecursive(graph, outValue.name, visited);
-                                        if (result) return result;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
-
-
-    async exportAllTensorsAsBinAndJson() {
-        const weightBiasButtons = document.querySelectorAll('.action')[0];
-
-        if (!this._model || !this._model.graphs) {
-            console.warn('No model or graphs available to export tensors.');
-            weightBiasButtons.innerHTML = "No model or graphs available to export tensors.";
-            return;
-        }
-
-        let binaryData_nchw = [];
-        let binaryData_nhwc = [];
-        let tensorMetadata_nchw = [];
-        let tensorMetadata_nhwc = [];
-
-        // Create map to store tensor metadata for injecting into graph.json later
-        const tensorMetaMap = {};
-
-        // Detect model format and default layout
-        let format = (this._model.format || '').toLowerCase();
-        let defaultLayout = 'nchw'; // ONNX and most others
-        if (format.includes('tflite') || format.includes('tensorflow lite')) {
-            defaultLayout = 'nhwc';
-        }
-
-        for (const graph of this._model.graphs) {
-            for (const node of graph.nodes) {
-                for (const input of node.inputs) {
-                    for (const value of input.value) {
-                        if (value && value.initializer) {
-                            const tensor = new base.Tensor(value.initializer);
-                            const shape = tensor.type.shape.dimensions;
-                            let byteLength = 0;
-                            let tensorBuffer = null;
-
-                            if (tensor.data) {
-                                byteLength = tensor.data.byteLength;
-                                if (tensor.data.buffer) {
-                                    tensorBuffer = tensor.data.buffer.slice(tensor.data.byteOffset, tensor.data.byteOffset + byteLength);
-                                }
-                            } else if (tensor.encoding === '|' && tensor.values) {
-                                if(tensor.values.byteLength) {
-                                    byteLength = tensor.values.byteLength;
-                                    if (tensor.values.buffer) {
-                                        tensorBuffer = tensor.values.buffer.slice(tensor.values.byteOffset, tensor.values.byteOffset + byteLength);
-                                    }
-                                } else {
-                                    let elementSize = 0;
-                                    switch (tensor.type.dataType) {
-                                        case 'float32':
-                                        case 'int32':
-                                        case 'uint32':
-                                            elementSize = 4;
-                                            break;
-                                        case 'float64':
-                                        case 'int64':
-                                        case 'uint64':
-                                            elementSize = 8;
-                                            break;
-                                        case 'float16':
-                                        case 'int16':
-                                        case 'uint16':
-                                            elementSize = 2;
-                                            break;
-                                        case 'int8':
-                                        case 'uint8':
-                                        case 'bool':
-                                            elementSize = 1;
-                                            break;
-                                        default:
-                                            elementSize = 0;
-                                    }
-                                    byteLength = elementSize * tensor.values.length;
-                                    tensorBuffer = this.toBuffer(tensor.values, tensor.type.dataType);
-                                }
-                            }
-
-                            if (byteLength > 0 && tensorBuffer) {
-                                const nodeName = node.name || '';
-                                const nodeIdentifier = node.identifier || '';
-                                const tensorName = tensor.name || value.name || '';
-                                const tensorIdentifier = value.identifier || '';
-
-                                let kernel_layout = this.getInitialKernelLayout(node, 'nchw');
-                                let nhwc_kernel_layout = this.getInitialKernelLayout(node, 'nhwc');
-
-                                // --- ONNX or other NCHW-default models ---
-                                if (defaultLayout === 'nchw') {
-                                    // NCHW: store as-is
-                                    binaryData_nchw.push(tensorBuffer);
-                                    tensorMetadata_nchw.push({
-                                        nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
-                                        tensorName, tensorIdentifier, byteLength, dataType: tensor.type.dataType, 
-                                        shape, kernel_layout
-                                    });
-
-                                    // NHWC: always push, transposed if 4D, else as-is
-                                    let nhwcBuffer = tensorBuffer;
-                                    let nhwcShape = shape;
-                                    let nhwcByteLength = byteLength;
-
-                                    if (Array.isArray(shape) && shape.length === 4) {
-                                        let typedArray = null;
-                                        if (tensor.data) {
-                                            typedArray = this.getTypedArray(tensor.data, tensor.type.dataType);
-                                        } else if (tensorBuffer) {
-                                            typedArray = this.getTypedArray({ buffer: tensorBuffer, byteOffset: 0, byteLength: tensorBuffer.byteLength }, tensor.type.dataType);
-                                        }
-                                        if (typedArray) {
-                                            let transposed = { data: typedArray, elementSize: typedArray.BYTES_PER_ELEMENT, shape: shape };
-                                            nhwcShape = shape;
-                                            nhwc_kernel_layout = '';
-
-                                            if (this.isDepthwiseConv(node) || this.isConvTranspose(node)) {
-                                                // Depthwise Conv: OIHW -> IHWO
-                                                transposed = this.transpose4D(typedArray, shape, [1, 2, 3, 0]);
-                                                nhwcShape = [shape[1], shape[2], shape[3], shape[0]];
-                                                nhwc_kernel_layout = 'IHWO';
-                                            } else if (this.isRegularConv(node)) {
-                                                // Regular Conv: OIHW -> OHWI
-                                                transposed = this.transpose4D(typedArray, shape, [0, 2, 3, 1]);
-                                                nhwcShape = [shape[0], shape[2], shape[3], shape[1]];
-                                                nhwc_kernel_layout = 'OHWI';
-                                            } else {
-                                                // Use the helper to check if this tensor is used as a kernel in a Conv/Depthwise/ConvTranspose op
-                                                const kernelInfo = this._isKernelForConvRecursive(graph, tensor.name || value.name);
-                                                if (kernelInfo) {
-                                                    if (kernelInfo.type === 'depthwise_or_transpose') {
-                                                        // OIHW -> IHWO
-                                                        transposed = this.transpose4D(typedArray, shape, [1, 2, 3, 0]);
-                                                        nhwcShape = [shape[1], shape[2], shape[3], shape[0]];
-                                                        nhwc_kernel_layout = 'IHWO';
-                                                    } else if (kernelInfo.type === 'conv') {
-                                                        // OIHW -> OHWI
-                                                        transposed = this.transpose4D(typedArray, shape, [0, 2, 3, 1]);
-                                                        nhwcShape = [shape[0], shape[2], shape[3], shape[1]];
-                                                        nhwc_kernel_layout = 'OHWI';
-                                                    }
-                                                } else {
-                                                    // Not a kernel: keep as-is, no kernel_layout
-                                                    transposed = { data: typedArray, elementSize: typedArray.BYTES_PER_ELEMENT, shape: shape };
-                                                    nhwcShape = shape;
-                                                    nhwc_kernel_layout = '';
-                                                }
-                                            }
-
-                                            const nhwcArray = transposed.data;
-                                            const elementSize = transposed.elementSize;
-                                            nhwcByteLength = nhwcArray.length * elementSize;
-                                            const nhwcBufferTmp = new ArrayBuffer(nhwcByteLength);
-                                            new Uint8Array(nhwcBufferTmp).set(new Uint8Array(nhwcArray.buffer, nhwcArray.byteOffset, nhwcByteLength));
-                                            nhwcBuffer = nhwcBufferTmp;
-                                        }
-                                    }
-
-                                    binaryData_nhwc.push(nhwcBuffer);
-                                    tensorMetadata_nhwc.push({
-                                        nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
-                                        tensorName, tensorIdentifier, byteLength: nhwcByteLength, dataType: tensor.type.dataType,
-                                        shape: nhwcShape, kernel_layout: nhwc_kernel_layout
-                                    });
-                                }
-                                // --- TFLite or other NHWC-default models ---
-                                else if (defaultLayout === 'nhwc') {
-                                    // NHWC: store as-is
-                                    binaryData_nhwc.push(tensorBuffer);
-                                    tensorMetadata_nhwc.push({
-                                        nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
-                                        tensorName, tensorIdentifier, byteLength, dataType: tensor.type.dataType, 
-                                        shape, kernel_layout: nhwc_kernel_layout
-                                    });
-
-                                    // NCHW: always push, transposed if 4D, else as-is
-                                    let nchwBuffer = tensorBuffer;
-                                    let nchwShape = shape;
-                                    let nchwByteLength = byteLength;
-                                    if (Array.isArray(shape) && shape.length === 4) {
-                                        let typedArray = null;
-                                        if (tensor.data) {
-                                            typedArray = this.getTypedArray(tensor.data, tensor.type.dataType);
-                                        } else if (tensorBuffer) {
-                                            typedArray = this.getTypedArray({ buffer: tensorBuffer, byteOffset: 0, byteLength: tensorBuffer.byteLength }, tensor.type.dataType);
-                                        }
-                                        if (typedArray) {
-                                            let transposed = { data: typedArray, elementSize: typedArray.BYTES_PER_ELEMENT, shape: shape };
-                                            nchwShape = shape;
-                                            kernel_layout = '';
-
-                                            if (this.isDepthwiseConv(node) || this.isConvTranspose(node)) {
-                                                // Depthwise Conv: IHWO -> OIHW
-                                                transposed = this.transpose4D(typedArray, shape, [3, 0, 1, 2]);
-                                                nchwShape = [shape[3], shape[0], shape[1], shape[2]];
-                                                kernel_layout = 'OIHW';
-                                            } else if (this.isRegularConv(node)) {
-                                                // Regular Conv: OHWI -> OIHW
-                                                transposed = this.transpose4D(typedArray, shape, [0, 3, 1, 2]);
-                                                nchwShape = [shape[0], shape[3], shape[1], shape[2]];
-                                                kernel_layout = 'OIHW';
-                                            } else {
-                                                // Use the helper to check if this tensor is used as a kernel in a Conv/Depthwise/ConvTranspose op
-                                                const kernelInfo = this._isKernelForConvRecursive(graph, tensor.name || value.name);
-                                                if (kernelInfo) {
-                                                    if (kernelInfo.type === 'depthwise_or_transpose') {
-                                                        // IHWO -> OIHW
-                                                        transposed = this.transpose4D(typedArray, shape, [3, 0, 1, 2]);
-                                                        nchwShape = [shape[3], shape[0], shape[1], shape[2]];
-                                                        kernel_layout = 'OIHW';
-                                                    } else if (kernelInfo.type === 'conv') {
-                                                        // OHWI -> OIHW
-                                                        transposed = this.transpose4D(typedArray, shape, [0, 3, 1, 2]);
-                                                        nchwShape = [shape[0], shape[3], shape[1], shape[2]];
-                                                        kernel_layout = 'OIHW';
-                                                    }
-                                                } else {
-                                                    // Not a kernel: keep as-is, no kernel_layout
-                                                    transposed = { data: typedArray, elementSize: typedArray.BYTES_PER_ELEMENT, shape: shape };
-                                                    nchwShape = shape;
-                                                    kernel_layout = '';
-                                                }
-                                            }
-                                            const nchwArray = transposed.data;
-                                            const elementSize = transposed.elementSize;
-                                            nchwByteLength = nchwArray.length * elementSize;
-                                            const nchwBufferTmp = new ArrayBuffer(nchwByteLength);
-                                            new Uint8Array(nchwBufferTmp).set(new Uint8Array(nchwArray.buffer, nchwArray.byteOffset, nchwByteLength));
-                                            nchwBuffer = nchwBufferTmp;
-                                        }
-                                    }
-                                    binaryData_nchw.push(nchwBuffer);
-                                    tensorMetadata_nchw.push({
-                                        nodeName, nodeIdentifier, nodeType: node.type.name, inputName: input.name,
-                                        tensorName, tensorIdentifier, byteLength: nchwByteLength, dataType: tensor.type.dataType,
-                                        shape: nchwShape, kernel_layout
-                                    });
-                                }
-
-                                // Add tensor metadata to map
-                                const key = tensorIdentifier || tensorName;
-                                tensorMetaMap[key] = {
-                                    nodeName,
-                                    nodeIdentifier,
-                                    nodeType: node.type.name,
-                                    input: input.name,
-                                    name: tensorName,
-                                    identifier: tensorIdentifier,
-                                    dataType: tensor.type.dataType,
-                                    byteLength: byteLength,
-                                    nchw: {
-                                        dimensions: tensorMetadata_nchw[tensorMetadata_nchw.length - 1].shape,
-                                        kernel_layout: tensorMetadata_nchw[tensorMetadata_nchw.length - 1].kernel_layout
-                                    },
-                                    nhwc: {
-                                        dimensions: tensorMetadata_nhwc[tensorMetadata_nhwc.length - 1].shape,
-                                        kernel_layout: tensorMetadata_nhwc[tensorMetadata_nhwc.length - 1].kernel_layout
-                                    }
-                                };
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        const offsets_nchw = await this._downloadModelWeightBiasBin("weights_nchw.bin", binaryData_nchw);
-        // Write NHWC binary file
-        await this._downloadModelWeightBiasBin("weights_nhwc.bin", binaryData_nhwc);
-
-        // Update both NCHW and NHWC offsets in tensor metadata map
-        for (let i = 0; i < tensorMetadata_nchw.length; i++) {
-            const key = tensorMetadata_nchw[i].tensorIdentifier || tensorMetadata_nchw[i].tensorName;
-            if (tensorMetaMap[key]) {
-                tensorMetaMap[key].dataOffset = offsets_nchw[i]; // For NCHW
-            }
-        }
-
-        // Save tensorMetaMap for later use in exportGraphAsJson
-        this._tensorMetaMap = tensorMetaMap;
-
-        console.log(`Downloaded: weights_nchw.bin and weights_nhwc.bin`);
-
-    }
-
-    async _getTensorAsNpy(tensor) {
-        const dataType = tensor.type.dataType;
-        const python = await import('./python.js');
-        const execution = new python.Execution();
-        const bytes = execution.invoke('io.BytesIO', []);
-        const dtype = execution.invoke('numpy.dtype', [dataType]);
-        const array = execution.invoke('numpy.asarray', [tensor.value, dtype]);
-        execution.invoke('numpy.save', [bytes, array]);
-        bytes.seek(0);
-        return bytes.read(); // Return the binary data of the .npy file
-    }
-
-    async exportGraphAndWeights() {
-        await this.exportAllTensorsAsBinAndJson();
-        await this.exportGraphAsJson();
     }
 
     resetZoom() {
-        this._updateZoom(1);
+        this._target.zoom = 1;
     }
 
-    _activate() {
-        if (!this._events) {
-            this._events = {};
-            this._events.scroll = (e) => this._scrollHandler(e);
-            this._events.wheel = (e) => this._wheelHandler(e);
-            this._events.gesturestart = (e) => this._gestureStartHandler(e);
-            this._events.pointerdown = (e) => this._pointerDownHandler(e);
-            this._events.touchstart = (e) => this._touchStartHandler(e);
-        }
-        const graph = this._element('graph');
-        graph.focus();
-        graph.addEventListener('scroll', this._events.scroll);
-        graph.addEventListener('wheel', this._events.wheel, { passive: false });
-        graph.addEventListener('pointerdown', this._events.pointerdown);
-        if (this._host.environment('agent') === 'safari') {
-            graph.addEventListener('gesturestart', this._events.gesturestart, false);
-        } else {
-            graph.addEventListener('touchstart', this._events.touchstart, { passive: true });
-        }
-    }
-
-    _deactivate() {
-        if (this._events) {
-            const graph = this._element('graph');
-            graph.removeEventListener('scroll', this._events.scroll);
-            graph.removeEventListener('wheel', this._events.wheel);
-            graph.removeEventListener('pointerdown', this._events.pointerdown);
-            graph.removeEventListener('gesturestart', this._events.gesturestart);
-            graph.removeEventListener('touchstart', this._events.touchstart);
-        }
-    }
-
-    _toggleWebNN() {
-        const webnn = document.querySelector('#webnn');
-        webnn.classList.toggle("showGrid");
-        webnn.classList.toggle("showNone");
-    }
-
-    _updateZoom(zoom, e) {
-        const container = this._element('graph');
-        const canvas = this._element('canvas');
-        const limit = this._options.direction === 'vertical' ?
-            container.clientHeight / this._height :
-            container.clientWidth / this._width;
-        const min = Math.min(Math.max(limit, 0.15), 1);
-        zoom = Math.max(min, Math.min(zoom, 1.4));
-        const scrollLeft = this._scrollLeft || container.scrollLeft;
-        const scrollTop = this._scrollTop || container.scrollTop;
-        const x = (e ? e.pageX : (container.clientWidth / 2)) + scrollLeft;
-        const y = (e ? e.pageY : (container.clientHeight / 2)) + scrollTop;
-        const width = zoom * this._width;
-        const height = zoom * this._height;
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
-        this._scrollLeft = Math.max(0, ((x * zoom) / this._zoom) - (x - scrollLeft));
-        this._scrollTop = Math.max(0, ((y * zoom) / this._zoom) - (y - scrollTop));
-        container.scrollLeft = this._scrollLeft;
-        container.scrollTop = this._scrollTop;
-        this._zoom = zoom;
-    }
-
-    _pointerDownHandler(e) {
-        if (e.pointerType === 'touch' || e.buttons !== 1) {
-            return;
-        }
-        // Workaround for Firefox emitting 'pointerdown' event when scrollbar is pressed
-        if (e.originalTarget) {
-            try {
-                /* eslint-disable no-unused-expressions */
-                e.originalTarget.id;
-                /* eslint-enable no-unused-expressions */
-            } catch {
-                return;
-            }
-        }
-        const container = this._element('graph');
-        e.target.setPointerCapture(e.pointerId);
-        this._mousePosition = {
-            left: container.scrollLeft,
-            top: container.scrollTop,
-            x: e.clientX,
-            y: e.clientY
-        };
-        e.target.style.cursor = 'grabbing';
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        const pointerMoveHandler = (e) => {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            if (this._mousePosition) {
-                const dx = e.clientX - this._mousePosition.x;
-                const dy = e.clientY - this._mousePosition.y;
-                this._mousePosition.moved = dx * dx + dy * dy > 0;
-                if (this._mousePosition.moved) {
-                    const container = this._element('graph');
-                    container.scrollTop = this._mousePosition.top - dy;
-                    container.scrollLeft = this._mousePosition.left - dx;
+    async refresh(anchor) {
+        const snapshot = new Map();
+        if (this._target) {
+            for (const [key, entry] of this._target.nodes) {
+                const label = entry.label;
+                if (label && label.x !== undefined) {
+                    snapshot.set(label.value || key, {
+                        x: label.x, y: label.y,
+                        width: label.width || 0, height: label.height || 0
+                    });
                 }
             }
-        };
-        const clickHandler = (e) => {
-            e.stopPropagation();
-            document.removeEventListener('click', clickHandler, true);
-        };
-        const pointerUpHandler = (e) => {
-            e.target.releasePointerCapture(e.pointerId);
-            e.target.style.removeProperty('cursor');
-            container.removeEventListener('pointerup', pointerUpHandler);
-            container.removeEventListener('pointermove', pointerMoveHandler);
-            if (this._mousePosition && this._mousePosition.moved) {
-                e.preventDefault();
-                e.stopImmediatePropagation();
-                delete this._mousePosition;
-                document.addEventListener('click', clickHandler, true);
-            }
-        };
-        container.addEventListener('pointermove', pointerMoveHandler);
-        container.addEventListener('pointerup', pointerUpHandler);
-    }
-
-    _touchStartHandler(e) {
-        if (e.touches.length === 2) {
-            this._touchPoints = Array.from(e.touches);
-            this._touchZoom = this._zoom;
         }
-        const touchMoveHandler = (e) => {
-            if (Array.isArray(this._touchPoints) && this._touchPoints.length === 2 && e.touches.length === 2) {
-                const distance = (points) => {
-                    const dx = (points[1].clientX - points[0].clientX);
-                    const dy = (points[1].clientY - points[0].clientY);
-                    return Math.sqrt(dx * dx + dy * dy);
-                };
-                const d1 = distance(Array.from(e.touches));
-                const d2 = distance(this._touchPoints);
-                if (d2 !== 0) {
-                    const points = this._touchPoints;
-                    const e = {
-                        pageX: (points[1].pageX + points[0].pageX) / 2,
-                        pageY: (points[1].pageY + points[0].pageY) / 2
-                    };
-                    const zoom = d2 === 0 ? d1 : d1 / d2;
-                    this._updateZoom(this._touchZoom * zoom, e);
+        const document = this._host.document;
+        const container = document.getElementById('target');
+        const zoom = this._target ? this._target._zoom : 1;
+        const blocks = this._target ? this._target.blocks : null;
+        if (blocks && blocks.size > 0 && this._path.length > 0) {
+            this._path[0].state = Object.assign(this._path[0].state || {}, { blocks });
+        }
+        const origin = document.getElementById('origin');
+        let previous = null;
+        if (origin && this.activeTarget) {
+            previous = origin.getScreenCTM();
+            const oldChildren = Array.from(origin.children);
+            const graph = this.activeTarget;
+            const groups = graph.groups || false;
+            const viewGraph = new view.Graph(this, groups);
+            const state = this._path && this._path.length > 0 && this._path[0] ? this._path[0].state : null;
+            if (state && state.blocks) {
+                viewGraph.blocks = state.blocks;
+            }
+            viewGraph.add(graph, this.activeSignature);
+            viewGraph.addTunnels();
+            viewGraph.build(document, origin);
+            await viewGraph.measure();
+            const status = await viewGraph.layout(this._worker);
+            if (status === '') {
+                for (const child of oldChildren) {
+                    if (child.parentNode === origin) {
+                        origin.removeChild(child);
+                    }
                 }
-            }
-        };
-        const container = this._element('graph');
-        const touchEndHandler = () => {
-            container.removeEventListener('touchmove', touchMoveHandler, { passive: true });
-            container.removeEventListener('touchcancel', touchEndHandler, { passive: true });
-            container.removeEventListener('touchend', touchEndHandler, { passive: true });
-            delete this._touchPoints;
-            delete this._touchZoom;
-        };
-        container.addEventListener('touchmove', touchMoveHandler, { passive: true });
-        container.addEventListener('touchcancel', touchEndHandler, { passive: true });
-        container.addEventListener('touchend', touchEndHandler, { passive: true });
-    }
-
-    _gestureStartHandler(e) {
-        e.preventDefault();
-        this._gestureZoom = this._zoom;
-        const container = this._element('graph');
-        const gestureChangeHandler = (e) => {
-            e.preventDefault();
-            this._updateZoom(this._gestureZoom * e.scale, e);
-        };
-        const gestureEndHandler = (e) => {
-            container.removeEventListener('gesturechange', gestureChangeHandler, false);
-            container.removeEventListener('gestureend', gestureEndHandler, false);
-            e.preventDefault();
-            if (this._gestureZoom) {
-                this._updateZoom(this._gestureZoom * e.scale, e);
-                delete this._gestureZoom;
-            }
-        };
-        container.addEventListener('gesturechange', gestureChangeHandler, false);
-        container.addEventListener('gestureend', gestureEndHandler, false);
-    }
-
-    _scrollHandler(e) {
-        if (this._scrollLeft && e.target.scrollLeft !== Math.floor(this._scrollLeft)) {
-            delete this._scrollLeft;
-        }
-        if (this._scrollTop && e.target.scrollTop !== Math.floor(this._scrollTop)) {
-            delete this._scrollTop;
-        }
-    }
-
-    _wheelHandler(e) {
-        if (e.shiftKey || e.ctrlKey || this._options.mousewheel === 'zoom') {
-            let factor = 1;
-            if (e.deltaMode === 1) {
-                factor = 0.05;
-            } else if (e.deltaMode) {
-                factor = 1;
+                viewGraph.update();
+                viewGraph.updateTunnels();
+                origin.setAttribute('transform', 'translate(0,0) scale(1)');
+                document.getElementById('background').setAttribute('width', 0);
+                document.getElementById('background').setAttribute('height', 0);
+                viewGraph.restore(state);
+                this.target = viewGraph;
             } else {
-                factor = 0.002;
+                for (const child of Array.from(origin.children)) {
+                    if (!oldChildren.includes(child)) {
+                        origin.removeChild(child);
+                    }
+                }
             }
-            const delta = -e.deltaY * factor * (e.ctrlKey ? 10 : 1);
-            this._updateZoom(this._zoom * Math.pow(2, delta), e);
-            e.preventDefault();
+        } else {
+            await this.render(this.activeTarget, this.activeSignature);
         }
-    }
-
-    scrollTo(selection, behavior) {
-        if (selection && selection.length > 0) {
-            const container = this._element('graph');
-            const rect = container.getBoundingClientRect();
-            // Exclude scrollbars
-            const cw = container.clientWidth;
-            const ch = container.clientHeight;
-            // Shrink the test rectangle by 10%
-            const bounds = {};
-            bounds.left = (rect.x + cw / 2) - (cw * 0.45);
-            bounds.width = cw * 0.9;
-            bounds.right = bounds.left + bounds.width;
-            bounds.top = (rect.y + ch / 2) - (ch * 0.45);
-            bounds.height = ch * 0.9;
-            bounds.bottom = bounds.top + bounds.height;
-            let x = 0;
-            let y = 0;
-            let left = Number.POSITIVE_INFINITY;
-            let right = Number.NEGATIVE_INFINITY;
-            let top = Number.POSITIVE_INFINITY;
-            let bottom = Number.NEGATIVE_INFINITY;
-            for (const element of selection) {
-                const rect = element.getBoundingClientRect();
-                const width = Math.min(rect.width, bounds.width);
-                const height = Math.min(rect.width, bounds.height);
-                x += rect.left + (width / 2);
-                y += rect.top + (height / 2);
-                left = Math.min(left, rect.left);
-                right = Math.max(right, rect.right);
-                top = Math.min(top, rect.top);
-                bottom = Math.max(bottom, rect.bottom);
-            }
-            // No need to scroll if new selection is in the safe area.
-            if (right <= bounds.right && left >= bounds.left && bottom <= bounds.bottom && top >= bounds.top) {
-                return;
-            }
-            // If new selection is completely out of the bounds, scroll to centerize it.
-            if (bottom - top >= bounds.height || right - left >= bounds.width || right < rect.left || left > rect.right || bottom < rect.top || top > rect.bottom) {
-                x /= selection.length;
-                y /= selection.length;
-                const options = {};
-                options.left = (container.scrollLeft + x - bounds.left) - (bounds.width / 2);
-                options.top = (container.scrollTop + y - bounds.top) - (bounds.height / 2);
-                options.behavior = behavior || 'smooth';
-                container.scrollTo(options);
-                return;
-            }
-            const options = {};
-            options.left = 0;
-            options.top = 0;
-            options.behavior = behavior || 'smooth';
-            // similar to scrollIntoView block: "nearest"
-            const dr = bounds.right - right;
-            const dl = left - bounds.left;
-            const db = bounds.bottom - bottom;
-            const dt = top - bounds.top;
-            if (right - left < bounds.width) {
-                if (dl < 0) {
-                    options.left = dl;
-                } else if (dr < 0) {
-                    options.left = -dr;
+        this.show(null);
+        if (this._target) {
+            this._target.zoom = zoom;
+            if (container && anchor) {
+                const anchorNode = this._target.find(anchor.value);
+                if (anchorNode instanceof grapher.Node && anchorNode.element) {
+                    let newRect = anchorNode.element.getBoundingClientRect();
+                    if (anchorNode.definition && anchorNode.definition.element) {
+                        newRect = anchorNode.definition.element.getBoundingClientRect();
+                    }
+                    if (container.scrollWidth > container.clientWidth) {
+                        container.scrollLeft += (newRect.left - anchor.rect.left);
+                    }
+                    if (container.scrollHeight > container.clientHeight) {
+                        container.scrollTop += (newRect.top - anchor.rect.top);
+                    }
                 }
+                delete this._target._scrollLeft;
+                delete this._target._scrollTop;
             }
-            if (bottom - top < bounds.height) {
-                if (dt < 0) {
-                    options.top = dt;
-                } else if (db < 0) {
-                    options.top = -db;
+            const current = origin ? origin.getScreenCTM() : null;
+            const ox = previous && current ? (previous.e - current.e) / current.a : 0;
+            const oy = previous && current ? (previous.f - current.f) / current.d : 0;
+            const animateTransition = (snapshot) => {
+                if (!this._target || snapshot.size === 0) {
+                    return;
                 }
-            }
-            container.scrollBy(options);
+                const duration = 300;
+                let startTime = 0;
+                const animations = [];
+                for (const [key, entry] of this._target.nodes) {
+                    const label = entry.label;
+                    if (!label || !label.element) {
+                        continue;
+                    }
+                    const modelKey = label.value || key;
+                    const old = snapshot.get(modelKey);
+                    const isCluster = this._target.children(key).length > 0;
+                    if (old) {
+                        if (isCluster) {
+                            animations.push({
+                                type: 'cluster', element: label.element, rect: label.rectangle,
+                                fromX: old.x + ox, fromY: old.y + oy, toX: label.x, toY: label.y,
+                                fromW: old.width, fromH: old.height, toW: label.width, toH: label.height
+                            });
+                        } else {
+                            const fw = old.width;
+                            const fh = old.height;
+                            const tw = label.width;
+                            const th = label.height;
+                            animations.push({
+                                type: 'node', element: label.element,
+                                fromX: old.x - fw / 2 + ox, fromY: old.y - fh / 2 + oy,
+                                toX: label.x - tw / 2, toY: label.y - th / 2
+                            });
+                        }
+                    } else {
+                        label.element.style.opacity = '0';
+                        animations.push({ type: 'fadein', element: label.element });
+                    }
+                }
+                for (const edge of this._target.edges.values()) {
+                    const label = edge.label;
+                    if (!label || !label.element) {
+                        continue;
+                    }
+                    const fromNode = snapshot.get(label.from.value || edge.v);
+                    const toNode = snapshot.get(label.to.value || edge.w);
+                    if (fromNode && toNode) {
+                        const newFrom = this._target.node(edge.v);
+                        const newTo = this._target.node(edge.w);
+                        if (newFrom && newTo) {
+                            const dfx = fromNode.x - newFrom.label.x;
+                            const dfy = fromNode.y - newFrom.label.y;
+                            const dtx = toNode.x - newTo.label.x;
+                            const dty = toNode.y - newTo.label.y;
+                            const edgeOx = (dfx + dtx) / 2 + ox;
+                            const edgeOy = (dfy + dty) / 2 + oy;
+                            if (Math.abs(edgeOx) > 0.5 || Math.abs(edgeOy) > 0.5) {
+                                const labelTransform = label.labelElement ? label.labelElement.getAttribute('transform') : null;
+                                animations.push({
+                                    type: 'edge', element: label.element,
+                                    hitTest: label.hitTest, labelElement: label.labelElement,
+                                    labelTransform,
+                                    fromX: edgeOx, fromY: edgeOy
+                                });
+                            }
+                        }
+                    } else {
+                        label.element.style.opacity = '0';
+                        animations.push({ type: 'fadein', element: label.element });
+                        if (label.hitTest) {
+                            label.hitTest.style.opacity = '0';
+                            animations.push({ type: 'fadein', element: label.hitTest });
+                        }
+                        if (label.labelElement) {
+                            label.labelElement.style.opacity = '0';
+                            animations.push({ type: 'fadein', element: label.labelElement });
+                        }
+                    }
+                }
+                for (const anim of animations) {
+                    if (anim.type === 'node') {
+                        anim.element.setAttribute('transform', `translate(${anim.fromX},${anim.fromY})`);
+                    } else if (anim.type === 'cluster') {
+                        anim.element.setAttribute('transform', `translate(${anim.fromX},${anim.fromY})`);
+                        if (anim.rect) {
+                            anim.rect.setAttribute('x', -anim.fromW / 2);
+                            anim.rect.setAttribute('y', -anim.fromH / 2);
+                            anim.rect.setAttribute('width', anim.fromW);
+                            anim.rect.setAttribute('height', anim.fromH);
+                        }
+                    } else if (anim.type === 'edge') {
+                        const t = `translate(${anim.fromX},${anim.fromY})`;
+                        anim.element.setAttribute('transform', t);
+                        if (anim.hitTest) {
+                            anim.hitTest.setAttribute('transform', t);
+                        }
+                        if (anim.labelElement) {
+                            anim.labelElement.setAttribute('transform', `translate(${anim.fromX},${anim.fromY}) ${anim.labelTransform || ''}`);
+                        }
+                    } else if (anim.type === 'fadein') {
+                        anim.element.style.opacity = '0';
+                    }
+                }
+                const tick = (now) => {
+                    if (!startTime) {
+                        startTime = now;
+                    }
+                    const elapsed = now - startTime;
+                    const t = Math.min(elapsed / duration, 1);
+                    const ease = 1 - Math.pow(1 - t, 3);
+                    for (const anim of animations) {
+                        if (anim.type === 'node') {
+                            const x = anim.fromX + (anim.toX - anim.fromX) * ease;
+                            const y = anim.fromY + (anim.toY - anim.fromY) * ease;
+                            anim.element.setAttribute('transform', `translate(${x},${y})`);
+                        } else if (anim.type === 'cluster') {
+                            const x = anim.fromX + (anim.toX - anim.fromX) * ease;
+                            const y = anim.fromY + (anim.toY - anim.fromY) * ease;
+                            anim.element.setAttribute('transform', `translate(${x},${y})`);
+                            if (anim.rect) {
+                                const w = anim.fromW + (anim.toW - anim.fromW) * ease;
+                                const h = anim.fromH + (anim.toH - anim.fromH) * ease;
+                                anim.rect.setAttribute('x', -w / 2);
+                                anim.rect.setAttribute('y', -h / 2);
+                                anim.rect.setAttribute('width', w);
+                                anim.rect.setAttribute('height', h);
+                            }
+                        } else if (anim.type === 'edge') {
+                            const x = anim.fromX * (1 - ease);
+                            const y = anim.fromY * (1 - ease);
+                            const tr = `translate(${x},${y})`;
+                            anim.element.setAttribute('transform', tr);
+                            if (anim.hitTest) {
+                                anim.hitTest.setAttribute('transform', tr);
+                            }
+                            if (anim.labelElement) {
+                                anim.labelElement.setAttribute('transform', `translate(${x},${y}) ${anim.labelTransform || ''}`);
+                            }
+                        } else if (anim.type === 'fadein') {
+                            anim.element.style.opacity = String(ease);
+                        }
+                    }
+                    if (t < 1) {
+                        this._host.window.requestAnimationFrame(tick);
+                    } else {
+                        for (const anim of animations) {
+                            if (anim.type === 'fadein') {
+                                anim.element.style.removeProperty('opacity');
+                            } else if (anim.type === 'edge') {
+                                anim.element.removeAttribute('transform');
+                                if (anim.hitTest) {
+                                    anim.hitTest.removeAttribute('transform');
+                                }
+                                if (anim.labelElement) {
+                                    if (anim.labelTransform) {
+                                        anim.labelElement.setAttribute('transform', anim.labelTransform);
+                                    } else {
+                                        anim.labelElement.removeAttribute('transform');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+                this._host.window.requestAnimationFrame(tick);
+            };
+            animateTransition(snapshot);
         }
     }
 
@@ -1849,33 +703,33 @@ view.View = class {
             this._sidebar.close();
         }
         this.exception(error, false);
+        const repository = this._host.environment('repository');
         const knowns = [
-            { message: /^Invalid value identifier/, url: 'https://github.com/lutzroeder/netron/issues/540' },
-            { message: /^Cannot read property/, url: 'https://github.com/lutzroeder/netron/issues/647' },
-            { message: /^Duplicate value /, url: 'https://github.com/lutzroeder/netron/issues/1364' },
-            { message: /^EPERM: operation not permitted/, url: 'https://github.com/lutzroeder/netron/issues/551' },
-            { message: /^EACCES: permission denied/, url: 'https://github.com/lutzroeder/netron/issues/504' },
-            { message: /^Offset is outside the bounds of the DataView/, url: 'https://github.com/lutzroeder/netron/issues/563' },
-            { message: /^Invalid string length/, url: 'https://github.com/lutzroeder/netron/issues/648' },
-            { message: /^Unknown function /, url: 'https://github.com/lutzroeder/netron/issues/546' },
-            { message: /^Unsupported file content/, url: 'https://github.com/lutzroeder/netron/issues/550' },
-            { message: /^Unsupported Protocol Buffers content/, url: 'https://github.com/lutzroeder/netron/issues/593' },
-            { message: /^Unsupported Protocol Buffers text content/, url: 'https://github.com/lutzroeder/netron/issues/594' },
-            { message: /^Unsupported JSON content/, url: 'https://github.com/lutzroeder/netron/issues/595' },
-            { message: /^Invalid file content. File contains PaddlePaddle IR data./, url: 'https://github.com/lutzroeder/netron/issues/1384' },
-            { name: 'Error loading PyTorch model.', message: /^Unknown type name/, url: 'https://github.com/lutzroeder/netron/issues/969' },
-            { name: 'Error loading ONNX model.', message: /^File format is not onnx\.ModelProto \(Unexpected end of file\)\./, url: 'https://github.com/lutzroeder/netron/issues/1155' },
-            { name: 'Error loading ONNX model.', message: /^File format is not onnx\.ModelProto \(Cannot read properties of undefined \(reading 'ModelProto'\)\)\./, url: 'https://github.com/lutzroeder/netron/issues/1156' },
-            { name: 'Error loading ONNX model.', message: /^File format is not onnx\.ModelProto/, url: 'https://github.com/lutzroeder/netron/issues/549' }
+            { message: /^Invalid value identifier/, issue: '540' },
+            { message: /^Cannot read property/, issue: '647' },
+            { message: /^Duplicate value /, issue: '1364' },
+            { message: /^EPERM: operation not permitted/, issue: '551' },
+            { message: /^EACCES: permission denied/, issue: '504' },
+            { message: /^Offset is outside the bounds of the DataView/, issue: '563' },
+            { message: /^Invalid string length/, issue: '648' },
+            { message: /^Unknown function /, issue: '546' },
+            { message: /^Unsupported file content/, issue: '550' },
+            { message: /^Unsupported Protocol Buffers content/, issue: '593' },
+            { message: /^Unsupported Protocol Buffers text content/, issue: '594' },
+            { message: /^Unsupported JSON content/, issue: '595' },
+            { message: /^Unknown type name '__torch__\./, issue: '969' },
+            { name: 'Error loading ONNX model.', message: /^File format is not onnx\.ModelProto \(Unexpected end of file\)\./, issue: '1155' },
+            { name: 'Error loading ONNX model.', message: /^File format is not onnx\.ModelProto \(Cannot read properties of undefined \(reading 'ModelProto'\)\)\./, issue: '1156' },
+            { name: 'Error loading ONNX model.', message: /^File format is not onnx\.ModelProto/, issue: '549' }
         ];
         const known = knowns.find((known) => (!known.name || known.name === error.name) && error.message.match(known.message));
-        const url = known && known.url ? known.url : null;
+        const url = known && known.issue ? `${repository}/issues/${known.issue}` : `${repository}/issues`;
         const message = error.message;
         name = name || error.name;
-        const report = url ? true : false;
+        const report = !message.startsWith('Invalid file content.') && this.host.environment('packaged');
         await this._host.message(message, true, report ? 'Report' : 'OK');
         if (report) {
-            this._host.openURL(url || `${this._host.environment('repository')}/issues`);
+            this._host.openURL(url);
         }
         this.show(screen);
     }
@@ -1903,15 +757,20 @@ view.View = class {
                 });
             }
             await this._timeout(20);
-            const stack = [];
-            if (Array.isArray(model.graphs) && model.graphs.length > 0) {
-                const [graph] = model.graphs;
-                const signature = Array.isArray(graph.signatures) && graph.signatures.length > 0 ? graph.signatures[0] : null;
-                stack.push({ target: graph, signature });
-            } else if (Array.isArray(model.functions) && model.functions.length > 0) {
-                stack.push({ target: model.functions[0], signature: null });
+            const path = [];
+            const modules = Array.isArray(model.functions) ? model.modules.concat(model.functions) : model.modules;
+            let target = modules.length > 0 ? modules[0] : null;
+            for (const module of modules) {
+                if (Array.isArray(module.nodes) && module.nodes.length > 0) {
+                    target = module;
+                    break;
+                }
             }
-            return await this._updateTarget(model, stack);
+            if (target) {
+                const signature = Array.isArray(target.signatures) && target.signatures.length > 0 ? target.signatures[0] : null;
+                path.push({ target, signature });
+            }
+            return await this._updateTarget(model, path);
         } catch (error) {
             error.context = !error.context && context && context.identifier ? context.identifier : error.context || '';
             throw error;
@@ -1944,42 +803,38 @@ view.View = class {
     }
 
     get activeTarget() {
-        if (Array.isArray(this._stack) && this._stack.length > 0) {
-            return this._stack[0].target;
+        if (this._path.length > 0) {
+            return this._path[0].target;
         }
         return null;
     }
 
     get activeSignature() {
-        if (Array.isArray(this._stack) && this._stack.length > 0) {
-            return this._stack[0].signature;
+        if (this._path.length > 0) {
+            return this._path[0].signature;
         }
         return null;
     }
 
-    async _updateTarget(model, stack) {
+    async _updateTarget(model, path) {
         const lastModel = this._model;
-        const lastStack = this._stack;
+        const lastPath = this._path;
         try {
-            await this._updateStack(model, stack);
+            await this._updatePath(model, path);
             return this._model;
         } catch (error) {
-            await this._updateStack(lastModel, lastStack);
+            await this._updatePath(lastModel, lastPath);
             throw error;
         }
     }
 
-    update(model) {
-        this._model = model;
-    }
-
-    async _updateStack(model, stack) {
-        this.update(model);
-        this._stack = stack;
-        const status = await this.renderGraph(this._model, this.activeTarget, this.activeSignature, this._options);
-        if (status !== '') {
-            this.update(null);
-            this._stack = [];
+    async _updatePath(model, stack) {
+        this.model = model;
+        this._path = stack;
+        const status = await this.render(this.activeTarget, this.activeSignature);
+        if (status === 'cancel') {
+            this.model = null;
+            this._path = [];
             this._activeTarget = null;
         }
         this.show(null);
@@ -1989,26 +844,27 @@ view.View = class {
             path.removeChild(path.lastElementChild);
         }
         if (status === '') {
-            if (this._stack.length <= 1) {
+            if (this._path.length <= 1) {
                 back.style.opacity = 0;
             } else {
                 back.style.opacity = 1;
-                const last = this._stack.length - 2;
+                const last = this._path.length - 2;
                 const count = Math.min(2, last);
+                const document = this.host.document;
                 if (count < last) {
-                    const element = this._host.document.createElement('button');
+                    const element = document.createElement('button');
                     element.setAttribute('class', 'toolbar-path-name-button');
                     element.innerHTML = '&hellip;';
                     path.appendChild(element);
                 }
                 for (let i = count; i >= 0; i--) {
-                    const target = this._stack[i].target;
-                    const element = this._host.document.createElement('button');
+                    const target = this._path[i].target;
+                    const element = document.createElement('button');
                     element.setAttribute('class', 'toolbar-path-name-button');
                     element.addEventListener('click', async () => {
                         if (i > 0) {
-                            this._stack = this._stack.slice(i);
-                            await this._updateTarget(this._model, this._stack);
+                            this._path = this._path.slice(i);
+                            await this._updateTarget(this._model, this._path);
                         } else {
                             await this.showTargetProperties(target);
                         }
@@ -2021,10 +877,17 @@ view.View = class {
                     }
                     if (name.length > 24) {
                         element.setAttribute('title', name);
-                        element.innerHTML = `&hellip;${name.substring(name.length - 24, name.length)}`;
+                        const truncated = name.substring(name.length - 24, name.length);
+                        element.innerHTML = '&hellip;';
+                        const text = document.createTextNode(truncated);
+                        element.appendChild(text);
                     } else {
                         element.removeAttribute('title');
-                        element.innerHTML = name;
+                        if (name) {
+                            element.textContent = name;
+                        } else {
+                            element.innerHTML = '&nbsp;';
+                        }
                     }
                     path.appendChild(element);
                 }
@@ -2045,145 +908,88 @@ view.View = class {
     async pushTarget(graph, context) {
         if (graph && graph !== this.activeTarget && Array.isArray(graph.nodes)) {
             this._sidebar.close();
-            if (context) {
-                this._stack[0].state = { context, zoom: this._zoom };
+            if (context && this._path.length > 0) {
+                this._path[0].state = { context, zoom: this._target.zoom, blocks: this._target.blocks };
             }
             const signature = Array.isArray(graph.signatures) && graph.signatures.length > 0 ? graph.signatures[0] : null;
             const entry = { target: graph, signature };
-            const stack = [entry].concat(this._stack);
+            const stack = [entry].concat(this._path);
             await this._updateTarget(this._model, stack);
         }
     }
 
     async popTarget() {
-        if (this._stack.length > 1) {
+        if (this._path.length > 1) {
             this._sidebar.close();
-            return await this._updateTarget(this._model, this._stack.slice(1));
+            return await this._updateTarget(this._model, this._path.slice(1));
         }
         return null;
     }
 
-    async renderGraph(model, graph, signature, options) {
-        this._graph = null;
-        const canvas = this._element('canvas');
-        while (canvas.lastChild) {
-            canvas.removeChild(canvas.lastChild);
+    async render(target, signature) {
+        this.target = null;
+        const element = this._element('target');
+        while (element.lastChild) {
+            element.removeChild(element.lastChild);
         }
-        if (!graph) {
-            return '';
-        }
-        this._zoom = 1;
-        const groups = graph.groups || false;
-        const nodes = graph.nodes;
-        this._host.event('graph_view', {
-            graph_node_count: nodes.length,
-            graph_skip: 0
-        });
-        const viewGraph = new view.Graph(this, this._host, model, options, groups);
-        viewGraph.add(graph, signature);
-        // Workaround for Safari background drag/zoom issue:
-        // https://stackoverflow.com/questions/40887193/d3-js-zoom-is-not-working-with-mousewheel-in-safari
-        const background = this._host.document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        background.setAttribute('id', 'background');
-        background.setAttribute('fill', 'none');
-        background.setAttribute('pointer-events', 'all');
-        canvas.appendChild(background);
-        const origin = this._host.document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        origin.setAttribute('id', 'origin');
-        canvas.appendChild(origin);
-        viewGraph.build(this._host.document, origin);
-        await this._timeout(20);
-        viewGraph.measure();
-        const status = await viewGraph.layout(this._worker);
-        if (status === '') {
-            viewGraph.update();
-            const elements = Array.from(canvas.getElementsByClassName('graph-input') || []);
-            if (elements.length === 0) {
-                const nodeElements = Array.from(canvas.getElementsByClassName('graph-node') || []);
-                if (nodeElements.length > 0) {
-                    elements.push(nodeElements[0]);
-                }
+        let status = '';
+        if (target) {
+            const document = this._host.document;
+            const graph = target;
+            const groups = graph.groups || false;
+            const nodes = graph.nodes;
+            this._host.event('graph_view', {
+                graph_node_count: nodes.length,
+                graph_skip: 0
+            });
+            const viewGraph = new view.Graph(this, groups);
+            const state = this._path && this._path.length > 0 && this._path[0] ? this._path[0].state : null;
+            if (state && state.blocks) {
+                viewGraph.blocks = state.blocks;
             }
-            const size = canvas.getBBox();
-            const margin = 100;
-            const width = Math.ceil(margin + size.width + margin);
-            const height = Math.ceil(margin + size.height + margin);
-            origin.setAttribute('transform', `translate(${margin - size.x}, ${margin - size.y}) scale(1)`);
-            background.setAttribute('width', width);
-            background.setAttribute('height', height);
-            this._width = width;
-            this._height = height;
-            delete this._scrollLeft;
-            delete this._scrollRight;
-            canvas.setAttribute('viewBox', `0 0 ${width} ${height}`);
-            canvas.setAttribute('width', width);
-            canvas.setAttribute('height', height);
-            this._zoom = this._stack && this._stack.length > 0 && this._stack[0].state ? this._stack[0].state.zoom : 1;
-            this._updateZoom(this._zoom);
-            const container = this._element('graph');
-            const context = this._stack && this._stack.length > 0 && this._stack[0].state ? viewGraph.select([this._stack[0].state.context]) : [];
-            if (context.length > 0) {
-                this.scrollTo(context, 'instant');
-            } else if (elements && elements.length > 0) {
-                // Center view based on input elements
-                const bounds = container.getBoundingClientRect();
-                const xs = [];
-                const ys = [];
-                for (let i = 0; i < elements.length; i++) {
-                    const element = elements[i];
-                    const rect = element.getBoundingClientRect();
-                    const width = Math.min(rect.width, bounds.width);
-                    const height = Math.min(rect.width, bounds.width);
-                    xs.push(rect.left + (width / 2));
-                    ys.push(rect.top + (height / 2));
-                }
-                let [x] = xs;
-                const [y] = ys;
-                if (ys.every((y) => y === ys[0])) {
-                    x = xs.reduce((a, b) => a + b, 0) / xs.length;
-                }
-                const left = (container.scrollLeft + x - bounds.left) - (bounds.width / 2);
-                const top = (container.scrollTop + y - bounds.top) - (bounds.height / 2);
-                container.scrollTo({ left, top, behavior: 'auto' });
-            } else {
-                const canvasRect = canvas.getBoundingClientRect();
-                const graphRect = container.getBoundingClientRect();
-                const left = (container.scrollLeft + (canvasRect.width / 2) - graphRect.left) - (graphRect.width / 2);
-                const top = (container.scrollTop + (canvasRect.height / 2) - graphRect.top) - (graphRect.height / 2);
-                container.scrollTo({ left, top, behavior: 'auto' });
+            viewGraph.add(graph, signature);
+            viewGraph.addTunnels();
+            viewGraph.build(document);
+            await viewGraph.measure();
+            status = await viewGraph.layout(this._worker);
+            if (status === '') {
+                viewGraph.update();
+                viewGraph.updateTunnels();
+                viewGraph.restore(state);
+                this.target = viewGraph;
             }
-            this._graph = viewGraph;
         }
         return status;
     }
 
-    applyStyleSheet(element, name) {
-        let rules = [];
-        for (const styleSheet of this._host.document.styleSheets) {
-            if (styleSheet && styleSheet.href && styleSheet.href.endsWith(`/${name}`)) {
-                rules = styleSheet.cssRules;
-                break;
-            }
-        }
-        const nodes = element.getElementsByTagName('*');
-        for (const node of nodes) {
-            for (const rule of rules) {
-                if (node.matches(rule.selectorText)) {
-                    for (const item of rule.style) {
-                        node.style[item] = rule.style[item];
-                    }
-                }
-            }
-        }
-    }
-
     async export(file) {
+        const window = this.host.window;
         const lastIndex = file.lastIndexOf('.');
         const extension = lastIndex === -1 ? 'png' : file.substring(lastIndex + 1).toLowerCase();
         if (this.activeTarget && (extension === 'png' || extension === 'svg')) {
             const canvas = this._element('canvas');
             const clone = canvas.cloneNode(true);
-            this.applyStyleSheet(clone, 'grapher.css');
+            const document = this._host.document;
+            const applyStyleSheet = (element, name) => {
+                let rules = [];
+                for (const styleSheet of document.styleSheets) {
+                    if (styleSheet && styleSheet.href && styleSheet.href.endsWith(`/${name}`)) {
+                        rules = styleSheet.cssRules;
+                        break;
+                    }
+                }
+                const nodes = element.getElementsByTagName('*');
+                for (const node of nodes) {
+                    for (const rule of rules) {
+                        if (node.matches(rule.selectorText)) {
+                            for (const item of rule.style) {
+                                node.style[item] = rule.style[item];
+                            }
+                        }
+                    }
+                }
+            };
+            applyStyleSheet(clone, 'grapher.css');
             clone.setAttribute('id', 'export');
             clone.removeAttribute('viewBox');
             clone.removeAttribute('width');
@@ -2213,48 +1019,79 @@ view.View = class {
             background.setAttribute('width', width);
             background.setAttribute('height', height);
             background.setAttribute('fill', '#fff');
-            const data = new XMLSerializer().serializeToString(clone);
+            const data = new window.XMLSerializer().serializeToString(clone);
             if (extension === 'svg') {
-                const blob = new Blob([data], { type: 'image/svg' });
+                const blob = new window.Blob([data], { type: 'image/svg' });
                 await this._host.export(file, blob);
             }
             if (extension === 'png') {
-                try {
-                    const blob = await new Promise((resolve, reject) => {
-                        const image = new Image();
-                        image.onload = async () => {
-                            const max = Math.max(width, height);
-                            const scale = Math.min(24000.0 / max, 2.0);
+                const blob = await new Promise((resolve, reject) => {
+                    this.show('welcome spinner');
+                    this.progress(0);
+                    const image = new window.Image();
+                    image.onload = async () => {
+                        try {
+                            let targetWidth = Math.ceil(width * 2);
+                            let targetHeight = Math.ceil(height * 2);
+                            let scale = 1;
+                            if (targetWidth > 100000 || targetHeight > 100000) {
+                                scale = Math.min(scale, 100000 / Math.max(targetWidth, targetHeight));
+                            }
+                            if (targetWidth * targetHeight * scale * scale > 500000000) {
+                                scale = Math.min(scale, Math.sqrt(500000000 / (targetWidth * targetHeight)));
+                            }
+                            if (scale < 1) {
+                                targetWidth = Math.floor(targetWidth * scale);
+                                targetHeight = Math.floor(targetHeight * scale);
+                            }
+                            const drawScale = targetWidth / width;
+                            const size = Math.min(targetWidth, 4096);
+                            const encoder = new png.Encoder(window, targetWidth, targetHeight);
                             const canvas = this._host.document.createElement('canvas');
-                            canvas.width = Math.ceil(width * scale);
-                            canvas.height = Math.ceil(height * scale);
+                            canvas.width = size;
+                            canvas.height = 4096;
                             const context = canvas.getContext('2d');
-                            context.scale(scale, scale);
-                            context.drawImage(image, 0, 0);
-                            canvas.toBlob((blob) => {
-                                if (blob) {
-                                    resolve(blob);
-                                } else {
-                                    const error = new Error('Image may be too large to render as PNG.');
-                                    error.name = 'Error exporting image.';
-                                    reject(error);
+                            for (let y = 0; y < targetHeight; y += 4096) {
+                                const h = Math.min(4096, targetHeight - y);
+                                const data = new Uint8Array(targetWidth * h * 4);
+                                for (let x = 0; x < targetWidth; x += size) {
+                                    const w = Math.min(size, targetWidth - x);
+                                    context.setTransform(drawScale, 0, 0, drawScale, -x, -y);
+                                    context.drawImage(image, 0, 0);
+                                    const tileData = context.getImageData(0, 0, w, h);
+                                    for (let row = 0; row < h; row++) {
+                                        const src = row * w * 4;
+                                        const dst = row * targetWidth * 4 + x * 4;
+                                        data.set(tileData.data.subarray(src, src + w * 4), dst);
+                                    }
                                 }
-                            }, 'image/png');
-                        };
-                        image.onerror = (error) => {
+                                /* eslint-disable-next-line no-await-in-loop */
+                                await encoder.write(data, h);
+                                this.progress((y + h) / targetHeight * 100);
+                            }
+                            const buffer = await encoder.toBuffer();
+                            this.progress(0);
+                            this.show('default');
+                            resolve(new window.Blob([buffer], { type: 'image/png' }));
+                        } catch (error) {
+                            this.progress(0);
+                            this.show('default');
                             reject(error);
-                        };
-                        image.src = `data:image/svg+xml;base64,${this._host.window.btoa(unescape(encodeURIComponent(data)))}`;
-                    });
-                    await this._host.export(file, blob);
-                } catch (error) {
-                    await this.error(error);
-                }
+                        }
+                    };
+                    image.onerror = (error) => {
+                        this.progress(0);
+                        this.show('default');
+                        reject(error);
+                    };
+                    image.src = `data:image/svg+xml;base64,${this._host.window.btoa(unescape(encodeURIComponent(data)))}`;
+                });
+                await this._host.export(file, blob);
             }
         }
     }
 
-    showDocumentProperties() {
+    showModelProperties() {
         if (!this._model) {
             return;
         }
@@ -2266,8 +1103,12 @@ view.View = class {
         }
     }
 
-    showTargetProperties() {
-        const target = this.activeTarget;
+    showTargetProperties(target) {
+        if (this._sidebar.identifier === 'target' && !target) {
+            this.showModelProperties();
+            return;
+        }
+        target = target || this.activeTarget;
         if (!target) {
             return;
         }
@@ -2277,19 +1118,19 @@ view.View = class {
                 await this.showDefinition(target);
             });
             sidebar.on('focus', (sender, value) => {
-                this._graph.focus([value]);
+                this._target.focus([value]);
             });
             sidebar.on('blur', (sender, value) => {
-                this._graph.blur([value]);
+                this._target.blur([value]);
             });
             sidebar.on('select', (sender, value) => {
-                this.scrollTo(this._graph.activate(value));
+                this._target.scrollTo(this._target.select([value]));
             });
             sidebar.on('activate', (sender, value) => {
-                this.scrollTo(this._graph.select([value]));
+                this._target.scrollTo(this._target.activate(value));
             });
             sidebar.on('deactivate', () => {
-                this._graph.select(null);
+                this._target.select(null);
             });
             let title = null;
             const type = target.type || 'graph';
@@ -2323,16 +1164,16 @@ view.View = class {
                     await this.showDefinition(node.type);
                 });
                 sidebar.on('focus', (sender, value) => {
-                    this._graph.focus([value]);
+                    this._target.focus([value]);
                 });
                 sidebar.on('blur', (sender, value) => {
-                    this._graph.blur([value]);
+                    this._target.blur([value]);
                 });
                 sidebar.on('select', (sender, value) => {
-                    this.scrollTo(this._graph.select([value]));
+                    this._target.scrollTo(this._target.select([value]));
                 });
                 sidebar.on('activate', (sender, value) => {
-                    this.scrollTo(this._graph.activate(value));
+                    this._target.scrollTo(this._target.activate(value));
                 });
                 this._sidebar.open(sidebar, 'Node Properties');
             } catch (error) {
@@ -2348,16 +1189,16 @@ view.View = class {
             }
             const sidebar = new view.ConnectionSidebar(this, value, from, to);
             sidebar.on('focus', (sender, value) => {
-                this._graph.focus([value]);
+                this._target.focus([value]);
             });
             sidebar.on('blur', (sender, value) => {
-                this._graph.blur([value]);
+                this._target.blur([value]);
             });
             sidebar.on('select', (sender, value) => {
-                this.scrollTo(this._graph.select([value]));
+                this._target.scrollTo(this._target.select([value]));
             });
             sidebar.on('activate', (sender, value) => {
-                this.scrollTo(this._graph.activate(value));
+                this._target.scrollTo(this._target.activate(value));
             });
             this._sidebar.push(sidebar, 'Connection Properties');
         } catch (error) {
@@ -2372,16 +1213,16 @@ view.View = class {
             }
             const sidebar = new view.TensorSidebar(this, value);
             sidebar.on('focus', (sender, value) => {
-                this._graph.focus([value]);
+                this._target.focus([value]);
             });
             sidebar.on('blur', () => {
-                this._graph.blur(null);
+                this._target.blur(null);
             });
             sidebar.on('select', (sender, value) => {
-                this.scrollTo(this._graph.select([value]));
+                this._target.scrollTo(this._target.select([value]));
             });
             sidebar.on('activate', (sender, value) => {
-                this.scrollTo(this._graph.activate(value));
+                this._target.scrollTo(this._target.activate(value));
             });
             this._sidebar.push(sidebar, 'Tensor Properties');
         } catch (error) {
@@ -2431,6 +1272,7 @@ view.Menu = class {
         this.items = [];
         this._darwin = host.environment('platform') === 'darwin';
         this._document = host.document;
+        this._window = host.window;
         this._stack = [];
         this._root = [];
         this._buttons = [];
@@ -2465,31 +1307,23 @@ view.Menu = class {
             }
         };
         this._keyup = (e) => {
-            const code = e.keyCode;
-            if (code === 0x0012 && this._alt) { // Alt
-                switch (this._stack.length) {
-                    case 0: {
-                        if (this.open()) {
-                            e.preventDefault();
-                        }
-                        break;
-                    }
-                    case 1: {
-                        if (this.close()) {
-                            e.preventDefault();
-                        }
-                        break;
-                    }
-                    default: {
-                        this._stack = [this];
-                        if (this._root.length > 1) {
-                            this._root = [this];
-                            this._rebuild();
-                        }
-                        this._update();
+            if (e.keyCode === 0x0012 && this._alt) { // Alt
+                if (this._stack.length === 0) {
+                    if (this.open()) {
                         e.preventDefault();
-                        break;
                     }
+                } else if (this._stack.length === 1) {
+                    if (this.close()) {
+                        e.preventDefault();
+                    }
+                } else {
+                    this._stack = [this];
+                    if (this._root.length > 1) {
+                        this._root =  [this];
+                        this._rebuild();
+                    }
+                    this._update();
+                    e.preventDefault();
                 }
             }
             this._alt = false;
@@ -2643,6 +1477,7 @@ view.Menu = class {
     }
 
     _execute(action) {
+        const window = this._window;
         if (typeof action === 'function') {
             action();
             return true;
@@ -2660,7 +1495,7 @@ view.Menu = class {
             }
             case 'command': {
                 this.close();
-                setTimeout(() => action.execute(), 10);
+                window.setTimeout(() => action.execute(), 10);
                 return true;
             }
             default: {
@@ -2943,25 +1778,29 @@ view.Worker = class {
 
     constructor(host) {
         this._host = host;
-        const type = this._host.type;
-        this._browser = type === 'Browser' || type === 'Python';
-        if (this._browser) {
-            this._create();
-        }
+        this._timeout = -1;
+        this._create();
     }
 
     async request(message, delay, notification) {
-        this._timeout = -1;
+        if (this._resolve) {
+            const resolve = this._resolve;
+            resolve({ type: 'terminate' });
+            delete this._resolve;
+            delete this._reject;
+            this.cancel(true);
+        } else {
+            this.cancel(false);
+        }
         return new Promise((resolve, reject) => {
             this._resolve = resolve;
             this._reject = reject;
-            if (!this._worker) {
-                this._create();
-            }
+            this._create();
             this._worker.postMessage(message);
-            this._timeout = setTimeout(async () => {
+            const window = this._host.window;
+            this._timeout = window.setTimeout(async () => {
                 await this._host.message(notification, null, 'Cancel');
-                this._cancel(true);
+                this.cancel(true);
                 delete this._resolve;
                 delete this._reject;
                 resolve({ type: 'cancel' });
@@ -2970,36 +1809,41 @@ view.Worker = class {
     }
 
     _create() {
-        this._worker = this._host.worker('./worker');
-        this._worker.addEventListener('message', (e) => {
-            this._cancel(false);
-            const message = e.data;
-            if (this._reject && message.type === 'error') {
-                this._reject(new Error(message.message));
-            } else if (this._resolve) {
-                this._resolve(message);
-            }
-            delete this._resolve;
-            delete this._reject;
-        });
-        this._worker.addEventListener('error', (e) => {
-            this._cancel(true);
-            if (this._reject) {
-                this._reject(new Error(`Unknown worker error type '${e.type}'.`));
+        if (!this._worker) {
+            this._worker = this._host.worker('./worker');
+            this._worker.addEventListener('message', (e) => {
+                this.cancel(false);
+                const message = e.data;
+                const resolve = this._resolve;
+                const reject = this._reject;
                 delete this._resolve;
                 delete this._reject;
-            }
-        });
+                if (reject && message.type === 'error') {
+                    const error = new Error(`Worker: ${message.message}`);
+                    reject(error);
+                } else if (resolve) {
+                    resolve(message);
+                }
+            });
+            this._worker.addEventListener('error', (e) => {
+                this.cancel(true);
+                const reject = this._reject;
+                delete this._resolve;
+                delete this._reject;
+                if (reject) {
+                    reject(new Error(`Unknown worker error type '${e.type}'.`));
+                }
+            });
+        }
     }
 
-    _cancel(terminate) {
-        terminate = terminate || !this._browser;
+    cancel(terminate) {
         if (this._worker && terminate) {
             this._worker.terminate();
             this._worker = null;
         }
-        if (this._timeout >= 0) {
-            clearTimeout(this._timeout);
+        if (this._timeout !== -1) {
+            this._host.window.clearTimeout(this._timeout);
             this._timeout = -1;
             this._host.message();
         }
@@ -3008,18 +1852,57 @@ view.Worker = class {
 
 view.Graph = class extends grapher.Graph {
 
-    constructor(view, host, model, options, compound) {
+    constructor(view, compound) {
         super(compound);
         this.view = view;
-        this.host = host;
-        this.model = model;
-        this.options = options;
         this.counter = 0;
         this._nodeKey = 0;
         this._values = new Map();
         this._tensors = new Map();
         this._table = new Map();
         this._selection = new Set();
+        this.blocks = new Set();
+        this._zoom = 1;
+        this._listeners = {};
+    }
+
+    on(event, callback) {
+        this._listeners[event] = this._listeners[event] || [];
+        this._listeners[event].push(callback);
+    }
+
+    off(event, callback) {
+        if (this._listeners[event]) {
+            this._listeners[event] = this._listeners[event].filter((c) => c !== callback);
+        }
+    }
+
+    emit(event, data) {
+        if (this._listeners[event]) {
+            for (const callback of this._listeners[event]) {
+                callback(this, data);
+            }
+        }
+    }
+
+    get model() {
+        return this.view.model;
+    }
+
+    get host() {
+        return this.view.host;
+    }
+
+    get options() {
+        return this.view.options;
+    }
+
+    get values() {
+        return this._values;
+    }
+
+    get selection() {
+        return this._selection;
     }
 
     createNode(node) {
@@ -3029,8 +1912,8 @@ view.Graph = class extends grapher.Graph {
         return obj;
     }
 
-    createGraph(graph) {
-        const obj = new view.Node(this, graph, 'graph');
+    createGraph(graph, type) {
+        const obj = new view.Node(this, graph, type || 'graph');
         obj.name = (this._nodeKey++).toString();
         this._table.set(graph, obj);
         return obj;
@@ -3076,7 +1959,27 @@ view.Graph = class extends grapher.Graph {
         return null;
     }
 
+    find(value) {
+        if (this._table.has(value)) {
+            return this._table.get(value);
+        }
+        for (const obj of this._table.values()) {
+            if (obj instanceof grapher.Node) {
+                for (const block of obj.blocks) {
+                    if (block instanceof view.Block) {
+                        const found = block.target.find(value);
+                        if (found) {
+                            return found;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     add(graph, signature) {
+        this.target = graph;
         this.identifier = this.model.identifier;
         this.identifier += graph && graph.name ? `.${graph.name.replace(/\/|\\/g, '.')}` : '';
         const clusters = new Set();
@@ -3181,19 +2084,318 @@ view.Graph = class extends grapher.Graph {
         }
     }
 
+    addTunnels() {
+        this._tunnels = [];
+        const subgraphOuterRefs = (graph) => {
+            const produced = new Set();
+            if (Array.isArray(graph.inputs)) {
+                for (const arg of graph.inputs) {
+                    if (!Array.isArray(arg.value)) {
+                        continue;
+                    }
+                    for (const val of arg.value) {
+                        if (val.name) {
+                            produced.add(val.name);
+                        }
+                    }
+                }
+            }
+            for (const node of (graph.nodes || [])) {
+                for (const arg of (node.outputs || [])) {
+                    if (!Array.isArray(arg.value)) {
+                        continue;
+                    }
+                    for (const val of arg.value) {
+                        if (val.name) {
+                            produced.add(val.name);
+                        }
+                    }
+                }
+            }
+            const refs = new Set();
+            for (const node of (graph.nodes || [])) {
+                for (const arg of (node.inputs || [])) {
+                    if (!Array.isArray(arg.value)) {
+                        continue;
+                    }
+                    for (const val of arg.value) {
+                        if (val.name && !val.initializer && !produced.has(val.name)) {
+                            refs.add(val.name);
+                        }
+                    }
+                }
+            }
+            return refs;
+        };
+        // Collect tunnel refs per (source, parent, attrName)
+        const seen = new Set();
+        for (const entry of this._nodes.values()) {
+            const node = entry.label;
+            if (!(node instanceof view.Node)) {
+                continue;
+            }
+            const modelNode = node.value;
+            const subgraphs = (modelNode.attributes || []).concat(modelNode.blocks || []);
+            for (const attr of subgraphs) {
+                if (attr.type !== 'graph' || !attr.value) {
+                    continue;
+                }
+                const refs = subgraphOuterRefs(attr.value);
+                for (const valueName of refs) {
+                    const outerValue = this._values.get(valueName);
+                    if (!outerValue || !outerValue.from) {
+                        continue;
+                    }
+                    const sourceNode = outerValue.from;
+                    const refKey = `${sourceNode.name}:${node.name}:${attr.name}`;
+                    if (seen.has(refKey)) {
+                        continue;
+                    }
+                    seen.add(refKey);
+                    const edge = sourceNode.edge(node);
+                    if (!edge._tunnel) {
+                        edge._tunnel = true;
+                    }
+                    const edgeKey = `${edge.v}:${edge.w}`;
+                    if (!this._edges.has(edgeKey)) {
+                        this.setEdge(edge);
+                    }
+                    this._tunnels.push({
+                        sourceNode,
+                        parentNode: node,
+                        attrName: attr.name,
+                        valueName,
+                        edge
+                    });
+                }
+            }
+        }
+    }
+
+    updateTunnels() {
+        if (!this._tunnelGroup || !this._tunnels || !this._document) {
+            return;
+        }
+        while (this._tunnelGroup.lastChild) {
+            this._tunnelGroup.removeChild(this._tunnelGroup.lastChild);
+        }
+        if (this._tunnels.length === 0) {
+            return;
+        }
+        const document = this._document;
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrowhead-tunnel');
+        marker.setAttribute('viewBox', '0 0 10 10');
+        marker.setAttribute('refX', 9);
+        marker.setAttribute('refY', 5);
+        marker.setAttribute('markerUnits', 'strokeWidth');
+        marker.setAttribute('markerWidth', 8);
+        marker.setAttribute('markerHeight', 6);
+        marker.setAttribute('orient', 'auto');
+        const markerPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        markerPath.setAttribute('d', 'M 0 0 L 10 5 L 0 10 L 4 5 z');
+        markerPath.style.setProperty('stroke-width', 1);
+        marker.appendChild(markerPath);
+        defs.appendChild(marker);
+        this._tunnelGroup.appendChild(defs);
+        const intersectRect = (node, point) => {
+            const dx = point.x - node.x;
+            const dy = point.y - node.y;
+            let h = node.height / 2;
+            let w = node.width / 2;
+            if (Math.abs(dy) * w > Math.abs(dx) * h) {
+                if (dy < 0) {
+                    h = -h;
+                }
+                return { x: node.x + (dy === 0 ? 0 : h * dx / dy), y: node.y + h };
+            }
+            if (dx < 0) {
+                w = -w;
+            }
+            return { x: node.x + w, y: node.y + (dx === 0 ? 0 : w * dy / dx) };
+        };
+        const findTarget = (node, attrName, valueName) => {
+            const nodeTop = node.y - node.height / 2;
+            const nodeLeft = node.x - node.width / 2;
+            for (const block of node.blocks) {
+                if (!block._items) {
+                    continue;
+                }
+                for (const item of block._items) {
+                    if (item.name !== attrName) {
+                        continue;
+                    }
+                    if (item.content && item.content.blocks) {
+                        for (const innerBlock of item.content.blocks) {
+                            if (innerBlock instanceof view.Block && innerBlock.target && innerBlock.target._values) {
+                                const innerValue = innerBlock.target._values.get(valueName);
+                                if (innerValue && innerValue.to.length > 0) {
+                                    const innerNode = innerValue.to[0];
+                                    if (innerNode.x !== undefined && innerNode.y !== undefined) {
+                                        const padding = innerBlock._padding || 10;
+                                        const originX = innerBlock.target.originX || 0;
+                                        const originY = innerBlock.target.originY || 0;
+                                        const contentNode = item.content;
+                                        const cx = nodeLeft + block.x + (contentNode.x - contentNode.width / 2);
+                                        const cy = nodeTop + block.y + (contentNode.y - contentNode.height / 2);
+                                        return {
+                                            x: cx + innerBlock.x + (padding - originX) + innerNode.x,
+                                            y: cy + innerBlock.y + (padding - originY) + innerNode.y,
+                                            width: innerNode.width || 0,
+                                            height: innerNode.height || 0
+                                        };
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (item.content && item.content.x !== undefined) {
+                        const contentNode = item.content;
+                        return {
+                            x: nodeLeft + block.x + contentNode.x,
+                            y: nodeTop + block.y + contentNode.y,
+                            width: contentNode.width,
+                            height: contentNode.height
+                        };
+                    }
+                    return {
+                        x: nodeLeft + block.x + item.x + item.width / 2,
+                        y: nodeTop + block.y + item.y + item.height / 2,
+                        width: item.width,
+                        height: item.height
+                    };
+                }
+            }
+            return { x: node.x, y: node.y, width: node.width || 0, height: node.height || 0 };
+        };
+        // Group tunnels by parent node to detect all overlaps into same target
+        const groups = new Map();
+        for (let i = 0; i < this._tunnels.length; i++) {
+            const ref = this._tunnels[i];
+            const key = ref.parentNode.name;
+            if (!groups.has(key)) {
+                groups.set(key, []);
+            }
+            groups.get(key).push(i);
+        }
+        for (let i = 0; i < this._tunnels.length; i++) {
+            const { parentNode, attrName, valueName, edge } = this._tunnels[i];
+            if (!edge.points || edge.points.length < 2) {
+                continue;
+            }
+            const target = findTarget(parentNode, attrName, valueName);
+            const points = [];
+            const inner = edge.points.slice(1, edge.points.length - 1);
+            if (inner.length > 0) {
+                points.push(intersectRect(edge.from, inner[0]));
+                points.push(...inner);
+            } else {
+                points.push(intersectRect(edge.from, edge.points[edge.points.length - 1]));
+            }
+            points.push(intersectRect(target, points[points.length - 1]));
+            // If multiple tunnels target the same parent, draw arcs to separate them
+            const group = groups.get(parentNode.name);
+            let pathData = '';
+            if (group && group.length > 1) {
+                const j = group.indexOf(i);
+                const end = points[points.length - 1];
+                const start = intersectRect(edge.from, end);
+                const dy = Math.abs(end.y - start.y);
+                const arcBase = Math.min(80, dy * 0.2);
+                const arc = (j - (group.length - 1) / 2) * arcBase;
+                const p = new grapher.Edge.Path();
+                p.moveTo(start.x, start.y);
+                p.bezierCurveTo(
+                    start.x, start.y + (end.y - start.y) * 0.33,
+                    end.x + arc, start.y + (end.y - start.y) * 0.67,
+                    end.x, end.y
+                );
+                pathData = p.data;
+            } else {
+                pathData = new grapher.Edge.Curve(points).path.data;
+            }
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('class', 'edge-path edge-path-tunnel');
+            path.setAttribute('d', pathData);
+            path.setAttribute('marker-end', 'url(#arrowhead-tunnel)');
+            this._tunnelGroup.appendChild(path);
+        }
+    }
+
     build(document, origin) {
+        if (!origin) {
+            const element = document.getElementById('target');
+            while (element.lastChild) {
+                element.removeChild(element.lastChild);
+            }
+            const canvas = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            canvas.setAttribute('id', 'canvas');
+            canvas.setAttribute('class', 'canvas');
+            canvas.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+            canvas.setAttribute('width', '100%');
+            canvas.setAttribute('height', '100%');
+            element.appendChild(canvas);
+            // Workaround for Safari background drag/zoom issue:
+            // https://stackoverflow.com/questions/40887193/d3-js-zoom-is-not-working-with-mousewheel-in-safari
+            const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            background.setAttribute('id', 'background');
+            background.setAttribute('fill', 'none');
+            background.setAttribute('pointer-events', 'all');
+            canvas.appendChild(background);
+            origin = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            origin.setAttribute('id', 'origin');
+            canvas.appendChild(origin);
+        }
         for (const value of this._values.values()) {
             value.build();
         }
         super.build(document, origin);
     }
 
-    select(selection) {
+    async measure() {
+        const document = this.host.document;
+        const window = this.host.window;
+        if (document.fonts && document.fonts.ready) {
+            try {
+                await document.fonts.ready;
+            } catch {
+                // continue regardless of error
+            }
+        }
+        await new Promise((resolve) => {
+            window.requestAnimationFrame(() => {
+                window.requestAnimationFrame(() => {
+                    window.requestAnimationFrame(resolve);
+                });
+            });
+        });
+        await super.measure();
+    }
+
+    clearSelection() {
         if (this._selection.size > 0) {
             for (const element of this._selection) {
                 element.deselect();
             }
             this._selection.clear();
+        }
+        for (const entry of this._table.values()) {
+            if (entry instanceof grapher.Node) {
+                for (const block of entry.blocks) {
+                    if (block.target && block.target.clearSelection) {
+                        block.target.clearSelection();
+                    }
+                }
+            }
+        }
+    }
+
+    select(selection) {
+        if (selection && this.view.target && this.view.target !== this) {
+            this.view.target.clearSelection();
+        } else {
+            this.clearSelection();
         }
         if (selection) {
             let array = [];
@@ -3204,8 +2406,10 @@ view.Graph = class extends grapher.Graph {
                     this._selection.add(element);
                 }
             }
+            this.emit('selectionchange');
             return array;
         }
+        this.emit('selectionchange');
         return null;
     }
 
@@ -3236,6 +2440,351 @@ view.Graph = class extends grapher.Graph {
             }
         }
     }
+
+    restore(state) {
+        const document = this.host.document;
+        const canvas = document.getElementById('canvas');
+        const origin = document.getElementById('origin');
+        const background = document.getElementById('background');
+        const elements = Array.from(canvas.getElementsByClassName('graph-input') || []);
+        if (elements.length === 0) {
+            const nodeElements = Array.from(canvas.getElementsByClassName('graph-node') || []);
+            if (nodeElements.length > 0) {
+                elements.push(nodeElements[0]);
+            }
+        }
+        const size = canvas.getBBox();
+        const margin = 100;
+        const width = Math.ceil(margin + size.width + margin);
+        const height = Math.ceil(margin + size.height + margin);
+        origin.setAttribute('transform', `translate(${margin - size.x}, ${margin - size.y}) scale(1)`);
+        background.setAttribute('width', width);
+        background.setAttribute('height', height);
+        this._width = width;
+        this._height = height;
+        delete this._scrollLeft;
+        delete this._scrollRight;
+        canvas.setAttribute('viewBox', `0 0 ${width} ${height}`);
+        canvas.setAttribute('width', width);
+        canvas.setAttribute('height', height);
+        this._zoom = state ? state.zoom : 1;
+        this._updateZoom(this._zoom);
+        const container = document.getElementById('target');
+        const context = state ? this.select([state.context]) : [];
+        if (context.length > 0) {
+            this.scrollTo(context, 'instant');
+        } else if (elements && elements.length > 0) {
+            // Center view based on input elements
+            const bounds = container.getBoundingClientRect();
+            const xs = [];
+            const ys = [];
+            for (let i = 0; i < elements.length; i++) {
+                const element = elements[i];
+                const rect = element.getBoundingClientRect();
+                const width = Math.min(rect.width, bounds.width);
+                const height = Math.min(rect.height, bounds.height);
+                xs.push(rect.left + (width / 2));
+                ys.push(rect.top + (height / 2));
+            }
+            let [x] = xs;
+            const [y] = ys;
+            if (ys.every((y) => y === ys[0])) {
+                x = xs.reduce((a, b) => a + b, 0) / xs.length;
+            }
+            const left = (container.scrollLeft + x - bounds.left) - (bounds.width / 2);
+            const top = (container.scrollTop + y - bounds.top) - (bounds.height / 2);
+            container.scrollTo({ left, top, behavior: 'auto' });
+        } else {
+            const canvasRect = canvas.getBoundingClientRect();
+            const graphRect = container.getBoundingClientRect();
+            const left = (container.scrollLeft + (canvasRect.width / 2) - graphRect.left) - (graphRect.width / 2);
+            const top = (container.scrollTop + (canvasRect.height / 2) - graphRect.top) - (graphRect.height / 2);
+            container.scrollTo({ left, top, behavior: 'auto' });
+        }
+    }
+
+    register() {
+        if (!this._events) {
+            this._events = {};
+            this._events.scroll = (e) => this._scrollHandler(e);
+            this._events.wheel = (e) => this._wheelHandler(e);
+            this._events.gesturestart = (e) => this._gestureStartHandler(e);
+            this._events.pointerdown = (e) => this._pointerDownHandler(e);
+            this._events.touchstart = (e) => this._touchStartHandler(e);
+            const document = this.host.document;
+            const element = document.getElementById('target');
+            element.focus();
+            element.addEventListener('scroll', this._events.scroll);
+            element.addEventListener('wheel', this._events.wheel, { passive: false });
+            element.addEventListener('pointerdown', this._events.pointerdown);
+            if (this.host.environment('agent') === 'safari') {
+                element.addEventListener('gesturestart', this._events.gesturestart, false);
+            } else {
+                element.addEventListener('touchstart', this._events.touchstart, { passive: true });
+            }
+        }
+    }
+
+    unregister() {
+        if (this._events) {
+            const document = this.host.document;
+            const element = document.getElementById('target');
+            element.removeEventListener('scroll', this._events.scroll);
+            element.removeEventListener('wheel', this._events.wheel);
+            element.removeEventListener('pointerdown', this._events.pointerdown);
+            element.removeEventListener('gesturestart', this._events.gesturestart);
+            element.removeEventListener('touchstart', this._events.touchstart);
+            delete this._events;
+        }
+    }
+
+    get zoom() {
+        return this._zoom;
+    }
+
+    set zoom(value) {
+        this._updateZoom(value);
+    }
+
+    _updateZoom(zoom, e) {
+        const document = this.host.document;
+        const container = document.getElementById('target');
+        const canvas = document.getElementById('canvas');
+        const limit = this.view.options.direction === 'vertical' ?
+            container.clientHeight / this._height :
+            container.clientWidth / this._width;
+        const min = Math.min(Math.max(limit, 0.15), 1);
+        zoom = Math.max(min, Math.min(zoom, 1.4));
+        const scrollLeft = this._scrollLeft || container.scrollLeft;
+        const scrollTop = this._scrollTop || container.scrollTop;
+        const x = (e ? e.pageX : (container.clientWidth / 2)) + scrollLeft;
+        const y = (e ? e.pageY : (container.clientHeight / 2)) + scrollTop;
+        const width = zoom * this._width;
+        const height = zoom * this._height;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        this._scrollLeft = Math.max(0, ((x * zoom) / this._zoom) - (x - scrollLeft));
+        this._scrollTop = Math.max(0, ((y * zoom) / this._zoom) - (y - scrollTop));
+        container.scrollLeft = this._scrollLeft;
+        container.scrollTop = this._scrollTop;
+        this._zoom = zoom;
+    }
+
+    _pointerDownHandler(e) {
+        if (e.pointerType === 'touch' || e.buttons !== 1) {
+            return;
+        }
+        // Workaround for Firefox emitting 'pointerdown' event when scrollbar is pressed and interfering with dragging
+        if (e.rangeParent === null) {
+            return;
+        }
+        const document = this.host.document;
+        const container = document.getElementById('target');
+        e.target.setPointerCapture(e.pointerId);
+        this._mousePosition = {
+            left: container.scrollLeft,
+            top: container.scrollTop,
+            x: e.clientX,
+            y: e.clientY
+        };
+        e.target.style.cursor = 'grabbing';
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        const pointerMoveHandler = (e) => {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            if (this._mousePosition) {
+                const dx = e.clientX - this._mousePosition.x;
+                const dy = e.clientY - this._mousePosition.y;
+                this._mousePosition.moved = dx * dx + dy * dy > 0;
+                if (this._mousePosition.moved) {
+                    const document = this.host.document;
+                    const container = document.getElementById('target');
+                    container.scrollTop = this._mousePosition.top - dy;
+                    container.scrollLeft = this._mousePosition.left - dx;
+                }
+            }
+        };
+        const clickHandler = (e) => {
+            e.stopPropagation();
+            document.removeEventListener('click', clickHandler, true);
+        };
+        const pointerUpHandler = (e) => {
+            e.target.releasePointerCapture(e.pointerId);
+            e.target.style.removeProperty('cursor');
+            container.removeEventListener('pointerup', pointerUpHandler);
+            container.removeEventListener('pointermove', pointerMoveHandler);
+            if (this._mousePosition && this._mousePosition.moved) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                delete this._mousePosition;
+                document.addEventListener('click', clickHandler, true);
+            }
+        };
+        container.addEventListener('pointermove', pointerMoveHandler);
+        container.addEventListener('pointerup', pointerUpHandler);
+    }
+
+    _touchStartHandler(e) {
+        if (e.touches.length === 2) {
+            this._touchPoints = Array.from(e.touches);
+            this._touchZoom = this._zoom;
+        }
+        const touchMoveHandler = (e) => {
+            if (Array.isArray(this._touchPoints) && this._touchPoints.length === 2 && e.touches.length === 2) {
+                const distance = (points) => {
+                    const dx = (points[1].clientX - points[0].clientX);
+                    const dy = (points[1].clientY - points[0].clientY);
+                    return Math.sqrt(dx * dx + dy * dy);
+                };
+                const d1 = distance(Array.from(e.touches));
+                const d2 = distance(this._touchPoints);
+                if (d2 !== 0) {
+                    const points = this._touchPoints;
+                    const e = {
+                        pageX: (points[1].pageX + points[0].pageX) / 2,
+                        pageY: (points[1].pageY + points[0].pageY) / 2
+                    };
+                    const zoom = d2 === 0 ? d1 : d1 / d2;
+                    this._updateZoom(this._touchZoom * zoom, e);
+                }
+            }
+        };
+        const document = this.host.document;
+        const container = document.getElementById('target');
+        const touchEndHandler = () => {
+            container.removeEventListener('touchmove', touchMoveHandler, { passive: true });
+            container.removeEventListener('touchcancel', touchEndHandler, { passive: true });
+            container.removeEventListener('touchend', touchEndHandler, { passive: true });
+            delete this._touchPoints;
+            delete this._touchZoom;
+        };
+        container.addEventListener('touchmove', touchMoveHandler, { passive: true });
+        container.addEventListener('touchcancel', touchEndHandler, { passive: true });
+        container.addEventListener('touchend', touchEndHandler, { passive: true });
+    }
+
+    _gestureStartHandler(e) {
+        e.preventDefault();
+        this._gestureZoom = this._zoom;
+        const document = this.host.document;
+        const container = document.getElementById('target');
+        const gestureChangeHandler = (e) => {
+            e.preventDefault();
+            this._updateZoom(this._gestureZoom * e.scale, e);
+        };
+        const gestureEndHandler = (e) => {
+            container.removeEventListener('gesturechange', gestureChangeHandler, false);
+            container.removeEventListener('gestureend', gestureEndHandler, false);
+            e.preventDefault();
+            if (this._gestureZoom) {
+                this._updateZoom(this._gestureZoom * e.scale, e);
+                delete this._gestureZoom;
+            }
+        };
+        container.addEventListener('gesturechange', gestureChangeHandler, false);
+        container.addEventListener('gestureend', gestureEndHandler, false);
+    }
+
+    _scrollHandler(e) {
+        if (this._scrollLeft && e.target.scrollLeft !== Math.floor(this._scrollLeft)) {
+            delete this._scrollLeft;
+        }
+        if (this._scrollTop && e.target.scrollTop !== Math.floor(this._scrollTop)) {
+            delete this._scrollTop;
+        }
+    }
+
+    _wheelHandler(e) {
+        if (e.shiftKey || e.ctrlKey || this.view.options.mousewheel === 'zoom') {
+            let factor = 1;
+            if (e.deltaMode === 1) {
+                factor = 0.05;
+            } else if (e.deltaMode) {
+                factor = 1;
+            } else {
+                factor = 0.002;
+            }
+            const delta = -e.deltaY * factor * (e.ctrlKey ? 10 : 1);
+            this._updateZoom(this._zoom * Math.pow(2, delta), e);
+            e.preventDefault();
+        }
+    }
+
+    scrollTo(selection, behavior) {
+        if (selection && selection.length > 0) {
+            const document = this.host.document;
+            const container = document.getElementById('target');
+            const rect = container.getBoundingClientRect();
+            // Exclude scrollbars
+            const cw = container.clientWidth;
+            const ch = container.clientHeight;
+            // Shrink the test rectangle by 10%
+            const bounds = {};
+            bounds.left = (rect.x + cw / 2) - (cw * 0.45);
+            bounds.width = cw * 0.9;
+            bounds.right = bounds.left + bounds.width;
+            bounds.top = (rect.y + ch / 2) - (ch * 0.45);
+            bounds.height = ch * 0.9;
+            bounds.bottom = bounds.top + bounds.height;
+            let x = 0;
+            let y = 0;
+            let left = Number.POSITIVE_INFINITY;
+            let right = Number.NEGATIVE_INFINITY;
+            let top = Number.POSITIVE_INFINITY;
+            let bottom = Number.NEGATIVE_INFINITY;
+            for (const element of selection) {
+                const rect = element.getBoundingClientRect();
+                const width = Math.min(rect.width, bounds.width);
+                const height = Math.min(rect.height, bounds.height);
+                x += rect.left + (width / 2);
+                y += rect.top + (height / 2);
+                left = Math.min(left, rect.left);
+                right = Math.max(right, rect.right);
+                top = Math.min(top, rect.top);
+                bottom = Math.max(bottom, rect.bottom);
+            }
+            // No need to scroll if new selection is in the safe area.
+            if (right <= bounds.right && left >= bounds.left && bottom <= bounds.bottom && top >= bounds.top) {
+                return;
+            }
+            // If new selection is completely out of the bounds, scroll to centerize it.
+            if (bottom - top >= bounds.height || right - left >= bounds.width || right < rect.left || left > rect.right || bottom < rect.top || top > rect.bottom) {
+                x /= selection.length;
+                y /= selection.length;
+                const options = {};
+                options.left = (container.scrollLeft + x - bounds.left) - (bounds.width / 2);
+                options.top = (container.scrollTop + y - bounds.top) - (bounds.height / 2);
+                options.behavior = behavior || 'smooth';
+                container.scrollTo(options);
+                return;
+            }
+            const options = {};
+            options.left = 0;
+            options.top = 0;
+            options.behavior = behavior || 'smooth';
+            // similar to scrollIntoView block: "nearest"
+            const dr = bounds.right - right;
+            const dl = left - bounds.left;
+            const db = bounds.bottom - bottom;
+            const dt = top - bounds.top;
+            if (right - left < bounds.width) {
+                if (dl < 0) {
+                    options.left = dl;
+                } else if (dr < 0) {
+                    options.left = -dr;
+                }
+            }
+            if (bottom - top < bounds.height) {
+                if (dt < 0) {
+                    options.top = dt;
+                } else if (db < 0) {
+                    options.top = -db;
+                }
+            }
+            container.scrollBy(options);
+        }
+    }
 };
 
 view.Node = class extends grapher.Node {
@@ -3247,7 +2796,7 @@ view.Node = class extends grapher.Node {
         this.id = `node-${value.name ? `name-${value.name}` : `id-${(context.counter++)}`}`;
         this._add(value, type);
         const inputs = value.inputs;
-        if (type !== 'graph' && Array.isArray(inputs)) {
+        if (type !== 'graph' && type !== 'function' && Array.isArray(inputs)) {
             for (const argument of inputs) {
                 if (!argument.type || argument.type.endsWith('*')) {
                     if (Array.isArray(argument.value) && argument.value.length === 1 && argument.value[0].initializer) {
@@ -3287,9 +2836,9 @@ view.Node = class extends grapher.Node {
     }
 
     _add(value, type) {
-        const node = type === 'graph' ? { type: value } : value;
+        const node = (type === 'graph' || type === 'function') ? { type: value } : value;
         const options = this.context.options;
-        const header = this.header();
+        const header =  this.header();
         const category = node.type && node.type.category ? node.type.category : '';
         if (node.type && typeof node.type.name !== 'string' || !node.type.name.split) { // #416
             const error = new view.Error(`Unsupported node type '${JSON.stringify(node.type.name)}'.`);
@@ -3307,26 +2856,45 @@ view.Node = class extends grapher.Node {
             content = `${begin}\u2026${end}`;
         }
         const styles = category ? ['node-item-type', `node-item-type-${category.toLowerCase()}`] : ['node-item-type'];
-        const title = header.add(null, styles, content, tooltip);
+        const title = header.add(null, styles);
+        title.content = content;
+        title.tooltip = tooltip;
         title.on('click', () => {
             this.context.activate(value);
         });
-        if (node.type.type || (Array.isArray(node.type.nodes) && node.type.nodes.length > 0)) {
+        if (type === 'graph') {
+            this.definition = header.add(null, styles);
+            this.definition.content = '\u25CB';
+            this.definition.tooltip = 'Show Graph';
+            this.definition.padding = 4;
+            this.definition.on('click', async () => await this.context.view.pushTarget(value, this.value));
+            const expanded = this.context.blocks.has(value);
+            const icon = expanded ? '\u2212' : '+';
+            const tooltip = expanded ? 'Collapse Graph' : 'Expand Graph';
+            this.expander = header.add(null, styles);
+            this.expander.content = icon;
+            this.expander.tooltip = tooltip;
+            this.expander.padding = 6;
+            this.expander.on('click', () => {
+                const rect = this.expander.element.getBoundingClientRect();
+                if (this.context.blocks.has(value)) {
+                    this.context.blocks.delete(value);
+                } else {
+                    this.context.blocks.add(value);
+                }
+                this.context.view.refresh({ value: this.value, rect });
+            });
+        } else if (node.type.type || (Array.isArray(node.type.nodes) && node.type.nodes.length > 0)) {
             let icon = '\u0192';
             let tooltip = 'Show Function Definition';
-            if (type === 'graph') {
-                icon = '\u25CB';
-                tooltip = 'Show Graph';
-            } else if (node.type.type === 'weights') {
+            if (node.type.type === 'weights') {
                 icon = '\u25CF';
                 tooltip = 'Show Weights';
             }
-            const definition = header.add(null, styles, icon, tooltip);
-            definition.on('click', async () => await this.context.view.pushTarget(node.type, this.value));
-        }
-        if (Array.isArray(node.nodes)) {
-            // this._expand = header.add(null, styles, '+', null);
-            // this._expand.on('click', () => this.toggle());
+            this.definition = header.add(null, styles);
+            this.definition.content = icon;
+            this.definition.tooltip = tooltip;
+            this.definition.on('click', async () => await this.context.view.pushTarget(node.type, this.value));
         }
         let current = null;
         const list = () => {
@@ -3355,6 +2923,7 @@ view.Node = class extends grapher.Node {
                 (Array.isArray(node.inputs) && node.inputs.length > 0) ||
                 (Array.isArray(node.outputs) && node.outputs.length > 0) ||
                 (Array.isArray(node.attributes) && node.attributes.length > 0) ||
+                (Array.isArray(node.blocks) && node.blocks.length > 0) ||
                 (Array.isArray(node.chain) && node.chain.length > 0) ||
                 (node.type && Array.isArray(node.type.nodes) && node.type.nodes.length > 0)) {
                 return true;
@@ -3368,8 +2937,8 @@ view.Node = class extends grapher.Node {
                 const type = argument.type;
                 if (argument.visible !== false &&
                     ((type === 'graph') ||
-                        (type === 'object' && isObject(argument.value)) ||
-                        (type === 'object[]' || type === 'function' || type === 'function[]'))) {
+                    (type === 'object' && isObject(argument.value)) ||
+                    (type === 'object[]' || type === 'function' || type === 'function[]'))) {
                     objects.push(argument);
                 } else if (options.weights && argument.visible !== false && argument.type !== 'attribute' && Array.isArray(argument.value) && argument.value.length === 1 && argument.value[0].initializer) {
                     const item = this.context.createArgument(argument);
@@ -3389,12 +2958,23 @@ view.Node = class extends grapher.Node {
                 const type = argument.type;
                 if (argument.visible !== false &&
                     ((type === 'graph') ||
-                        (type === 'object') ||
-                        type === 'object[]' || type === 'function' || type === 'function[]')) {
+                    (type === 'object') ||
+                    type === 'object[]' || type === 'function' || type === 'function[]')) {
                     objects.push(argument);
                 } else if (options.attributes && argument.visible !== false) {
                     const item = attribute(argument);
                     list().add(item);
+                }
+            }
+        }
+        if (Array.isArray(node.blocks)) {
+            for (const argument of node.blocks) {
+                const type = argument.type;
+                if (argument.visible !== false &&
+                    ((type === 'graph') ||
+                    (type === 'object' && isObject(argument.value)) ||
+                    (type === 'object[]' || type === 'function' || type === 'function[]'))) {
+                    objects.push(argument);
                 }
             }
         }
@@ -3405,21 +2985,30 @@ view.Node = class extends grapher.Node {
         for (const argument of objects) {
             const type = argument.type;
             let content = null;
-            if (type === 'graph') {
+            if (type === 'graph' && this.context.blocks.has(argument.value)) {
                 content = this.context.createGraph(argument.value);
-                this.context.setNode(content);
+                content.blocks.push(new view.Block(this.context.view, argument.value, this.context.blocks));
+                content.activate = () => this.context.view.showTargetProperties(argument.value);
+                const item = list().argument(argument.name, content);
+                list().add(item);
+            } else if (type === 'graph' || type === 'function') {
+                content = this.context.createGraph(argument.value, type);
+                content.activate = () => this.context.view.showTargetProperties(argument.value);
+                const item = list().argument(argument.name, content);
+                list().add(item);
             } else if (type === 'graph[]') {
                 content = argument.value.map((value) => this.context.createGraph(value));
-            } else if (type === 'function' || argument.type === 'object') {
-                content = this.context.createNode(argument.value);
-            } else if (type === 'function[]' || argument.type === 'object[]') {
-                content = argument.value.map((value) => this.context.createNode(value));
+                const item = list().argument(argument.name, content);
+                list().add(item);
+            } else {
+                if (argument.type === 'object') {
+                    content = this.context.createNode(argument.value);
+                } else if (type === 'function[]' || argument.type === 'object[]') {
+                    content = argument.value.map((value) => this.context.createNode(value));
+                }
+                const item = list().argument(argument.name, content);
+                list().add(item);
             }
-            const item = list().argument(argument.name, content);
-            list().add(item);
-        }
-        if (Array.isArray(node.nodes) && node.nodes.length > 0) {
-            // this.canvas = this.canvas();
         }
         if (Array.isArray(node.chain) && node.chain.length > 0) {
             for (const innerNode of node.chain) {
@@ -3433,20 +3022,6 @@ view.Node = class extends grapher.Node {
         }
     }
 
-    toggle() {
-        this._expand.content = '-';
-        this._graph = new view.Graph(this.context.view, this.context.view.host, this.context.model, this.context.options, false, {});
-        this._graph.add(this.value);
-        // const document = this.element.ownerDocument;
-        // const parent = this.element.parentElement;
-        // this._graph.build(document, parent);
-        // this._graph.update();
-        this.canvas.width = 300;
-        this.canvas.height = 300;
-        this.layout();
-        this.context.update();
-    }
-
     activate() {
         this.context.view.showNodeProperties(this.value);
     }
@@ -3457,6 +3032,73 @@ view.Node = class extends grapher.Node {
             this._edges.set(to, new view.Edge(this, to));
         }
         return this._edges.get(to);
+    }
+};
+
+view.Block = class {
+
+    constructor(viewRef, target, blocks) {
+        this.target = new view.Graph(viewRef, false);
+        if (blocks) {
+            this.target.blocks = blocks;
+        }
+        this.target.add(target);
+        this.x = 0;
+        this.y = 0;
+    }
+
+    build(document, parent) {
+        this.element = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        this.element.setAttribute('class', 'node-block');
+        parent.appendChild(this.element);
+        if (!this.first) {
+            this.line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            this.line.setAttribute('class', 'node');
+            parent.appendChild(this.line);
+        }
+        this._background = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        this._background.setAttribute('class', 'node-block-background');
+        this.element.appendChild(this._background);
+        this._origin = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        this.element.appendChild(this._origin);
+        for (const value of this.target.values.values()) {
+            value.build();
+        }
+        this.target.build(document, this._origin);
+    }
+
+    async measure() {
+        for (const edge of this.target.edges.values()) {
+            if (edge.label.labelElement) {
+                const box = edge.label.labelElement.getBBox();
+                edge.label.width = box.width;
+                edge.label.height = box.height;
+            }
+        }
+        await this.target.measure();
+        await this.target.layout();
+        const padding = 10;
+        this._padding = padding;
+        this.width = (this.target.width || 0) + 2 * padding;
+        this.height = (this.target.height || 0) + 2 * padding;
+    }
+
+    async layout() {
+    }
+
+    update() {
+        const offsetX = this._padding - (this.target.originX || 0);
+        const offsetY = this._padding - (this.target.originY || 0);
+        this.element.setAttribute('transform', `translate(0,${this.y})`);
+        this._origin.setAttribute('transform', `translate(${offsetX},${offsetY})`);
+        this._background.setAttribute('d', grapher.Node.roundedRect(0, 0, this.width, this.height, false, false, this.last, this.last));
+        this.target.update();
+        if (this.line) {
+            this.line.setAttribute('x1', 0);
+            this.line.setAttribute('x2', this.width);
+            this.line.setAttribute('y1', this.y);
+            this.line.setAttribute('y2', this.y);
+        }
     }
 };
 
@@ -3473,9 +3115,15 @@ view.Input = class extends grapher.Node {
             name = name.split('/').pop();
         }
         const header = this.header();
-        const title = header.add(null, ['graph-item-input'], name, types);
-        title.on('click', () => this.context.view.showTargetProperties());
+        const title = header.add(null, ['graph-item-input']);
+        title.content = name;
+        title.tooltip = types;
+        title.on('click', () => this.context.view.showTargetProperties(this.target));
         this.id = `input-${name ? `name-${name}` : `id-${(view.Input.counter++)}`}`;
+    }
+
+    get target() {
+        return this.context.target === this.context.view.activeTarget ? null : this.context.target;
     }
 
     get class() {
@@ -3491,7 +3139,7 @@ view.Input = class extends grapher.Node {
     }
 
     activate() {
-        this.context.view.showTargetProperties();
+        this.context.view.showTargetProperties(this.target);
     }
 
     edge(to) {
@@ -3516,9 +3164,15 @@ view.Output = class extends grapher.Node {
                 name = name.split('/').pop();
             }
             const header = this.header();
-            const title = header.add(null, ['graph-item-output'], name, types);
-            title.on('click', () => this.context.view.showTargetProperties());
+            const title = header.add(null, ['graph-item-output']);
+            title.content = name;
+            title.tooltip = types;
+            title.on('click', () => this.context.view.showTargetProperties(this.target));
         }
+    }
+
+    get target() {
+        return this.context.target === this.context.view.activeTarget ? null : this.context.target;
     }
 
     get inputs() {
@@ -3530,7 +3184,7 @@ view.Output = class extends grapher.Node {
     }
 
     activate() {
-        this.context.view.showTargetProperties();
+        this.context.view.showTargetProperties(this.target);
     }
 };
 
@@ -3561,7 +3215,7 @@ view.Value = class {
                     type.shape.dimensions &&
                     type.shape.dimensions.length > 0 &&
                     type.shape.dimensions.every((dim) => !dim || Number.isInteger(dim) || typeof dim === 'bigint' || (typeof dim === 'string'))) {
-                    content = type.shape.dimensions.map((dim) => (dim !== null && dim !== undefined && dim !== -1) ? dim : '?').join('\u00D7');
+                    content = type.shape.dimensions.map((dim) => (dim !== null && dim !== undefined && dim !== -1 && dim !== -1n) ? dim : '?').join('\u00D7');
                     content = content.length > 16 ? '' : content;
                 }
                 if (this.context.options.names) {
@@ -3743,7 +3397,7 @@ view.Sidebar = class {
     _update(stack) {
         const sidebar = this._element('sidebar');
         const element = this._element('sidebar-content');
-        const container = this._element('graph');
+        const container = this._element('target');
         const closeButton = this._element('sidebar-closebutton');
         closeButton.removeEventListener('click', this._closeSidebarHandler);
         this._host.document.removeEventListener('keydown', this._closeSidebarKeyDownHandler);
@@ -3803,6 +3457,11 @@ view.Control = class {
         return element;
     }
 
+    createTextNode(data) {
+        const node = this._host.document.createTextNode(data);
+        return node;
+    }
+
     on(event, callback) {
         this._events = this._events || {};
         this._events[event] = this._events[event] || [];
@@ -3810,15 +3469,23 @@ view.Control = class {
     }
 
     emit(event, data) {
-        if (this._events && this._events[event]) {
-            for (const callback of this._events[event]) {
-                callback(this, data);
+        try {
+            if (this._events && this._events[event]) {
+                for (const callback of this._events[event]) {
+                    callback(this, data);
+                }
             }
+        } catch (error) {
+            this.error(error, false);
         }
     }
 
     error(error, fatal) {
         this._view.exception(error, fatal || false);
+    }
+
+    escape(value) {
+        return value.toString().split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;');
     }
 };
 
@@ -3834,11 +3501,13 @@ view.Expander = class extends view.Control {
         return [this.element];
     }
 
-    enable() {
-        this._expander = this.createElement('div', 'sidebar-item-value-expander');
-        this._expander.innerText = '+';
-        this._expander.addEventListener('click', () => this.toggle());
-        this.add(this._expander);
+    expandable() {
+        if (!this._expander) {
+            this._expander = this.createElement('div', 'sidebar-item-value-expander');
+            this._expander.innerText = '+';
+            this._expander.addEventListener('click', () => this.toggle());
+            this.add(this._expander);
+        }
     }
 
     add(element) {
@@ -3909,32 +3578,34 @@ view.TargetSelector = class extends view.Control {
                 }
             }
         };
-        const graphs = [];
+        const modules = [];
         const signatures = [];
         const functions = [];
-        for (const graph of model.graphs) {
-            const name = graph.name || '(unnamed)';
-            graphs.push({ name, target: graph, signature: null });
-            if (Array.isArray(graph.functions)) {
-                for (const func of graph.functions) {
-                    functions.push({ name: `${name}.${func.name}`, target: func, signature: null });
+        if (model && Array.isArray(model.modules)) {
+            for (const graph of model.modules) {
+                const name = graph.name || '-';
+                modules.push({ name, target: graph, signature: null });
+                if (Array.isArray(graph.functions)) {
+                    for (const func of graph.functions) {
+                        functions.push({ name: `${name}.${func.name}`, target: func, signature: null });
+                    }
                 }
-            }
-            if (Array.isArray(graph.signatures)) {
-                for (const signature of graph.signatures) {
-                    signatures.push({ name: `${name}.${signature.name}`, target: graph, signature });
+                if (Array.isArray(graph.signatures)) {
+                    for (const signature of graph.signatures) {
+                        signatures.push({ name: `${name}.${signature.name}`, target: graph, signature });
+                    }
                 }
             }
         }
-        if (Array.isArray(model.functions)) {
+        if (model && Array.isArray(model.functions)) {
             for (const func of model.functions) {
                 functions.push({ name: func.name, target: func, signature: null });
             }
         }
-        section('Graphs', graphs);
+        section('Modules', modules);
         section('Signatures', signatures);
         section('Functions', functions);
-        const visible = functions.length > 0 || signatures.length > 0 || graphs.length > 1;
+        const visible = functions.length > 0 || signatures.length > 0 || modules.length > 1;
         this._element.style.display = visible ? 'inline' : 'none';
     }
 };
@@ -3978,13 +3649,19 @@ view.ObjectSidebar = class extends view.Control {
         });
         value.on('select', (sender, value) => this.emit('select', value));
         value.on('activate', (sender, value) => this.emit('activate', value));
+        value.on('deactivate', (sender, value) => this.emit('deactivate', value));
         this.addEntry(name, value);
+        return value;
     }
 
     error(error, fatal) {
         super.error(error, fatal);
         const element = this.createElement('span');
-        element.innerHTML = `<b>ERROR:</b> ${error.message}`;
+        const title = this.createElement('b');
+        title.textContent = 'ERROR: ';
+        element.appendChild(title);
+        const message = this.createTextNode(` ${error.message}`);
+        element.appendChild(message);
         this.element.appendChild(element);
     }
 };
@@ -4061,6 +3738,14 @@ view.NodeSidebar = class extends view.ObjectSidebar {
             for (const output of outputs) {
                 const name = output.name;
                 this.addArgument(name, output);
+            }
+        }
+        const blocks = node.blocks;
+        if (Array.isArray(blocks) && blocks.length > 0) {
+            this.addSection('Blocks');
+            for (const block of blocks) {
+                const name = block.name;
+                this.addArgument(name, block);
             }
         }
         const metadata = this._view.model.attachment.metadata.node(node);
@@ -4140,19 +3825,27 @@ view.TextView = class extends view.Control {
             for (const item of list) {
                 const line = this.createElement('div', className);
                 switch (style) {
-                    case 'code':
-                        line.innerHTML = `<code>${item}<code>`;
+                    case 'code': {
+                        const element = this.createElement('code');
+                        element.textContent = item;
+                        line.appendChild(element);
                         break;
-                    case 'bold':
-                        line.innerHTML = `<b>${item}<b>`;
+                    }
+                    case 'bold': {
+                        const element = this.createElement('b');
+                        element.textContent = item;
+                        line.appendChild(element);
                         break;
-                    case 'nowrap':
+                    }
+                    case 'nowrap': {
                         line.innerText = item;
                         line.style.whiteSpace = style;
                         break;
-                    default:
+                    }
+                    default: {
                         line.innerText = item;
                         break;
+                    }
                 }
                 this.element.appendChild(line);
                 className = 'sidebar-item-value-line-border';
@@ -4209,7 +3902,11 @@ view.ArgumentView = class extends view.Control {
             });
         }
         this._source = typeof type === 'string' && !type.endsWith('*') ? 'attribute' : this._source;
-        if (this._source === 'attribute' && type !== 'tensor' && type !== 'tensor?' && type !== 'tensor[]' && type !== 'tensor?[]') {
+        const primitive = typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint';
+        if (primitive) {
+            const item = new view.PrimitiveView(context, argument);
+            this._items.push(item);
+        } else if (this._source === 'attribute' && type !== 'tensor' && type !== 'tensor?' && type !== 'tensor[]' && type !== 'tensor?[]') {
             this._source = 'attribute';
             const item = new view.PrimitiveView(context, argument);
             this._items.push(item);
@@ -4259,19 +3956,19 @@ view.PrimitiveView = class extends view.Expander {
             const type = argument.type === 'attribute' ? null : argument.type;
             const value = argument.value;
             if (type) {
-                this.enable();
+                this.expandable();
             }
             switch (type) {
                 case 'graph': {
                     const line = this.createElement('div', 'sidebar-item-value-line-link');
-                    line.innerHTML = value.name || '&nbsp;';
+                    line.textContent = value.name || '\u00A0';
                     line.addEventListener('click', () => this.emit('activate', value));
                     this.add(line);
                     break;
                 }
                 case 'function': {
                     const line = this.createElement('div', 'sidebar-item-value-line-link');
-                    line.innerHTML = value.type.name;
+                    line.textContent = value.name;
                     line.addEventListener('click', () => this.emit('activate', value));
                     this.add(line);
                     break;
@@ -4279,7 +3976,7 @@ view.PrimitiveView = class extends view.Expander {
                 case 'object[]': {
                     for (const obj of argument.value) {
                         const line = this.createElement('div', 'sidebar-item-value-line');
-                        line.innerHTML = obj.type.name;
+                        line.textContent = obj.type ? obj.type.name : '?';
                         this.add(line);
                     }
                     break;
@@ -4287,15 +3984,22 @@ view.PrimitiveView = class extends view.Expander {
                 default: {
                     const formatter = new view.Formatter(value, type);
                     let content = formatter.toString();
-                    if (content && content.length > 1000) {
-                        content = `${content.substring(0, 1000)}\u2026`;
+                    if (content) {
+                        if (content.length > 2000) {
+                            content = `${content.substring(0, 2000)}\u2026`;
+                        }
+                        const multiline = content.includes('\n');
+                        if (!multiline && content.length > 80) {
+                            this.expandable();
+                        }
+                        content = this.escape(content);
+                        if (multiline) {
+                            content = content.split('\n').join('<br>');
+                        }
                     }
-                    if (content && typeof content === 'string') {
-                        content = content.split('<').join('&lt;').split('>').join('&gt;');
-                    }
-                    const line = this.createElement('div', 'sidebar-item-value-line');
-                    line.innerHTML = content ? content : '&nbsp;';
-                    this.add(line);
+                    this._line = this.createElement('div', 'sidebar-item-value-line');
+                    this._line.innerHTML = content ? content : '&nbsp;';
+                    this.add(this._line);
                 }
             }
         } catch (error) {
@@ -4306,12 +4010,18 @@ view.PrimitiveView = class extends view.Expander {
 
     expand() {
         try {
+            if (this._line) {
+                this._line.classList.add('sidebar-item-value-line-wrap');
+            }
             const type = this._argument.type;
             const value = this._argument.value;
-            const content = type === 'tensor' && value && value.type ? value.type.toString() : this._argument.type;
-            const line = this.createElement('div', 'sidebar-item-value-line-border');
-            line.innerHTML = `type: <code><b>${content}</b></code>`;
-            this.add(line);
+            let content = type === 'tensor' && value && value.type ? value.type.toString() : this._argument.type;
+            if (content) {
+                content = this.escape(content);
+                const line = this.createElement('div', 'sidebar-item-value-line-border');
+                line.innerHTML = `type: <code><b>${content}</b></code>`;
+                this.add(line);
+            }
             const description = this._argument.description;
             if (description) {
                 const line = this.createElement('div', 'sidebar-item-value-line-border');
@@ -4324,9 +4034,15 @@ view.PrimitiveView = class extends view.Expander {
         }
     }
 
+    collapse() {
+        if (this._line) {
+            this._line.classList.remove('sidebar-item-value-line-wrap');
+        }
+    }
+
     _info(name, value) {
         const line = this.createElement('div');
-        line.innerHTML = `<b>${name}:</b> ${value}`;
+        line.innerHTML = `<b>${name}:</b> ${this.escape(value)}`;
         this._add(line);
     }
 
@@ -4354,7 +4070,7 @@ view.ValueView = class extends view.Expander {
                 this.element.classList.add('sidebar-item-value-content');
             }
             if (type || initializer || quantization || location || source === 'attribute') {
-                this.enable();
+                this.expandable();
             }
             if (initializer && source !== 'attribute') {
                 const element = this.createElement('div', 'sidebar-item-value-button');
@@ -4390,8 +4106,7 @@ view.ValueView = class extends view.Expander {
             } else if (this._hasCategory) {
                 this._bold('category', initializer.category);
             } else if (type) {
-                const value = type.toString().split('<').join('&lt;').split('>').join('&gt;');
-                this._code('tensor', value);
+                this._code('tensor', type);
             }
         } catch (error) {
             super.error(error, false);
@@ -4416,7 +4131,7 @@ view.ValueView = class extends view.Expander {
                 denotation = this._value.type.denotation || null;
             }
             if (type && (this._hasId || this._hasCategory)) {
-                this._code('tensor', type.split('<').join('&lt;').split('>').join('&gt;'));
+                this._code('tensor', type);
             }
             if (denotation) {
                 this._code('denotation', denotation);
@@ -4475,19 +4190,19 @@ view.ValueView = class extends view.Expander {
 
     _bold(name, value) {
         const line = this.createElement('div');
-        line.innerHTML = `${name}: <b>${value}</b>`;
+        line.innerHTML = `${name}: <b>${this.escape(value)}</b>`;
         this._add(line);
     }
 
     _code(name, value) {
         const line = this.createElement('div');
-        line.innerHTML = `${name}: <code><b>${value}</b></code>`;
+        line.innerHTML = `${name}: <code><b>${this.escape(value)}</b></code>`;
         this._add(line);
     }
 
     _info(name, value) {
         const line = this.createElement('div');
-        line.innerHTML = `<b>${name}:</b> ${value}`;
+        line.innerHTML = `<b>${name}:</b> ${this.escape(value)}`;
         this._add(line);
     }
 
@@ -4508,7 +4223,7 @@ view.TensorView = class extends view.Expander {
 
     render() {
         if (!this._button) {
-            this.enable();
+            this.expandable();
             this._button = this.createElement('div', 'sidebar-item-value-button');
             this._button.setAttribute('style', 'float: left;');
             this._button.innerHTML = `<svg class='sidebar-find-content-icon'><use href="#sidebar-icon-weight"></use></svg>`;
@@ -4554,7 +4269,6 @@ view.TensorView = class extends view.Expander {
                 } else {
                     content.innerHTML = tensor.toString();
                     if (this._host.save && value.type.shape && value.type.shape.dimensions && value.type.shape.dimensions.length > 0) {
-                        console.log(this);
                         this._saveButton = this.createElement('div', 'sidebar-item-value-button');
                         this._saveButton.classList.add('sidebar-item-value-button-context');
                         this._saveButton.setAttribute('style', 'float: right;');
@@ -4575,11 +4289,16 @@ view.TensorView = class extends view.Expander {
     error(error, fatal) {
         super.error(error, fatal);
         const element = this.createElement('div', 'sidebar-item-value-line');
-        element.innerHTML = `<b>ERROR:</b> ${error.message}`;
+        const title = this.createElement('b');
+        title.textContent = 'ERROR: ';
+        element.appendChild(title);
+        const message = this.createTextNode(error.message);
+        element.appendChild(message);
         this.element.appendChild(element);
     }
 
     async export() {
+        const window = this._host.window;
         const tensor = this._tensor;
         const defaultPath = tensor.name ? tensor.name.split('/').join('_').split(':').join('_').split('.').join('_') : 'tensor';
         const file = await this._host.save('NumPy Array', 'npy', defaultPath);
@@ -4589,24 +4308,34 @@ view.TensorView = class extends view.Expander {
                 switch (tensor.type.dataType) {
                     case 'boolean': data_type = 'bool'; break;
                     case 'bfloat16': data_type = 'float32'; break;
-                    case 'float8e5m2': data_type = 'float16'; break;
-                    case 'float8e5m2fnuz': data_type = 'float16'; break;
+                    case 'float4e2m1fn': data_type = 'float16'; break;
+                    case 'float6e2m3fn': data_type = 'float16'; break;
+                    case 'float6e3m2fn': data_type = 'float16'; break;
+                    case 'float8e3m4': data_type = 'float16'; break;
+                    case 'float8e4m3': data_type = 'float16'; break;
+                    case 'float8e4m3b11fnuz': data_type = 'float16'; break;
                     case 'float8e4m3fn': data_type = 'float16'; break;
                     case 'float8e4m3fnuz': data_type = 'float16'; break;
+                    case 'float8e5m2': data_type = 'float16'; break;
+                    case 'float8e5m2fnuz': data_type = 'float16'; break;
+                    case 'float8e8m0fnu': data_type = 'float16'; break;
                     case 'int4': data_type = 'int8'; break;
+                    case 'int48': data_type = 'int64'; break;
                     default: data_type = tensor.type.dataType; break;
                 }
                 const python = await import('./python.js');
                 const execution = new python.Execution();
-                const bytes = execution.invoke('io.BytesIO', []);
-                const dtype = execution.invoke('numpy.dtype', [data_type]);
-                const array = execution.invoke('numpy.asarray', [tensor.value, dtype]);
-                execution.invoke('numpy.save', [bytes, array]);
+                const io = execution.__import__('io');
+                const numpy = execution.register('numpy');
+                const bytes = new io.BytesIO();
+                const dtype = new numpy.dtype(data_type);
+                const array = numpy.asarray(tensor.value, dtype);
+                numpy.save(bytes, array);
                 bytes.seek(0);
-                const blob = new Blob([bytes.read()], { type: 'application/octet-stream' });
+                const blob = new window.Blob([bytes.read()], { type: 'application/octet-stream' });
                 await this._host.export(file, blob);
             } catch (error) {
-                this.error(error, 'Error saving NumPy tensor.', null);
+                this._view.error(error, 'Error saving NumPy tensor.', null);
             }
         }
     }
@@ -4620,7 +4349,7 @@ view.NodeView = class extends view.Expander {
         const name = node.name;
         const type = node.type ? node.type.name : '';
         if (name && type) {
-            this.enable();
+            this.expandable();
         }
         if (type) {
             const type = node.type.name;
@@ -4713,7 +4442,7 @@ view.ConnectionSidebar = class extends view.ObjectSidebar {
         const metadata = this._view.model.attachment.metadata.value(value);
         if (Array.isArray(metadata) && metadata.length > 0) {
             this.addSection('Metadata');
-            for (const argument of value.metadata) {
+            for (const argument of metadata) {
                 this.addArgument(argument.name, argument, 'attribute');
             }
         }
@@ -4790,7 +4519,9 @@ view.TensorSidebar = class extends view.ObjectSidebar {
                 const dataType = type.dataType;
                 this.addProperty('type', `${dataType}`, 'code');
                 const shape = type.shape && Array.isArray(type.shape.dimensions) ? type.shape.dimensions.toString(', ') : '?';
-                this.addProperty('shape', `${shape}`, 'code');
+                if (shape) {
+                    this.addProperty('shape', shape, 'code');
+                }
                 const denotation = type.denotation;
                 if (denotation) {
                     this.addProperty('denotation', denotation, 'code');
@@ -4810,10 +4541,17 @@ view.TensorSidebar = class extends view.ObjectSidebar {
             }
             const value = new view.TensorView(this._view, tensor, this._tensor);
             this.addEntry('value', value);
+            const attributes = tensor.attributes;
+            if (Array.isArray(attributes) && attributes.length > 0) {
+                this.addSection('Attributes');
+                for (const attribute of attributes) {
+                    this.addArgument(attribute.name, attribute, 'attribute');
+                }
+            }
             const metadata = this._view.model.attachment.metadata.tensor(tensor);
             if (Array.isArray(metadata) && metadata.length > 0) {
                 this.addSection('Metadata');
-                for (const argument of tensor.metadata) {
+                for (const argument of metadata) {
                     this.addArgument(argument.name, argument, 'attribute');
                 }
             }
@@ -4987,15 +4725,10 @@ view.TargetSidebar = class extends view.ObjectSidebar {
         return 'target';
     }
 
-    addArgument(name, argument) {
-        const value = new view.ArgumentView(this._view, argument);
-        value.on('focus', (sender, value) => this.emit('focus', value));
-        value.on('blur', (sender, value) => this.emit('blur', value));
-        value.on('activate', (sender, value) => this.emit('activate', value));
-        value.on('deactivate', (sender, value) => this.emit('deactivate', value));
-        value.on('select', (sender, value) => this.emit('select', value));
+    addArgument(name, argument, source) {
+        const value = super.addArgument(name, argument, source);
         value.toggle();
-        this.addEntry(name, value);
+        return value;
     }
 };
 
@@ -5004,6 +4737,9 @@ view.DocumentationSidebar = class extends view.Control {
     constructor(context, type) {
         super(context);
         this._type = type;
+        this._escapeReplacementsMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+        this._escapeTestNoEncodeRegExp = /[<>"']|&(?!#?\w+;)/;
+        this._escapeReplaceNoEncodeRegExp = /[<>"']|&(?!#?\w+;)/g;
     }
 
     get identifier() {
@@ -5025,7 +4761,7 @@ view.DocumentationSidebar = class extends view.Control {
                 this._append(this.element, 'h2', 'Attributes');
                 const attributes = this._append(this.element, 'dl');
                 for (const attribute of type.attributes) {
-                    this._append(attributes, 'dt', attribute.name + (attribute.type ? `: <tt>${attribute.type}</tt>` : ''));
+                    this._append(attributes, 'dt', attribute.name + (attribute.type ? `: <tt>${this._escape(attribute.type)}</tt>` : ''));
                     this._append(attributes, 'dd', attribute.description);
                 }
                 this.element.appendChild(attributes);
@@ -5034,7 +4770,7 @@ view.DocumentationSidebar = class extends view.Control {
                 this._append(this.element, 'h2', `Inputs${type.inputs_range ? ` (${type.inputs_range})` : ''}`);
                 const inputs = this._append(this.element, 'dl');
                 for (const input of type.inputs) {
-                    this._append(inputs, 'dt', input.name + (input.type ? `: <tt>${input.type}</tt>` : '') + (input.option ? ` (${input.option})` : ''));
+                    this._append(inputs, 'dt', input.name + (input.type ? `: <tt>${this._escape(input.type)}</tt>` : '') + (input.option ? ` (${input.option})` : ''));
                     this._append(inputs, 'dd', input.description);
                 }
             }
@@ -5042,7 +4778,7 @@ view.DocumentationSidebar = class extends view.Control {
                 this._append(this.element, 'h2', `Outputs${type.outputs_range ? ` (${type.outputs_range})` : ''}`);
                 const outputs = this._append(this.element, 'dl');
                 for (const output of type.outputs) {
-                    this._append(outputs, 'dt', output.name + (output.type ? `: <tt>${output.type}</tt>` : '') + (output.option ? ` (${output.option})` : ''));
+                    this._append(outputs, 'dt', output.name + (output.type ? `: <tt>${this._escape(output.type)}</tt>` : '') + (output.option ? ` (${output.option})` : ''));
                     this._append(outputs, 'dd', output.description);
                 }
             }
@@ -5091,10 +4827,21 @@ view.DocumentationSidebar = class extends view.Control {
         return element;
     }
 
+    _escape(content) {
+        if (this._escapeTestNoEncodeRegExp.test(content)) {
+            return content.replace(this._escapeReplaceNoEncodeRegExp, (ch) => this._escapeReplacementsMap[ch]);
+        }
+        return content;
+    }
+
     error(error, fatal) {
         super.error(error, fatal);
         const element = this.createElement('span');
-        element.innerHTML = `<b>ERROR:</b> ${error.message}`;
+        const title = this.createElement('b');
+        title.textContent = 'ERROR: ';
+        element.appendChild(title);
+        const message = this.createTextNode(error.message);
+        element.appendChild(message);
         this.element.appendChild(element);
     }
 };
@@ -5103,7 +4850,7 @@ view.FindSidebar = class extends view.Control {
 
     constructor(context, state, graph, signature) {
         super(context);
-        this._graph = graph;
+        this._target = graph;
         this._signature = signature;
         this._state = state || {
             query: '',
@@ -5129,10 +4876,14 @@ view.FindSidebar = class extends view.Control {
     }
 
     emit(event, data) {
-        if (this._events && this._events[event]) {
-            for (const callback of this._events[event]) {
-                callback(this, data);
+        try {
+            if (this._events && this._events[event]) {
+                for (const callback of this._events[event]) {
+                    callback(this, data);
+                }
             }
+        } catch (error) {
+            this.error(error, false);
         }
     }
 
@@ -5295,7 +5046,7 @@ view.FindSidebar = class extends view.Control {
     _update() {
         try {
             this._reset();
-            const inputs = this._signature ? this._signature.inputs : this._graph.inputs;
+            const inputs = this._signature ? this._signature.inputs : this._target.inputs;
             if (this._state.connection) {
                 for (const input of inputs) {
                     for (const value of input.value) {
@@ -5303,11 +5054,11 @@ view.FindSidebar = class extends view.Control {
                     }
                 }
             }
-            for (const node of this._graph.nodes) {
+            for (const node of this._target.nodes) {
                 this._node(node);
             }
             if (this._state.connection) {
-                const outputs = this._signature ? this._signature.outputs : this._graph.inputs;
+                const outputs = this._signature ? this._signature.outputs : this._target.outputs;
                 for (const output of outputs) {
                     if (!output.type || output.type.endsWith('*')) {
                         for (const value of output.value) {
@@ -5406,7 +5157,11 @@ view.FindSidebar = class extends view.Control {
     error(error, fatal) {
         super.error(error, fatal);
         const element = this.createElement('li');
-        element.innerHTML = `<b>ERROR:</b> ${error.message}`;
+        const title = this.createElement('b');
+        title.textContent = 'ERROR: ';
+        element.appendChild(title);
+        const message = this.createTextNode(` ${error.message}`);
+        element.appendChild(message);
         this._content.appendChild(element);
     }
 };
@@ -5460,7 +5215,7 @@ view.Quantization = class {
             return this.value.map((value, index) => `${index.toString().padStart(size, ' ')}: ${value}`).join('\n');
         } else if (this.type === 'annotation') {
             return Array.from(this.value).map(([name, value]) => `${name} = ${value}`).join('\n');
-        } else if (/^q\d_[01k]$/.test(this.type) || /^iq\d_[xsnlm]+$/.test(this.type)) {
+        } else if (/^q\d_[01k]$/.test(this.type) || /^iq\d_[xsnlm]+$/.test(this.type) || this.type === 'mxfp4') {
             return '';
         }
         throw new view.Error(`Unknown quantization type '${this.type}'.`);
@@ -5493,7 +5248,7 @@ view.Documentation = class {
                     const target = {};
                     target.name = source.name;
                     if (source.type !== undefined) {
-                        target.type = source.type;
+                        target.type = source.type === null || typeof source.type === 'string' ? source.type : source.type.toString();
                     }
                     if (source.option !== undefined) {
                         target.option = source.option;
@@ -5530,7 +5285,7 @@ view.Documentation = class {
                     const target = {};
                     target.name = source.name;
                     if (source.type !== undefined) {
-                        target.type = source.type;
+                        target.type = source.type === null || typeof source.type === 'string' ? source.type : source.type.toString();
                     }
                     if (source.description) {
                         target.description = generator.html(source.description);
@@ -5573,7 +5328,7 @@ view.Documentation = class {
                     const target = {};
                     target.name = source.name;
                     if (source.type) {
-                        target.type = source.type;
+                        target.type = source.type === null || typeof source.type === 'string' ? source.type : source.type.toString();
                     }
                     if (source.description) {
                         target.description = generator.html(source.description);
@@ -5585,7 +5340,7 @@ view.Documentation = class {
                         target.typeAttr = source.typeAttr;
                     }
                     if (source.typeListAttr !== undefined) {
-                        target.typeListAttr = source.typeAttr;
+                        target.typeListAttr = source.typeListAttr;
                     }
                     if (source.numberAttr !== undefined) {
                         target.numberAttr = source.numberAttr;
@@ -5631,7 +5386,7 @@ view.Documentation = class {
             if (source.min_output !== undefined) {
                 target.min_output = source.min_output;
             }
-            if (source.max_input !== undefined) {
+            if (source.max_output !== undefined) {
                 target.max_output = source.max_output;
             }
             if (source.inputs_range !== undefined) {
@@ -5678,7 +5433,7 @@ view.Formatter = class {
         if (typeof value === 'function') {
             return value();
         }
-        if (value && typeof value === 'bigint') {
+        if (value !== null && value !== undefined && (typeof value === 'bigint' || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')) {
             return value.toString();
         }
         if (Number.isNaN(value)) {
@@ -5703,8 +5458,9 @@ view.Formatter = class {
                 return view.Formatter.tensor(value);
             }
             case 'object':
-            case 'function':
                 return value.type.name;
+            case 'function':
+                return value.name;
             case 'object[]':
             case 'function[]':
                 return value ? value.map((item) => item.type.name).join(', ') : '(null)';
@@ -5712,6 +5468,8 @@ view.Formatter = class {
                 return value ? value.toString() : '(null)';
             case 'type[]':
                 return value ? value.map((item) => item.toString()).join(', ') : '(null)';
+            case 'complex':
+                return value ? value.toString() : '(null)';
             default:
                 break;
         }
@@ -5720,7 +5478,7 @@ view.Formatter = class {
                 return `"${value}"`;
             }
             if (value.trim().length === 0) {
-                return '&nbsp;';
+                return value;
             }
             return value;
         }
@@ -5729,8 +5487,8 @@ view.Formatter = class {
                 return quote ? '[]' : '';
             }
             let ellipsis = false;
-            if (value.length > 1000) {
-                value = value.slice(0, 1000);
+            if (value.length > 2000) {
+                value = value.slice(0, 2000);
                 ellipsis = true;
             }
             const itemType = (type && type.endsWith('[]')) ? type.substring(0, type.length - 2) : null;
@@ -6297,7 +6055,7 @@ markdown.Generator = class {
             if (match) {
                 source = source.substring(match[0].length);
                 prevChar = match[0].slice(-1);
-                tokens.push({ type: 'text', text: inRawBlock ? match[0] : this._escape(match[0]) });
+                tokens.push({ type: 'text' , text: inRawBlock ? match[0] : this._escape(match[0]) });
                 continue;
             }
             throw new Error(`Unexpected '${source.charCodeAt(0)}'.`);
@@ -6311,7 +6069,7 @@ markdown.Generator = class {
                 case 'paragraph':
                 case 'text':
                 case 'heading': {
-                    token.tokens = this._tokenizeInline(token.text, links, false, false, '');
+                    token.tokens  = this._tokenizeInline(token.text, links, false, false, '');
                     break;
                 }
                 case 'table': {
@@ -6535,6 +6293,72 @@ markdown.Generator = class {
     }
 };
 
+png.Encoder = class {
+
+    constructor(window, width, height) {
+        this.width = width;
+        this.height = height;
+        const compressor = new window.CompressionStream('deflate');
+        this.writer = compressor.writable.getWriter();
+        this.response = new window.Response(compressor.readable).blob();
+    }
+
+    async write(data, rows) {
+        const bytesPerRow = this.width * 4;
+        const filtered = new Uint8Array(rows * (1 + bytesPerRow));
+        let offset = 0;
+        let dataOffset = 0;
+        for (let i = 0; i < rows; i++) {
+            filtered[offset++] = 0;
+            filtered.set(data.subarray(dataOffset, dataOffset + bytesPerRow), offset);
+            offset += bytesPerRow;
+            dataOffset += bytesPerRow;
+        }
+        await this.writer.write(filtered);
+    }
+
+    async toBuffer() {
+        await this.writer.close();
+        const blob = await this.response;
+        const arrayBuffer = await blob.arrayBuffer();
+        const compressed = new Uint8Array(arrayBuffer);
+        const crc32Table = new Uint32Array(256);
+        for (let i = 0; i < 256; i++) {
+            let c = i;
+            for (let j = 0; j < 8; j++) {
+                c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+            }
+            crc32Table[i] = c;
+        }
+        const crc32 = (buffer, offset, length) => {
+            let crc = 0xFFFFFFFF;
+            for (let i = 0; i < length; i++) {
+                crc = crc32Table[(crc ^ buffer[offset + i]) & 0xFF] ^ (crc >>> 8);
+            }
+            return (crc ^ 0xFFFFFFFF) >>> 0;
+        };
+        const buffer = new Uint8Array(57 + compressed.length);
+        const view = new DataView(buffer.buffer);
+        // Signature
+        buffer.set([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], 0);
+        // IHDR
+        view.setUint32(8, 13, false);
+        buffer.set([0x49, 0x48, 0x44, 0x52], 12);
+        view.setUint32(16, this.width, false);
+        view.setUint32(20, this.height, false);
+        buffer.set([8, 6, 0, 0, 0], 24);
+        view.setUint32(29, crc32(buffer, 12, 17), false);
+        // IDAT
+        view.setUint32(33, compressed.length, false);
+        buffer.set([0x49, 0x44, 0x41, 0x54], 37);
+        buffer.set(compressed, 41);
+        view.setUint32(41 + compressed.length, crc32(buffer, 37, 4 + compressed.length), false);
+        // IEND
+        buffer.set([0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82], 45 + compressed.length);
+        return buffer;
+    }
+};
+
 metadata.Attachment = class {
 
     constructor() {
@@ -6634,7 +6458,7 @@ metadata.Attachment.Container = class {
 
 metadata.Argument = class {
 
-    constructor(name, value, type) {
+    constructor(name, value, type = null) {
         this.name = name;
         this.value = value;
         this.type = type;
@@ -6689,7 +6513,7 @@ metrics.Target = class {
                 const initializers = new Set();
                 if (this._target && Array.isArray(this._target.nodes)) {
                     for (const node of this._target.nodes) {
-                        for (const argument of node.inputs) {
+                        for (const argument of node.inputs || []) {
                             if (argument && Array.isArray(argument.value)) {
                                 for (const value of argument.value) {
                                     if (value && value.initializer) {
@@ -6702,11 +6526,11 @@ metrics.Target = class {
                 }
                 for (const tensor of initializers) {
                     const shape = tensor && tensor.type && tensor.type.shape && Array.isArray(tensor.type.shape.dimensions) ? tensor.type.shape.dimensions : [];
-                    if (!shape.every((dim) => typeof dim === 'number')) {
+                    if (!shape.every((dim) => typeof dim === 'number' || typeof dim === 'bigint')) {
                         parameters = 0;
                         break;
                     }
-                    parameters += shape.reduce((a, b) => a * b, 1);
+                    parameters += shape.reduce((a, b) => BigInt(a) * BigInt(b), 1n).toNumber();
                 }
                 if (parameters > 0) {
                     this._metrics.push(new metadata.Argument('parameters', parameters, 'attribute'));
@@ -6735,7 +6559,7 @@ metrics.Tensor = class {
             const keys = new Set(this._metrics.map((metrics) => metrics.name));
             const type = this._tensor.type;
             const shape = type.shape.dimensions;
-            const size = shape.reduce((a, b) => a * b, 1);
+            const size = shape.reduce((a, b) => BigInt(a) * BigInt(b), 1n).toNumber();
             if (size < 0x800000 &&
                 (type.dataType.startsWith('float') || type.dataType.startsWith('bfloat')) &&
                 (!keys.has('sparsity') || !keys.has('min') || !keys.has('max') && !keys.has('mean') || !keys.has('max') || !keys.has('std'))) {
@@ -6815,6 +6639,13 @@ view.Context = class {
         return this._stream;
     }
 
+    get container() {
+        if (this._context instanceof view.EntryContext) {
+            return this._context;
+        }
+        return null;
+    }
+
     async request(file) {
         return this._context.request(file, 'utf-8', null);
     }
@@ -6822,6 +6653,14 @@ view.Context = class {
     async fetch(file) {
         const stream = await this._context.request(file, null, this._base);
         return new view.Context(this._context, file, stream);
+    }
+
+    context(identifier, stream, entries) {
+        if (stream instanceof Uint8Array) {
+            stream = new base.BinaryStream(stream);
+        }
+        const context = entries instanceof Map ? new view.EntryContext(this._context, entries) : this._context;
+        return new view.Context(context, identifier, stream);
     }
 
     async require(id) {
@@ -6853,7 +6692,7 @@ view.Context = class {
                 const buffer = stream.peek(Math.min(stream.length, 16));
                 const skip =
                     match(buffer, [0x80, undefined, 0x8a, 0x0a, 0x6c, 0xfc, 0x9c, 0x46, 0xf9, 0x20, 0x6a, 0xa8, 0x50, 0x19]) || // PyTorch
-                    (type !== 'npz' && type !== 'zip' && match(buffer, [0x50, 0x4B, 0x03, 0x04])) || // Zip
+                    (type !== 'npz' && type !== 'zip' && match(buffer, [0x50, 0x4B, 0x03, 0x04])) || // ZIP
                     (type !== 'hdf5' && match(buffer, [0x89, 0x48, 0x44, 0x46, 0x0D, 0x0A, 0x1A, 0x0A])) || // \x89HDF\r\n\x1A\n
                     Array.from(this._tags).some(([key, value]) => key !== 'flatbuffers' && key !== 'xml' && value.size > 0) ||
                     Array.from(this._content.values()).some((obj) => obj !== undefined);
@@ -6861,7 +6700,7 @@ view.Context = class {
                     switch (type) {
                         case 'json': {
                             try {
-                                const buffer = stream.peek(Math.min(this.stream.length, 0x1000));
+                                const buffer = stream.peek(Math.min(stream.length, 0x1000));
                                 if (stream.length < 0x7ffff000 &&
                                     (buffer.length < 8 || String.fromCharCode.apply(null, buffer.slice(0, 8)) !== '\x89HDF\r\n\x1A\n') &&
                                     (buffer.some((v) => v === 0x22 || v === 0x5b || v === 0x5d || v === 0x7b || v === 0x7d))) {
@@ -6896,11 +6735,15 @@ view.Context = class {
                         }
                         case 'xml': {
                             try {
-                                const xml = await import('./xml.js');
-                                const reader = xml.TextReader.open(this._stream);
-                                if (reader) {
-                                    const obj = reader.read();
-                                    this._content.set(type, obj);
+                                const buffer = stream.peek(Math.min(this.stream.length, 0x1000));
+                                const content = String.fromCharCode.apply(null, buffer);
+                                if (stream.length < 0x7ffff000 && content.indexOf('<') !== -1 && content.indexOf('</') !== -1) {
+                                    const xml = await import('./xml.js');
+                                    const reader = xml.TextReader.open(this._stream);
+                                    if (reader) {
+                                        const obj = reader.read();
+                                        this._content.set(type, obj);
+                                    }
                                 }
                             } catch {
                                 // continue regardless of error
@@ -6915,8 +6758,8 @@ view.Context = class {
                                 const archive = zip.Archive.open(stream, 'zlib');
                                 const data = archive ? archive.entries.get('') : stream;
                                 let condition = false;
-                                if (data.length > 2) {
-                                    const head = data.peek(2);
+                                if (data.length > 4) {
+                                    const head = data.peek(4);
                                     condition = head[0] === 0x80 && head[1] < 7;
                                     if (!condition) {
                                         data.seek(-1);
@@ -6925,16 +6768,21 @@ view.Context = class {
                                         if (tail[0] === 0x2e) {
                                             const size = Math.min(data.length, 256);
                                             const buffer = data.peek(size);
-                                            const content = String.fromCharCode.apply(null, buffer);
-                                            const list = ['ccopy_reg', 'cnumpy.core.multiarray', '(dp0'];
-                                            condition = list.some((value) => content.indexOf(value) !== -1);
+                                            condition =
+                                                (buffer[0] === 0x28 && buffer[1] === 0x64 && buffer[2] === 0x70) ||
+                                                (buffer[0] === 0x28 && buffer[1] === 0x63 && buffer.indexOf(0x0a) !== -1);
+                                            if (!condition) {
+                                                const content = String.fromCharCode.apply(null, buffer);
+                                                const list = ['ccopy_reg', 'cnumpy.core.multiarray', '(dp0'];
+                                                condition = list.some((value) => content.indexOf(value) !== -1);
+                                            }
                                         }
                                     }
                                 }
                                 if (condition) {
                                     const python = await import('./python.js');
                                     const execution = new python.Execution();
-                                    execution.on('resolve', (_, name) => types.add(name));
+                                    execution.on('resolve', (sender, name) => types.add(name));
                                     const pickle = execution.__import__('pickle');
                                     unpickler = new pickle.Unpickler(data);
                                 }
@@ -7047,22 +6895,20 @@ view.Context = class {
                             break;
                         }
                         case 'npz': {
-                            try {
-                                const content = new Map();
-                                const entries = await this.peek('zip');
-                                if (entries instanceof Map && entries.size > 0 &&
-                                    Array.from(entries.keys()).every((name) => name.endsWith('.npy'))) {
-                                    const python = await import('./python.js');
-                                    const execution = new python.Execution();
-                                    for (const [name, stream] of entries) {
-                                        const bytes = execution.invoke('io.BytesIO', [stream]);
-                                        const array = execution.invoke('numpy.load', [bytes]);
-                                        content.set(name, array);
-                                    }
-                                    this._content.set(type, content);
+                            const content = new Map();
+                            const entries = await this.peek('zip');
+                            if (entries instanceof Map && entries.size > 0 &&
+                                Array.from(entries.keys()).every((name) => name.endsWith('.npy'))) {
+                                const python = await import('./python.js');
+                                const execution = new python.Execution();
+                                const io = execution.__import__('io');
+                                const numpy = execution.__import__('numpy');
+                                for (const [name, stream] of entries) {
+                                    const bytes = new io.BytesIO(stream);
+                                    const array = numpy.load(bytes);
+                                    content.set(name, array);
                                 }
-                            } catch {
-                                // continue regardless of error
+                                this._content.set(type, content);
                             }
                             break;
                         }
@@ -7166,8 +7012,8 @@ view.Context = class {
                 const signatures = [
                     [0x89, 0x48, 0x44, 0x46, 0x0D, 0x0A, 0x1A, 0x0A], // HDF5
                     [0x80, undefined, 0x8a, 0x0a, 0x6c, 0xfc, 0x9c, 0x46, 0xf9, 0x20, 0x6a, 0xa8, 0x50, 0x19], // PyTorch
-                    [0x50, 0x4b], // Zip
-                    [0x1f, 0x8b] // Gzip
+                    [0x50, 0x4b], // ZIP
+                    [0x1f, 0x8b] // gzip
                 ];
                 let skip = false;
                 if (signatures.some((signature) => signature.length <= stream.length && stream.peek(signature.length).every((value, index) => signature[index] === undefined || signature[index] === value))) {
@@ -7270,6 +7116,10 @@ view.EntryContext = class {
         return this._host.require(id);
     }
 
+    get entries() {
+        return this._entries;
+    }
+
     error(error, fatal) {
         this._host.exception(error, fatal);
     }
@@ -7291,8 +7141,8 @@ view.ModelFactoryService = class {
         this._factories = [];
         /* eslint-disable no-control-regex */
         this.register('./message', ['.message', '.netron', '.maxviz']);
-        this.register('./pytorch', ['.pt', '.pth', '.ptl', '.pt1', '.pt2', '.pyt', '.pyth', '.pkl', '.pickle', '.h5', '.t7', '.model', '.dms', '.tar', '.ckpt', '.chkpt', '.tckpt', '.bin', '.pb', '.zip', '.nn', '.torchmodel', '.torchscript', '.pytorch', '.ot', '.params', '.trt', '.ff', '.ptmf', '.jit', '.bin.index.json', 'model.json', '.ir', 'serialized_exported_program.json', 'serialized_state_dict.json'], ['.model', '.pt2'], [/^\x80.\x8a\x0a\x6c\xfc\x9c\x46\xf9\x20\x6a\xa8\x50\x19/]);
-        this.register('./onnx', ['.onnx', '.onnx.data', '.onn', '.pb', '.onnxtxt', '.pbtxt', '.prototxt', '.txt', '.model', '.pt', '.pth', '.pkl', '.ort', '.ort.onnx', '.ngf', '.json', '.bin', 'onnxmodel'], [], [/^....ORTM/]);
+        this.register('./pytorch', ['.pt', '.pth', '.ptl', '.pt1', '.pt2', '.pyt', '.pyth', '.pkl', '.pickle', '.h5', '.t7', '.model', '.dms', '.tar', '.ckpt', '.chkpt', '.tckpt', '.bin', '.pb', '.zip', '.nn', '.torchmodel', '.torchscript', '.pytorch', '.ot', '.params', '.trt', '.ff', '.ptmf', '.jit', '.bin.index.json', 'model.json', '.ir', 'serialized_exported_program.json', 'serialized_state_dict.json', 'archive_format'], ['.model', '.pt2'], [/^\x80.\x8a\x0a\x6c\xfc\x9c\x46\xf9\x20\x6a\xa8\x50\x19/]);
+        this.register('./onnx', ['.onnx', '.onnx.data', '.onnx.meta', '.onn', '.pb', '.onnxtxt', '.pbtxt', '.prototxt', '.txt', '.model', '.pt', '.pth', '.pkl', '.ort', '.ort.onnx', '.ngf', '.json', '.bin', 'onnxmodel'], [], [/^\x08[\x00-\x10]\x12[\x00-\x20]\w\w/, /^\x08[\x00-\x10]\x12\x00\x1A/, /^\x08[\x00-\x10]\x3A/, /^\s*ir_version:\s\d+/, /^....ORTM/]);
         this.register('./tflite', ['.tflite', '.lite', '.tfl', '.bin', '.pb', '.tmfile', '.h5', '.model', '.json', '.txt', '.dat', '.nb', '.ckpt', '.onnx'], [], [/^....TFL3/]);
         this.register('./mxnet', ['.json', '.params'], ['.mar']);
         this.register('./coreml', ['.mlmodel', '.bin', 'manifest.json', 'metadata.json', 'featuredescriptions.json', '.pb', '.pbtxt', '.mil'], ['.mlpackage', '.mlmodelc']);
@@ -7302,7 +7152,8 @@ view.ModelFactoryService = class {
         this.register('./tf', ['.pb', '.meta', '.pbtxt', '.prototxt', '.txt', '.pt', '.json', '.index', '.ckpt', '.graphdef', '.pbmm', /.data-[0-9][0-9][0-9][0-9][0-9]-of-[0-9][0-9][0-9][0-9][0-9]$/, /^events.out.tfevents./, /^.*group\d+-shard\d+of\d+(\.bin)?$/], ['.zip']);
         this.register('./tensorrt', ['.trt', '.trtmodel', '.engine', '.model', '.txt', '.uff', '.pb', '.tmfile', '.onnx', '.pth', '.dnn', '.plan', '.pt', '.dat', '.bin'], [], [/^ptrt/, /^ftrt/]);
         this.register('./keras', ['.h5', '.hd5', '.hdf5', '.keras', '.json', '.cfg', '.model', '.pb', '.pth', '.weights', '.pkl', '.lite', '.tflite', '.ckpt', '.pb', 'model.weights.npz', /^.*group\d+-shard\d+of\d+(\.bin)?$/], ['.zip'], [/^\x89HDF\r\n\x1A\n/]);
-        this.register('./numpy', ['.npz', '.npy', '.pkl', '.pickle', '.model', '.model2', '.mge', '.joblib', '']);
+        this.register('./safetensors', ['.safetensors', '.safetensors.index.json', 'safetensors-index.json']);
+        this.register('./numpy', ['.npz', '.npy', '.pkl', '.pickle', '.model', '.model2', '.mge', '.joblib'], [], [/^\x93NUMPY/, /^PK\x03\x04/]);
         this.register('./lasagne', ['.pkl', '.pickle', '.joblib', '.model', '.pkl.z', '.joblib.z']);
         this.register('./lightgbm', ['.txt', '.pkl', '.model']);
         this.register('./sklearn', ['.pkl', '.pickle', '.joblib', '.model', '.meta', '.pb', '.pt', '.h5', '.pkl.z', '.joblib.z', '.pickle.dat', '.bin']);
@@ -7336,22 +7187,26 @@ view.ModelFactoryService = class {
         this.register('./imgdnn', ['.dnn', 'params', '.json']);
         this.register('./flax', ['.msgpack']);
         this.register('./om', ['.om', '.onnx', '.pb', '.engine', '.bin'], [], [/^IMOD/, /^PICO/]);
-        this.register('./gguf', ['.gguf', /^[^.]+$/]);
+        this.register('./gguf', ['.gguf', /^[^.]+$/], [], [/^GGUF/]);
         this.register('./nnabla', ['.nntxt'], ['.nnp']);
         this.register('./hickle', ['.h5', '.hkl']);
         this.register('./nnef', ['.nnef', '.dat']);
         this.register('./onednn', ['.json']);
         this.register('./espresso', ['.espresso.net', '.espresso.shape', '.espresso.weights'], ['.mlmodelc']);
-        this.register('./mlir', ['.mlir', '.mlir.txt', '.mlirbc']);
+        this.register('./mlir', ['.mlir', '.mlir.txt', '.mlirbc', '.txt']);
         this.register('./sentencepiece', ['.model']);
         this.register('./hailo', ['.hn', '.har', '.metadata.json']);
-        this.register('./safetensors', ['.safetensors', '.safetensors.index.json']);
         this.register('./tvm', ['.json', '.params']);
         this.register('./dot', ['.dot'], [], [/^\s*(\/\*[\s\S]*?\*\/|\/\/.*|#.*)?\s*digraph\s*([A-Za-z][A-Za-z0-9-_]*|".*?")?\s*{/m]);
-        this.register('./catboost', ['.cbm']);
+        this.register('./jax', ['.jax', '.jax_export', '.jax_exported']);
+        this.register('./catboost', ['.cbm', '.pkl'], [], [/^CBM1/]);
         this.register('./weka', ['.model']);
-        this.register('./qnn', ['.json', '.bin', '.serialized']);
+        this.register('./qnn', ['.json', '.bin', '.serialized', '.dlc']);
+        this.register('./espdl', ['.espdl'], [], [/^EDL2/]);
         this.register('./kann', ['.kann', '.bin', '.kgraph'], [], [/^....KaNN/]);
+        this.register('./xgboost', ['.xgb', '.xgboost', '.json', '.model', '.bin', '.txt'], [], [/^{L\x00\x00/, /^binf/, /^bs64/, /^\s*booster\[0\]:/]);
+        this.register('./tosa', ['.tosa', '.json'], [], [/^....TOSA/]);
+        this.register('./transformers', ['.json']);
         this.register('', ['.cambricon', '.vnnmodel', '.nnc']);
         /* eslint-enable no-control-regex */
     }
@@ -7373,7 +7228,7 @@ view.ModelFactoryService = class {
         try {
             await this._openSignature(context);
             const content = new view.Context(context);
-            const model = await this._openContext(content);
+            let model = await this._openContext(content);
             if (!model) {
                 const check = (obj) => {
                     if (obj instanceof Error) {
@@ -7398,11 +7253,40 @@ view.ModelFactoryService = class {
                 if (!entryContext) {
                     await this._unsupported(content);
                 }
-                return this._openContext(entryContext);
+                model = await this._openContext(entryContext);
+            }
+            if (!model.format || typeof model.format !== 'string' || model.format.length === 0) {
+                throw new view.Error('Invalid model format name.');
+            }
+            if (!/^[a-zA-Z][a-zA-Z0-9-.]*( [a-zA-Z][a-zA-Z0-9-.]*)*( v\d+(\.\d+)*(b\d+)?([.+-][a-zA-Z0-9]+)?)?$/.test(model.format) || model.format.includes('undefined')) {
+                throw new view.Error(`Invalid model format name '${model.format}'.`);
+            }
+            if (model.producer && /[^\x20-\x7E\u00C0-\u00FF\u0370-\u03FF]/.test(model.producer)) {
+                throw new view.Error(`Invalid model producer name '${model.producer}'.`);
             }
             return model;
         } catch (error) {
-            error.context = !error.context && context && context.identifier ? context.identifier : error.context || '';
+            if (!error.context && context) {
+                error.context = context.identifier || '';
+                const stream = context.stream;
+                if (stream) {
+                    try {
+                        const hex = (buffer) => Array.from(buffer).map((c) => (c < 16 ? '0' : '') + c.toString(16)).join('');
+                        const position = stream.position;
+                        stream.seek(0);
+                        const head = stream.peek(Math.min(16, stream.length));
+                        error.context += `|${hex(head)}`;
+                        if (stream.length > 16) {
+                            stream.seek(stream.length - 16);
+                            const tail = stream.peek(16);
+                            error.context += `|${hex(tail)}`;
+                        }
+                        stream.seek(position);
+                    } catch {
+                        // continue regardless of error
+                    }
+                }
+            }
             throw error;
         }
     }
@@ -7428,6 +7312,20 @@ view.ModelFactoryService = class {
                 throw new view.Error("Archive contains no model files.");
             }
         }
+        const regex = async() => {
+            if (stream) {
+                const entries = [
+                    { name: 'Unity metadata', value: /fileFormatVersion:/ },
+                ];
+                const buffer = stream.peek(Math.min(4096, stream.length));
+                const content = String.fromCharCode.apply(null, buffer);
+                for (const entry of entries) {
+                    if (content.match(entry.value) && (!entry.identifier || context.identifier.match(entry.identifier))) {
+                        throw new view.Error(`Invalid file content. File contains ${entry.name}.`);
+                    }
+                }
+            }
+        };
         const json = async () => {
             const obj = await context.peek('json');
             if (obj) {
@@ -7446,6 +7344,7 @@ view.ModelFactoryService = class {
                     { name: 'NuGet assets', tags: ['version', 'targets', 'packageFolders'] },
                     { name: 'NuGet data', tags: ['format', 'restore', 'projects'] },
                     { name: 'NPM package', tags: ['name', 'version', 'dependencies'] },
+                    { name: 'NPM package lock data', tags: ['name', 'version', 'lockfileVersion'] },
                     { name: 'NetworkX adjacency_data', tags: ['directed', 'graph', 'nodes'] },
                     { name: 'Waifu2x data', tags: ['name', 'arch_name', 'channels'] },
                     { name: 'Waifu2x data', tags: ['[].nInputPlane', '[].nOutputPlane', '[].weight', '[].bias'] },
@@ -7459,23 +7358,25 @@ view.ModelFactoryService = class {
                     { name: 'Trace Event data', tags: ['traceEvents'] },
                     { name: 'Trace Event data', tags: ['[].pid', '[].ph'] },
                     { name: 'Diffusers configuration', tags: ['_class_name', '_diffusers_version'] },
-                    { name: 'Transformers configuration', tags: ['architectures', 'model_type'] }, // https://huggingface.co/docs/transformers/en/create_a_model
-                    { name: 'Transformers generation configuration', tags: ['transformers_version'] },
-                    { name: 'Transformers tokenizer configuration', tags: ['tokenizer_class'] },
-                    { name: 'Transformers tokenizer configuration', tags: ['bos_token', 'eos_token', 'unk_token'] },
-                    { name: 'Transformers tokenizer configuration', tags: ['bos_token', 'eos_token', 'pad_token'] },
-                    { name: 'Transformers tokenizer configuration', tags: ['additional_special_tokens'] },
-                    { name: 'Transformers tokenizer configuration', tags: ['special_tokens_map_file'] },
-                    { name: 'Transformers tokenizer configuration', tags: ['full_tokenizer_file'] },
-                    { name: 'Transformers vocabulary data', tags: ['<|im_start|>'] },
-                    { name: 'Transformers vocabulary data', tags: ['<|endoftext|>'] },
-                    { name: 'Transformers preprocessor configuration', tags: ['crop_size', 'do_center_crop', 'image_mean', 'image_std', 'do_resize'] },
-                    { name: 'Tokenizers data', tags: ['version', 'added_tokens', 'model'] }, // https://github.com/huggingface/tokenizers/blob/main/tokenizers/src/tokenizer/serialization.rs
+                    { name: 'ModelScope configuration', tags: ['framework', 'task'] }, // https://github.com/modelscope/modelscope
                     { name: 'Tokenizer data', tags: ['<eos>', '<bos>'] },
                     { name: 'Jupyter Notebook data', tags: ['cells', 'nbformat'] },
-                    { name: 'Kaggle credentials', tags: ['username', 'key'] },
+                    { name: 'Kaggle credentials', tags: ['username','key'] },
                     { name: '.NET runtime configuration', tags: ['runtimeOptions.configProperties'] },
                     { name: '.NET dependency manifest', tags: ['runtimeTarget', 'targets', 'libraries'] },
+                    { name: 'GuitarML NeuralPi model data', tags: ['model_data', 'state_dict'] },
+                    { name: 'GuitarML SmartAmpPro model data', tags: ['conv1d', 'conv1d_stride'] },
+                    { name: 'GuitarML SmartAmp model data', tags: ['activation', 'output_channels', 'input_channels', 'residual_channels'] },
+                    { name: 'Keras configuration data', tags: ['floatx', 'epsilon', 'backend'] },
+                    { name: 'PIMCOMP-NN model data', tags: ['node_list', 'reshape_info'] },
+                    { name: 'AIMET encodings', tags: ['activation_encodings'] },
+                    { name: 'COCO annotations', tags: ['images', 'annotations', 'categories'] }, // https://cocodataset.org/
+                    { name: 'Sentence Transformers modules', tags: ['[].idx', '[].path', '[].type'] }, // https://www.sbert.net/
+                    { name: 'Sentence Transformers configuration', tags: ['__version__.sentence_transformers'] }, // https://www.sbert.net/
+                    { name: 'Lottie animation', tags: ['v', 'fr', 'ip', 'op', 'w', 'h', 'layers'] }, // https://lottiefiles.github.io/lottie-docs/
+                    { name: 'OCI image manifest', tags: ['schemaVersion', 'mediaType'] }, // https://github.com/opencontainers/image-spec
+                    { name: 'LabelMe annotation', tags: ['version', 'flags', 'shapes'] }, // https://github.com/labelmeai/labelme
+                    { name: 'Ollama model manifest', tags: ['model_format', 'model_family'] }, // https://github.com/ollama/ollama
                 ];
                 const match = (obj, tag) => {
                     if (tag.startsWith('[].')) {
@@ -7545,17 +7446,17 @@ view.ModelFactoryService = class {
             const tags = await context.tags('pb+');
             if (Object.keys(tags).length > 0) {
                 const formats = [
-                    { name: 'sentencepiece.ModelProto data', tags: [[1, [[1, 2], [2, 5], [3, 0]]], [2, [[1, 2], [2, 2], [3, 0], [4, 0], [5, 2], [6, 0], [7, 2], [10, 5], [16, 0], [40, 0], [41, 0], [42, 0], [43, 0]]], [3, []], [4, []], [5, []]] },
-                    { name: 'mediapipe.BoxDetectorIndex data', tags: [[1, [[1, [[1, [[1, 5], [2, 5], [3, 5], [4, 5], [6, 0], [7, 5], [8, 5], [10, 5], [11, 0], [12, 0]]], [2, 5], [3, []]]], [2, false], [3, false], [4, false], [5, false]]], [2, false], [3, false]] },
-                    { name: 'third_party.tensorflow.python.keras.protobuf.SavedMetadata data', tags: [[1, [[1, [[1, 0], [2, 0]]], [2, 0], [3, 2], [4, 2], [5, 2]]]] },
-                    { name: 'pblczero.Net data', tags: [[1, 5], [2, 2], [3, [[1, 0], [2, 0], [3, 0]], [10, [[1, []], [2, []], [3, []], [4, []], [5, []], [6, []]]], [11, []]]] }, // https://github.com/LeelaChessZero/lczero-common/blob/master/proto/net.proto
-                    { name: 'chrome_browser_media.PreloadedData', tags: [[1, 2]], identifier: 'preloaded_data.pb' }, // https://github.com/kiwibrowser/src/blob/86afd150b847c9dd6f9ad3faddee1a28b8c9b23b/chrome/browser/media/media_engagement_preload.proto#L9
-                    { name: 'mind_ir.ModelProto', tags: [[1, 2], [2, 2], [5, 2], [7, []], [10, 0], [12, []], [13, 0]] }, // https://github.com/mindspore-ai/mindspore/blob/master/mindspore/core/proto/mind_ir.proto
-                    { name: 'mindspore.irpb.Checkpoint', tags: [[1, [[1, 2], [2, [[1, 0], [2, 2], [3, 2]]]]]] }, // https://github.com/mindspore-ai/mindspore/blob/master/mindspore/ccsrc/utils/checkpoint.proto
-                    { name: 'optimization_guide.proto.PageTopicsOverrideList data', tags: [[1, [[1, 2], [2, []]]]] }, // https://github.com/chromium/chromium/blob/main/components/optimization_guide/proto/page_topics_override_list.proto
-                    { name: 'optimization_guide.proto.ModelInfo data', tags: [[1, 0], [2, 0], [4, 0], [6, false], [7, []], [9, 0]] }, // https://github.com/chromium/chromium/blob/22b0d711657b451b61d50dd2e242b3c6e38e6ef5/components/optimization_guide/proto/models.proto#L80
-                    { name: 'Hobot Dnn data', tags: [[1, 0], [2, 0], [4, [[1, 2], [2, 2]]]] }, // https://github.com/HorizonRDK/hobot_dnn
-                    { name: 'Hobot Dnn data', tags: [[1, 0], [2, 0], [6, [1, [[1, 2], [2, 2]]]]] }, // https://github.com/HorizonRDK/hobot_dnn
+                    { name: 'sentencepiece.ModelProto data', tags: [[1,[[1,2],[2,5],[3,0]]],[2,[[1,2],[2,2],[3,0],[4,0],[5,2],[6,0],[7,2],[10,5],[16,0],[40,0],[41,0],[42,0],[43,0]]],[3,[]],[4,[]],[5,[]]] }, // https://github.com/google/sentencepiece/blob/master/src/sentencepiece_model.proto
+                    { name: 'mediapipe.BoxDetectorIndex data', tags: [[1,[[1,[[1,[[1,5],[2,5],[3,5],[4,5],[6,0],[7,5],[8,5],[10,5],[11,0],[12,0]]],[2,5],[3,[]]]],[2,false],[3,false],[4,false],[5,false]]],[2,false],[3,false]] }, // https://github.com/google-ai-edge/mediapipe/blob/2b5a50fff37f79db8103dbd88f552c1a9be31e51/mediapipe/util/tracking/box_detector.proto
+                    { name: 'third_party.tensorflow.python.keras.protobuf.SavedMetadata data', tags: [[1,[[1,[[1,0],[2,0]]],[2,0],[3,2],[4,2],[5,2]]]] },
+                    { name: 'pblczero.Net data', tags: [[1,5],[2,2],[3,[[1,0],[2,0],[3,0]],[10,[[1,[]],[2,[]],[3,[]],[4,[]],[5,[]],[6,[]]]],[11,[]]]] }, // https://github.com/LeelaChessZero/lczero-common/blob/master/proto/net.proto
+                    { name: 'chrome_browser_media.PreloadedData', tags: [[1,2]], identifier: 'preloaded_data.pb' }, // https://github.com/kiwibrowser/src/blob/86afd150b847c9dd6f9ad3faddee1a28b8c9b23b/chrome/browser/media/media_engagement_preload.proto#L9
+                    { name: 'mind_ir.ModelProto', tags: [[1,2],[2,2],[5,2],[7,[]],[10,0],[12,[]],[13,0]] }, // https://github.com/mindspore-ai/mindspore/blob/master/mindspore/core/proto/mind_ir.proto
+                    { name: 'mindspore.irpb.Checkpoint', tags: [[1,[[1,2],[2,[[1,0],[2,2],[3,2]]]]]] }, // https://github.com/mindspore-ai/mindspore/blob/master/mindspore/ccsrc/utils/checkpoint.proto
+                    { name: 'optimization_guide.proto.PageTopicsOverrideList data', tags: [[1,[[1,2],[2,[]]]]] }, // https://github.com/chromium/chromium/blob/main/components/optimization_guide/proto/page_topics_override_list.proto
+                    { name: 'optimization_guide.proto.ModelInfo data', tags: [[1,0],[2,0],[4,0],[6,false],[7,[]],[9,0]] }, // https://github.com/chromium/chromium/blob/22b0d711657b451b61d50dd2e242b3c6e38e6ef5/components/optimization_guide/proto/models.proto#L80
+                    { name: 'Horizon binary model', tags: [[1,0],[2,0],[5,[[7,2],[8,2]]],[6,[[1,[[1,2],[2,2]]]]]] }, // https://github.com/HorizonRDK/hobot_dnn
+                    { name: 'TensorFlow Profiler data', tags: [[1,[[2,2],[3,[]],[4,[]]]]] }, // https://github.com/tensorflow/tensorflow/blob/master/third_party/xla/third_party/tsl/tsl/profiler/protobuf/xplane.proto
                 ];
                 const match = (tags, schema) => {
                     for (const [key, inner] of schema) {
@@ -7593,7 +7494,8 @@ view.ModelFactoryService = class {
                     return content.join(',');
                 };
                 const content = format(tags);
-                throw new view.Error(`Unsupported Protocol Buffers content '${content.length > 64 ? `${content.substring(0, 100)}...` : content}'.`);
+                const message = content.length > 64 ? `${content.substring(0, 100)}...` : content;
+                throw new view.Error(`Unsupported Protocol Buffers content or ambiguous file extension '${message}'.`);
             }
         };
         const flatbuffers = async () => {
@@ -7605,8 +7507,7 @@ view.ModelFactoryService = class {
                     identifier = reader.identifier;
                 } else {
                     const data = stream.peek(8);
-                    if (data[0] >= 8 && data[0] <= 0x28 && (data[0] & 3) === 0 &&
-                        data[1] === 0x00 && data[2] === 0x00 && data[2] === 0x00) {
+                    if (data[0] >= 8 && data[0] <= 0x28 && (data[0] & 3) === 0 && data[1] === 0x00 && data[2] === 0x00 && data[3] === 0x00) {
                         identifier = String.fromCharCode.apply(null, data.slice(4, 8));
                     }
                 }
@@ -7622,8 +7523,11 @@ view.ModelFactoryService = class {
                         { name: 'MindSpore Lite model data', identifier: 'MSL1' },
                         { name: 'MindSpore Lite model data', identifier: 'MSL2' },
                         { name: 'MindSpore Lite model data', identifier: 'MSL3' },
+                        { name: 'NVDA model data', identifier: 'NVDA' },
                         { name: 'BSTM model data', identifier: 'BSTM' },
-                        { name: 'onnu model data', identifier: 'onnu' }
+                        { name: 'onnu model data', identifier: 'onnu' },
+                        { name: 'ONNX Runtime On-Device Training Checkpoint', identifier: 'ODTC' },
+                        { name: 'TOSA model data', identifier: 'TOSA' }
                     ];
                     for (const format of formats) {
                         if (identifier === format.identifier) {
@@ -7675,13 +7579,11 @@ view.ModelFactoryService = class {
         };
         const unknown = async () => {
             if (stream) {
-                stream.seek(0);
-                const buffer = stream.peek(Math.min(16, stream.length));
-                const content = Array.from(buffer).map((c) => (c < 16 ? '0' : '') + c.toString(16)).join('');
-                throw new view.Error(`Unsupported file content '${content}'.`);
+                throw new view.Error(`Unsupported file content.`);
             }
             throw new view.Error("Unsupported file directory.");
         };
+        await regex();
         await json();
         await pbtxt();
         await pb();
@@ -7775,8 +7677,8 @@ view.ModelFactoryService = class {
                         }
                         delete context.value;
                         if (type) {
-                            matches = matches.filter((match) => !factory.filter || factory.filter(context, match.type));
-                            if (matches.every((match) => !match.factory.filter || match.factory.filter(match, context.type))) {
+                            matches = matches.filter((match) => !factory.filter || factory.filter(context, match));
+                            if (matches.every((match) => !match.factory.filter || match.factory.filter(match, context))) {
                                 context.factory = factory;
                                 matches.push(context);
                             }
@@ -7814,8 +7716,8 @@ view.ModelFactoryService = class {
         let accept = false;
         for (const extension of this._patterns) {
             if ((typeof extension === 'string' &&
-                ((extension !== '' && identifier.endsWith(extension)) ||
-                    (extension === '' && identifier.indexOf('.') === -1))) ||
+                    ((extension !== '' && identifier.endsWith(extension)) ||
+                     (extension === '' && identifier.indexOf('.') === -1))) ||
                 (extension instanceof RegExp && extension.exec(identifier))) {
                 accept = true;
                 break;
@@ -7863,46 +7765,52 @@ view.ModelFactoryService = class {
             }
             /* eslint-disable no-control-regex */
             const entries = [
-                { name: 'ELF executable', value: /^\x7FELF/ },
-                { name: 'PNG image', value: /^\x89PNG/ },
-                { name: 'Git LFS header', value: /^version https:\/\/git-lfs.github.com/ },
-                { name: 'Git LFS header', value: /^\s*oid sha256:/ },
-                { name: 'GGML data', value: /^lmgg|fmgg|tjgg|algg|fugg/ },
-                { name: 'HTML markup', value: /^\s*<(html|HTML)(\s+[^>]+)?>/ },
-                { name: 'HTML markup', value: /^\s*<!(doctype|DOCTYPE)\s*(html|HTML)>/ },
-                { name: 'HTML markup', value: /^\s*<!DOCTYPE\s*HTML\s+(PUBLIC|SYSTEM)?/ },
-                { name: 'Unity metadata', value: /^fileFormatVersion:/ },
-                { name: 'Python source code', value: /^((#.*(\n|\r\n))|('''.*'''(\n|\r\n))|("""[\s\S]*""")|(\n|\r\n))*(import[ ]+[a-zA-Z_]\w*(\.[a-zA-Z_]\w*)*([ ]+as[ ]+[a-zA-Z]\w*)?[ ]*(,|;|\n|\r\n))/ },
-                { name: 'Python source code', value: /^((#.*(\n|\r\n))|('''.*'''(\n|\r\n))|("""[\s\S]*""")|(\n|\r\n))*(from[ ]+([a-zA-Z_]\w*(\.[a-zA-Z_]\w*)*)[ ]+import[ ]+[a-zA-Z]\w*)/ },
-                { name: 'Python virtual environment configuration', value: /^home[ ]*=[ ]*/, identifier: /^pyvenv\.cfg/ },
-                { name: 'Bash script', value: /^(#!\/usr\/bin\/env|#!\/bin\/bash)\s/ },
-                { name: 'TSD header', value: /^%TSD-Header-###%/ },
-                { name: 'AppleDouble data', value: /^\x00\x05\x16\x07/ },
-                { name: 'TensorFlow Hub module', value: /^\x08\x03$/, identifier: /^tfhub_module\.pb/ },
-                { name: 'V8 snapshot', value: /^.\x00\x00\x00.\x00\x00\x00/, identifier: /^snapshot_blob\.bin/ },
-                { name: 'V8 context snapshot', value: /^.\x00\x00\x00.\x00\x00\x00/, identifier: /^v8_context_snapshot\.bin/ },
-                { name: 'V8 natives blob', value: /^./, identifier: /^natives_blob\.bin/ },
-                { name: 'ViSQOL model', value: /^svm_type\s/ },
-                { name: 'SenseTime model', value: /^STEF/ },
                 { name: 'AES Crypt data', value: /^AES[\x01|\x02]\x00/ },
-                { name: 'BModel data', value: /^\xEE\xAA\x55\xFF/ }, // https://github.com/sophgo/tpu-mlir/blob/master/include/tpu_mlir/Builder/BM168x/bmodel.fbs
-                { name: 'CviModel data', value: /^CviModel/ }, // https://github.com/sophgo/tpu-mlir/blob/master/include/tpu_mlir/Builder/CV18xx/proto/cvimodel.fbs
-                { name: 'Tokenizer data', value: /^IQ== 0\n/ },
-                { name: 'BCNN model', value: /^BCNN/ },
+                { name: 'AppleDouble data', value: /^\x00\x05\x16\x07/ },
                 { name: 'base64 data', value: /^gAAAAAB/ },
-                { name: 'Mathematica Notebook data', value: /^\(\*\sContent-type:\sapplication\/vnd\.wolfram\.mathematica\s\*\)/ },
-                { name: 'llama2.c checkpoint', value: /^..\x00\x00..\x00\x00..\x00\x00..\x00\x00..\x00\x00..\x00\x00..\x00\x00/, identifier: /^stories\d+[KM]\.bin/ },
+                { name: 'Bash script', value: /^(#!\/usr\/bin\/env|#!\/bin\/bash)\s/ },
+                { name: 'BCNN model', value: /^BCNN/ },
+                { name: 'BModel data', value: /^\xEE\xAA\x55\xFF/ }, // https://github.com/sophgo/tpu-mlir/blob/master/include/tpu_mlir/Builder/BM168x/bmodel.fbs
                 { name: 'Cambricon model', value: /^\x7fMEF/ },
                 { name: 'Cambricon model', value: /^cambricon_offline/ },
-                { name: 'VNN model', value: /^\x2F\x4E\x00\x00.\x00\x00\x00/, identifier: /.vnnmodel$/ },
-                { name: 'XGBoost model', value: /^(binf|bs64)/ }, // https://github.com/dmlc/xgboost/blob/master/src/learner.cc
-                { name: 'SQLite data', value: /^SQLite format/ },
-                { name: 'Optimium model', value: /^EZMODEL/ }, // https://github.com/EZ-Optimium/Optimium,
-                { name: 'undocumented NNC data', value: /^(\xC0|\xBC)\x0F\x00\x00ENNC/ },
-                { name: 'Rich Text Format data', value: /^{\\rtf/ },
-                { name: 'Encrypted File data', value: /^ENCRYPTED_FILE/ },
+                { name: 'CviModel data', value: /^CviModel/ }, // https://github.com/sophgo/tpu-mlir/blob/master/include/tpu_mlir/Builder/CV18xx/proto/cvimodel.fbs
+                { name: 'DRTcrypt data', value: /^DRTcrypt/ },
+                { name: 'ELF executable', value: /^\x7FELF/ },
+                { name: 'encrypted data', value: /^ENCRYPTED_FILE|EV_ENCRYPTED/ },
+                { name: 'encrypted data', value: /^Salted__/ },
+                { name: 'encrypted data', value: /^KINGSOFTOFFICE/ },
+                { name: 'GGML data', value: /^lmgg|fmgg|tjgg|algg|fugg/ },
+                { name: 'Git LFS header', value: /^\s*oid sha256:/ },
+                { name: 'Git LFS header', value: /^version https:\/\/git-lfs.github.com/ },
+                { name: 'HTML markup', value: /^\s*<!(doctype|DOCTYPE)\s*(html|HTML)>/ },
+                { name: 'HTML markup', value: /^\s*<!DOCTYPE\s*HTML\s+(PUBLIC|SYSTEM)?/ },
+                { name: 'HTML markup', value: /^\s*<(html|HTML)(\s+[^>]+)?>/ },
                 { name: 'Keras Tokenizer data', value: /^"{\\"class_name\\":\s*\\"Tokenizer\\"/ },
+                { name: 'llama2.c checkpoint', value: /^..\x00\x00..\x00\x00..\x00\x00..\x00\x00..\x00\x00..\x00\x00..\x00\x00/, identifier: /^stories\d+[KM]\.bin/ },
+                { name: 'Mathematica Notebook data', value: /^\(\*\sContent-type:\sapplication\/vnd\.wolfram\.mathematica\s\*\)/ },
+                { name: 'Momentum Human Rig model', value: /^Momentum Model Definition/ }, // https://github.com/facebookresearch/MHR
                 { name: 'obfuscated data', value: /^obfs/ },
+                { name: 'Optimium model', value: /^EZMODEL/ }, // https://github.com/EZ-Optimium/Optimium,
+                { name: 'PNG image', value: /^\x89PNG/ },
+                { name: 'Python source code', value: /^((#.*(\n|\r\n))|('''.*'''(\n|\r\n))|("""[\s\S]*""")|(\n|\r\n))*(from[ ]+([a-zA-Z_]\w*(\.[a-zA-Z_]\w*)*)[ ]+import[ ]+[a-zA-Z]\w*)/ },
+                { name: 'Python source code', value: /^((#.*(\n|\r\n))|('''.*'''(\n|\r\n))|("""[\s\S]*""")|(\n|\r\n))*(import[ ]+[a-zA-Z_]\w*(\.[a-zA-Z_]\w*)*([ ]+as[ ]+[a-zA-Z]\w*)?[ ]*(,|;|\n|\r\n))/ },
+                { name: 'Python virtual environment configuration', value: /^home[ ]*=[ ]*/, identifier: /^pyvenv\.cfg/ },
+                { name: 'Rich Text Format data', value: /^{\\rtf/ },
+                { name: 'SenseTime model', value: /^STEF/ },
+                { name: 'SQLite data', value: /^SQLite format/ },
+                { name: 'TensorFlow Hub module', value: /^\x08\x03$/, identifier: /^tfhub_module\.pb/ },
+                { name: 'Tokenizer data', value: /^IQ== 0\n/ },
+                { name: 'TSD header', value: /^%TSD-Header-###%/ },
+                { name: 'undocumented HALCON model', value: /^HDLMODEL/ },
+                { name: 'undocumented license data', value: /^This model and the software may not be used or distributed in any manner except as authorized under a valid written agreemen/ },
+                { name: 'undocumented NNC data', value: /^(\xC0|\xBC)\x0F\x00\x00ENNC/ },
+                { name: 'undocumented RKNX data', value: /^RKNX\x00\x00\x00\x00/ },
+                { name: 'V8 context snapshot', value: /^.\x00\x00\x00.\x00\x00\x00/, identifier: /^v8_context_snapshot\.bin/ },
+                { name: 'V8 natives blob', value: /^./, identifier: /^natives_blob\.bin/ },
+                { name: 'V8 snapshot', value: /^.\x00\x00\x00.\x00\x00\x00/, identifier: /^snapshot_blob\.bin/ },
+                { name: 'ViSQOL model', value: /^svm_type\s/ },
+                { name: 'VNN model', value: /^\x2F\x4E\x00\x00.\x00\x00\x00/, identifier: /.vnnmodel$/ },
+                { name: 'Windows executable', value: /^MZ[\s\S]*PE\x00\x00/ },
             ];
             /* eslint-enable no-control-regex */
             const buffer = stream.peek(Math.min(4096, stream.length));

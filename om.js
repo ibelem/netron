@@ -35,7 +35,7 @@ om.Model = class {
             signature: target.signature,
             weights: target.weights
         };
-        this.graphs = target.model.graph.map((graph) => new om.Graph(context, graph));
+        this.modules = target.model.graph.map((graph) => new om.Graph(context, graph));
     }
 };
 
@@ -193,7 +193,7 @@ om.Node = class {
                 case 's': {
                     if (typeof obj.s === 'string') {
                         value = obj.s;
-                    } else if (obj.s.filter((c) => c <= 32 && c >= 128).length === 0) {
+                    } else if (obj.s.every((c) => c >= 32 && c <= 128)) {
                         value = om.Utility.decodeText(obj.s);
                     } else {
                         value = obj.s;
@@ -258,7 +258,7 @@ om.Node = class {
 
 om.Argument = class {
 
-    constructor(name, value, type) {
+    constructor(name, value, type = null) {
         this.name = name;
         this.value = value;
         this.type = type;
@@ -267,13 +267,13 @@ om.Argument = class {
 
 om.Value = class {
 
-    constructor(name, type, initializer) {
+    constructor(name, type, initializer = null) {
         if (typeof name !== 'string') {
             throw new om.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
         }
         this.name = name;
         this.type = initializer ? initializer.type : type;
-        this.initializer = initializer || null;
+        this.initializer = initializer;
     }
 };
 
@@ -378,7 +378,7 @@ om.Container = class {
                     header.platform_version = decoder.decode(reader.read(20));
                     header.platform_type = reader.byte();
                     header.padd = [reader.byte(), reader.byte(), reader.byte()];
-                    header.model_length = reader.uint64().toNumber();
+                    header.model_length = reader.uint64();
                     header.need_check_os_cpu_info = reader.byte();
                     header.is_unknow_model = reader.byte(); // 0:static model 1:dynamic model
                     header.reserved = reader.read(62);
@@ -445,13 +445,16 @@ om.Container = class {
                             case 9: // STATIC_TASK_DESC
                             case 10: // DYNAMIC_TASK_DESC
                             case 11: // TASK_PARAM
+                            case 12: // TILING_DATA
                             case 20: // PRE_MODEL_DESC
                             case 21: // PRE_MODEL_SQE
-                            case 22: { // PRE_KERNEL_ARGS
+                            case 22: // PRE_KERNEL_ARGS
+                            case 23: // PRE_MODEL_DESC_EXTEND
+                            case 24: { // BUNDLE_MODEL_INFO
                                 break;
                             }
                             default: {
-                                throw new om.Error('Unsupported DaVinci OM partition type.');
+                                throw new om.Error(`Unsupported DaVinci OM partition type '${type}'.`);
                             }
                         }
                     }
@@ -496,7 +499,7 @@ om.Utility = class {
         om.Utility._types = om.Utility._types || [
             'undefined', 'float32', 'float16', 'int8', 'uint8', 'int16', 'uint16', 'int32',
             'int64', 'uint32', 'uint64', 'boolean', 'float64', 'string', 'dual_sub_int8', 'dual_sub_uint8',
-            'complex64', 'complex128', 'qint8', 'qint16', 'qint32', 'quint8', 'quint16', 'resource',
+            'complex<float32>', 'complex<float64>', 'qint8', 'qint16', 'qint32', 'quint8', 'quint16', 'resource',
             'stringref', 'dual', 'variant', 'bfloat16', 'int4', 'uint1', 'int2', 'uint2'
         ];
         if (value >= om.Utility._types.length) {

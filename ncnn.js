@@ -46,7 +46,7 @@ ncnn.ModelFactory = class {
                             if (!line) {
                                 break;
                             }
-                            if (line.startsWith('pnnx.') || line.startsWith('nn.') || line.startsWith('F.')) {
+                            if (line.startsWith('pnnx.') || line.startsWith('nn.') || line.startsWith('F.') || line.startsWith('torch.') || line.startsWith('Tensor.')) {
                                 type = 'pnnx.model';
                                 break;
                             }
@@ -63,7 +63,7 @@ ncnn.ModelFactory = class {
             return context.set('ncnn.weights');
         } else if (identifier.endsWith('.pnnx.bin')) {
             const entries = await context.peek('zip');
-            if (entries) { // can be empty
+            if (entries instanceof Map) {
                 return context.set('pnnx.weights', entries);
             }
         } else if (identifier.endsWith('.bin') || identifier.endsWith('.weights.ncnn')) {
@@ -99,8 +99,8 @@ ncnn.ModelFactory = class {
         return null;
     }
 
-    filter(context, type) {
-        return (context.type !== 'ncnn.model' && context.type !== 'ncnn.model.bin') || type !== 'ncnn.weights';
+    filter(context, match) {
+        return (context.type !== 'ncnn.model' && context.type !== 'ncnn.model.bin') || match.type !== 'ncnn.weights';
     }
 
     async open(context) {
@@ -191,7 +191,7 @@ ncnn.Model = class {
 
     constructor(metadata, format, param, blobs) {
         this.format = format === 'pnnx' ? 'PNNX' : 'ncnn';
-        this.graphs = [new ncnn.Graph(metadata, format, param, blobs)];
+        this.modules = [new ncnn.Graph(metadata, format, param, blobs)];
     }
 };
 
@@ -243,12 +243,10 @@ ncnn.Graph = class {
                 const argument = new ncnn.Argument(layer.name, layer.outputs.map((output) => values.map(output, type)));
                 this.inputs.push(argument);
             } else if (layer.type === 'pnnx.Input' && layer.params) {
-                const type = ncnn.Utility.route(layer.params, '0');
-                const argument = new ncnn.Argument(layer.name, layer.outputs.map((output) => values.map(output, type)));
+                const argument = new ncnn.Argument(layer.name, layer.outputs.map((output) => values.map(output, ncnn.Utility.route(layer.params, output))));
                 this.inputs.push(argument);
             } else if (layer.type === 'pnnx.Output' && layer.params) {
-                const type = ncnn.Utility.route(layer.params, '0');
-                const argument = new ncnn.Argument(layer.name, layer.inputs.map((input) => values.map(input, type)));
+                const argument = new ncnn.Argument(layer.name, layer.inputs.map((input) => values.map(input, ncnn.Utility.route(layer.params, input))));
                 this.outputs.push(argument);
             } else {
                 const node = new ncnn.Node(metadata, format, blobs, layer, values);
@@ -271,13 +269,13 @@ ncnn.Argument = class {
 
 ncnn.Value = class {
 
-    constructor(name, type, initializer) {
+    constructor(name, type, initializer = null) {
         if (typeof name !== 'string') {
             throw new ncnn.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
         }
         this.name = name;
         this.type = initializer ? initializer.type : type;
-        this.initializer = initializer || null;
+        this.initializer = initializer;
         this.quantization = initializer ? initializer.quantization : null;
     }
 };
@@ -367,7 +365,8 @@ ncnn.Node = class {
                 const weight_data_size = parseInt(params.get('2') || 0, 10);
                 const int8_scale_term = parseInt(params.get('8') || 0, 10);
                 const activation_type = parseInt(params.get('9') || 0, 10);
-                blobs.weight('weight', [num_output, weight_data_size / num_output]);
+                const input_size = num_output > 0 ? Math.floor(weight_data_size / num_output) : 0;
+                blobs.weight('weight', [num_output, input_size]);
                 if (bias_term) {
                     blobs.weight('bias', [num_output], 1);
                 }
@@ -784,9 +783,7 @@ ncnn.TensorShape = class {
     }
 
     equals(obj) {
-        return obj && Array.isArray(obj.dimensions) &&
-            Array.isArray(this.dimensions) && this.dimensions.length === obj.dimensions.length
-            && obj.dimensions.every((value, index) => this.dimensions[index] === value);
+        return obj && Array.isArray(obj.dimensions) && Array.isArray(this.dimensions) && this.dimensions.length === obj.dimensions.length && obj.dimensions.every((value, index) => Object.is(this.dimensions[index], value));
     }
 
     toString() {
@@ -942,7 +939,10 @@ ncnn.BlobReader = class {
         if (context) {
             identifier = context.identifier;
             if (identifier.toLowerCase().endsWith('.pnnx.bin')) {
-                entries = await context.peek('zip');
+                const content = await context.peek('zip');
+                if (content instanceof Map) {
+                    entries = content;
+                }
             } else {
                 buffer = context.stream.peek();
                 position = 0;
@@ -953,7 +953,7 @@ ncnn.BlobReader = class {
 
     constructor(identifier, entries, buffer, position) {
         this._identifier = identifier;
-        this._entires = entries;
+        this._entries = entries;
         this._buffer = buffer;
         this._position = position;
     }
@@ -986,7 +986,7 @@ ncnn.BlobReader = class {
         if (type === 0) {
             const buffer = this.read(4);
             const [f0, f1, f2, f3] = buffer;
-            const flag = f0 | f1 << 8 | f2 << 16 | f3 << 24;
+            const flag = (f0 | f1 << 8 | f2 << 16 | f3 << 24) >>> 0;
             // https://github.com/Tencent/ncnn/blob/master/src/modelbin.cpp
             if (flag === 0x01306B47) { // float16
                 const data = this.read(size * 2);
@@ -1037,8 +1037,8 @@ ncnn.BlobReader = class {
     }
 
     entry(identifier) {
-        if (this._entires && this._entires.has(identifier)) {
-            const reader = this._entires.get(identifier);
+        if (this._entries && this._entries.has(identifier)) {
+            const reader = this._entries.get(identifier);
             return reader.peek();
         }
         return null;
@@ -1068,7 +1068,18 @@ pnnx.Metadata = class {
             const items = JSON.parse(data);
             for (const item of items) {
                 item.name = item.name.replace(/^torch\.nn\.modules\.(\w)+\./, 'nn.');
-                item.name = item.name.replace(/aten::([a-z_]+)(\.\w+)?/g, (match, p1) => `torch.${p1}`);
+                const match = item.name.match(/^aten::([a-z_]+)/);
+                if (match) {
+                    const name = match[1];
+                    if (item.category) {
+                        if (!this._types.has(`torch.${name}`)) {
+                            this._types.set(`torch.${name}`, { name: `torch.${name}`, category: item.category });
+                        }
+                        if (!this._types.has(`F.${name}`)) {
+                            this._types.set(`F.${name}`, { name: `F.${name}`, category: item.category });
+                        }
+                    }
+                }
                 this._types.set(item.name, { name: item.name, category: item.category });
             }
         }

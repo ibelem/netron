@@ -5,7 +5,7 @@ darknet.ModelFactory = class {
 
     async match(context) {
         const identifier = context.identifier;
-        const extension = identifier.split('.').pop().toLowerCase();
+        const extension = identifier.lastIndexOf('.') > 0 ? identifier.split('.').pop().toLowerCase() : '';
         if (extension === 'weights' && !identifier.toLowerCase().endsWith('.espresso.weights')) {
             const weights = await darknet.Weights.open(context);
             if (weights) {
@@ -72,7 +72,7 @@ darknet.Model = class {
 
     constructor(metadata, configuration, weights) {
         this.format = 'Darknet';
-        this.graphs = [new darknet.Graph(metadata, configuration, weights)];
+        this.modules = [new darknet.Graph(metadata, configuration, weights)];
     }
 };
 
@@ -779,11 +779,11 @@ darknet.Graph = class {
 
 darknet.Argument = class {
 
-    constructor(name, value, type, visible) {
+    constructor(name, value, type = null, visible = true) {
         this.name = name;
         this.value = value;
-        this.type = type || null;
-        this.visible = visible !== false;
+        this.type = type;
+        this.visible = visible;
 
     }
 };

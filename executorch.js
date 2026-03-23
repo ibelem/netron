@@ -5,6 +5,10 @@ const executorch = {};
 const coreml = {};
 const vulkan = {};
 const xnnpack = {};
+const qnn = {};
+const ethosu = {};
+const openvino = {};
+const rockchip = {};
 
 import * as base from './base.js';
 import * as python from './python.js';
@@ -32,11 +36,11 @@ executorch.Model = class {
 
     constructor(target) {
         this.format = `ExecuTorch v${target.program.version}`;
-        this.graphs = [];
+        this.modules = [];
         for (const plan of target.program.execution_plan) {
             for (const chain of plan.chains) {
                 const graph = new executorch.Graph(target, plan, chain);
-                this.graphs.push(graph);
+                this.modules.push(graph);
             }
         }
     }
@@ -90,7 +94,7 @@ executorch.Graph = class {
                     const list = val.items.map((index) => plan.values[index].val.int_val);
                     values.set(index, { type: 'int64[]', value: list });
                 } else if (val instanceof executorch_flatbuffer.DoubleList) {
-                    throw new executorch.Error('executorch_flatbuffer.DoubleList not implemented.');
+                    values.set(index, { type: 'float64[]', value: Array.from(val.items) });
                 } else if (val instanceof executorch_flatbuffer.BoolList) {
                     throw new executorch.Error('executorch_flatbuffer.BoolList not implemented.');
                 } else if (val instanceof executorch_flatbuffer.TensorList) {
@@ -128,23 +132,23 @@ executorch.Graph = class {
 
 executorch.Argument = class {
 
-    constructor(name, value, type, visible) {
+    constructor(name, value, type = null, visible = true) {
         this.name = name;
         this.value = value;
-        this.type = type || null;
-        this.visible = visible !== false;
+        this.type = type;
+        this.visible = visible;
     }
 };
 
 executorch.Value = class Value {
 
-    constructor(name, type, initializer) {
+    constructor(name, type, initializer = null) {
         if (typeof name !== 'string') {
             throw new executorch.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
         }
         this.name = name;
         this.type = initializer && initializer.type ? initializer.type : type || null;
-        this.initializer = initializer || null;
+        this.initializer = initializer;
     }
 };
 
@@ -161,7 +165,8 @@ executorch.Node = class {
             const op = plan.operators[instr_args.op_index];
             const name = op.name.split('::').pop();
             const identifier = op.overload ? `${op.name}.${op.overload}` : op.name;
-            const schemas = target.execution.invoke('torch._C._jit_get_schemas_for_operator', [op.name]);
+            const torch = target.execution.__import__('torch');
+            const schemas = torch._C._jit_get_schemas_for_operator(op.name);
             const schema = schemas.find((schema) => schema.name === op.name && schema.overload_name === op.overload);
             if (!schema) {
                 throw new executorch.Error(`Operator schema for '${identifier}' not found.`);
@@ -215,7 +220,7 @@ executorch.Node = class {
             for (let i = 0; i < outputs.length; i++) {
                 const output = outputs[i];
                 const value = values.map(output);
-                const name = inputs.length === 1 ? 'output' : `output.${i}`;
+                const name = outputs.length === 1 ? 'output' : `output.${i}`;
                 const argument = new executorch.Argument(name, value.value, value.type);
                 this.outputs.push(argument);
             }
@@ -233,22 +238,41 @@ executorch.Node = class {
 executorch.TensorType = class {
 
     constructor(tensor) {
-        executorch.TensorType._types = executorch.TensorType._types || [
-            'uint8',
-            'int8', 'int16', 'int32', 'int64',
-            'float16', 'float32', 'float64',
-            'complex16', 'complex32', 'complex64',
-            'boolean',
-            'qint8', 'quint8', 'qint32',
-            'bfloat16',
-            'quint4x2', 'quint2x4', 'bits1x8', 'bits2x4', 'bits4x2', 'bits8', 'bits16',
-            'float8e5m2', 'float8e4m3fn', 'float8e5m2fnuz', 'float8e4m3fnuz',
-            'uint16', 'uint32', 'uint64'
-        ];
-        if (tensor.scalar_type >= executorch.TensorType._types.length) {
-            throw new executorch.Error(`Unknown tensor data type '${tensor.scalar_type}'.`);
+        const ScalarType = executorch.schema.executorch_flatbuffer.ScalarType;
+        switch (tensor.scalar_type) {
+            case ScalarType.BYTE: this.dataType = 'uint8'; break;
+            case ScalarType.CHAR: this.dataType = 'int8'; break;
+            case ScalarType.SHORT: this.dataType = 'int16'; break;
+            case ScalarType.INT: this.dataType = 'int32'; break;
+            case ScalarType.LONG: this.dataType = 'int64'; break;
+            case ScalarType.HALF: this.dataType = 'float16'; break;
+            case ScalarType.FLOAT: this.dataType = 'float32'; break;
+            case ScalarType.DOUBLE: this.dataType = 'float64'; break;
+            case ScalarType.BFLOAT16: this.dataType = 'bfloat16'; break;
+            case 8: this.dataType = 'complex<float16>'; break;
+            case 9: this.dataType = 'complex<float32>'; break;
+            case 10: this.dataType = 'complex<float64>'; break;
+            case ScalarType.BOOL: this.dataType = 'boolean'; break;
+            case ScalarType.QINT8: this.dataType = 'qint8'; break;
+            case ScalarType.QUINT8: this.dataType = 'quint8'; break;
+            case ScalarType.QINT32: this.dataType = 'qint32'; break;
+            case 15: this.dataType = 'bfloat16'; break;
+            case ScalarType.QUINT4X2: this.dataType = 'quint4x2'; break;
+            case ScalarType.QUINT2X4: this.dataType = 'quint2x4'; break;
+            case 18: this.dataType = 'bits1x8'; break;
+            case 19: this.dataType = 'bits2x4'; break;
+            case 20: this.dataType = 'bits4x2'; break;
+            case 21: this.dataType = 'bits8'; break;
+            case ScalarType.BITS16: this.dataType = 'bits16'; break;
+            case ScalarType.FLOAT8E5M2: this.dataType = 'float8e5m2'; break;
+            case ScalarType.FLOAT8E4M3FN: this.dataType = 'float8e4m3fn'; break;
+            case ScalarType.FLOAT8E5M2FNUZ: this.dataType = 'float8e5m2fnuz'; break;
+            case ScalarType.FLOAT8E4M3FNUZ: this.dataType = 'float8e4m3fnuz'; break;
+            case ScalarType.UINT16: this.dataType = 'uint16'; break;
+            case ScalarType.UINT32: this.dataType = 'uint32'; break;
+            case ScalarType.UINT64: this.dataType = 'uint64'; break;
+            default: throw new executorch.Error(`Unknown tensor data type '${tensor.scalar_type}'.`);
         }
-        this.dataType = executorch.TensorType._types[tensor.scalar_type];
         this.shape = new executorch.TensorShape(Array.from(tensor.sizes));
     }
 
@@ -259,8 +283,8 @@ executorch.TensorType = class {
 
 executorch.TensorShape = class {
 
-    constructor(dimensions) {
-        this.dimensions = dimensions || [];
+    constructor(dimensions = []) {
+        this.dimensions = dimensions;
     }
 
     toString() {
@@ -279,15 +303,24 @@ executorch.Tensor = class {
         const program = target.program;
         if (tensor.extra_tensor_info) {
             throw new executorch.Error('Extra tensor info not implemented.');
-        } else if (program.constant_buffers) {
-            throw new executorch.Error('Constant buffers not implemented.');
+        } else if (Array.isArray(program.constant_buffer) && program.constant_buffer.length > 0) {
+            if (data_buffer_idx >= program.constant_buffer.length) {
+                throw new executorch.Error(`Constant buffer index out of range.`);
+            }
+            const buffer = program.constant_buffer[data_buffer_idx];
+            this.values = buffer.storage;
+            this.encoding = '<';
         } else if (tensor.allocation_info === null) {
             const constant_segment = program.constant_segment;
             const data_segment = program.segments[constant_segment.segment_index];
-            const offset = constant_segment.offsets[data_buffer_idx].toNumber();
-            const next = data_buffer_idx + 1 < constant_segment.offsets.length ? constant_segment.offsets[data_buffer_idx + 1].toNumber() : data_segment.size.toNumber();
+            const offset = constant_segment.offsets[data_buffer_idx];
+            let next = data_segment.size;
+            if (data_buffer_idx + 1 < constant_segment.offsets.length) {
+                next = constant_segment.offsets[data_buffer_idx + 1];
+            }
             const size = next - offset;
-            this.values = target.blob(data_segment.offset.toNumber() + offset, size);
+            const position = data_segment.offset + offset;
+            this.values = target.blob(position.toNumber(), size.toNumber());
             this.encoding = '<';
         } else {
             throw new executorch.Error('Tensor allocation info not implemented.');
@@ -317,6 +350,10 @@ executorch.Reader = class {
         this.metadata.register(this.execution);
         const executorch_flatbuffer = executorch.schema.executorch_flatbuffer;
         this.program = executorch_flatbuffer.Program.create(this.reader);
+        this.named_data = new Map();
+        if (this.program.named_data) {
+            this.named_data = new Map(this.program.named_data.map((entry) => [entry.key, entry.segment_index]));
+        }
         this.reader = await context.read('binary');
         if (this.reader.length >= 32) {
             this.reader.seek(8);
@@ -324,8 +361,8 @@ executorch.Reader = class {
             if (magic === 'eh00') {
                 this.extended_file_header = {
                     length: this.reader.uint32(),
-                    program_size: this.reader.uint64().toNumber(),
-                    segment_base_offset: this.reader.uint64().toNumber(),
+                    program_size: this.reader.uint64(),
+                    segment_base_offset: this.reader.uint64(),
                 };
             }
             this.reader.seek(0);
@@ -347,7 +384,9 @@ executorch.Reader = class {
                             }
                             case executorch_flatbuffer.DataLocation.SEGMENT: {
                                 const segment = this.program.segments[delegate.processed.index];
-                                data = this.blob(segment.offset.toNumber(), segment.size.toNumber());
+                                const offset = segment.offset;
+                                const size = segment.size;
+                                data = this.blob(offset.toNumber(), size.toNumber());
                                 break;
                             }
                             default: {
@@ -355,21 +394,29 @@ executorch.Reader = class {
                             }
                         }
                         switch (delegate.id) {
-                            case 'XnnpackBackend': {
+                            case 'XnnpackBackend':
                                 delegate.backend = xnnpack.Reader.open(data, this);
                                 break;
-                            }
-                            case 'CoreMLBackend': {
+                            case 'CoreMLBackend':
                                 delegate.backend = coreml.Reader.open(data, this);
                                 break;
-                            }
-                            case 'VulkanBackend': {
+                            case 'VulkanBackend':
                                 delegate.backend = vulkan.Reader.open(data, this);
                                 break;
-                            }
-                            default: {
+                            case 'QnnBackend':
+                                delegate.backend = qnn.Reader.open(data, this);
+                                break;
+                            case 'EthosUBackend':
+                                delegate.backend = ethosu.Reader.open(data, this);
+                                break;
+                            case 'OpenvinoBackend':
+                                delegate.backend = openvino.Reader.open(data, this);
+                                break;
+                            case 'RockchipBackend':
+                                delegate.backend = rockchip.Reader.open(data, this);
+                                break;
+                            default:
                                 throw new executorch.Error(`ExecuTorch delegate '${delegate.id}' not implemented.`);
-                            }
                         }
                         /* eslint-disable no-await-in-loop */
                         await delegate.backend.read();
@@ -382,10 +429,24 @@ executorch.Reader = class {
 
     blob(offset, size) {
         if (this.extended_file_header) {
-            this.reader.seek(this.extended_file_header.segment_base_offset + offset);
+            const segment_base_offset = this.extended_file_header.segment_base_offset;
+            this.reader.seek(segment_base_offset.toNumber() + offset);
             const data = this.reader.read(size);
             this.reader.seek(0);
             return data;
+        }
+        return null;
+    }
+
+    segment(key) {
+        if (this.named_data.has(key)) {
+            const segment_index = this.named_data.get(key);
+            if (segment_index >= 0 && segment_index < this.program.segments.length) {
+                const segment = this.program.segments[segment_index];
+                const offset = segment.offset;
+                const size = segment.size;
+                return this.blob(offset.toNumber(), size.toNumber());
+            }
         }
         return null;
     }
@@ -443,8 +504,14 @@ xnnpack.Reader = class {
 
     constant(idx) {
         const constant_data = this.graph.constant_data[idx];
-        this.reader.seek(this.constants.offset + constant_data.offset.toNumber());
-        const data = this.reader.read(constant_data.size.toNumber());
+        const named_key = constant_data.named_key;
+        if (named_key) {
+            return this.target.segment(named_key);
+        }
+        const offset = constant_data.offset;
+        const size = constant_data.size;
+        this.reader.seek(this.constants.offset + offset.toNumber());
+        const data = this.reader.read(size.toNumber());
         this.reader.seek(0);
         return data;
     }
@@ -511,7 +578,7 @@ xnnpack.Node = class {
             let value = ArrayBuffer.isView(obj) ? Array.from(obj) : obj;
             let type = 'attribute';
             if (name.endsWith('_id')) {
-                value = obj === -1 ? [] : [values.map(obj)];
+                value = obj === -1 || obj === 0xFFFFFFFF ? [] : [values.map(obj)];
                 type = null;
             }
             const argument = new xnnpack.Argument(name, value, type);
@@ -526,23 +593,23 @@ xnnpack.Node = class {
 
 xnnpack.Argument = class {
 
-    constructor(name, value, type, visible) {
+    constructor(name, value, type = null, visible = true) {
         this.name = name;
         this.value = value;
-        this.type = type || null;
-        this.visible = visible !== false;
+        this.type = type;
+        this.visible = visible;
     }
 };
 
 xnnpack.Value = class Value {
 
-    constructor(name, type, initializer) {
+    constructor(name, type, initializer = null) {
         if (typeof name !== 'string') {
             throw new executorch.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
         }
         this.name = name;
         this.type = initializer && initializer.type ? initializer.type : type || null;
-        this.initializer = initializer || null;
+        this.initializer = initializer;
     }
 };
 
@@ -550,10 +617,31 @@ xnnpack.Metadata = class {
 
     constructor() {
         this._types = new Map();
-        this.register('XNNStaticTranspose', 'Transform');
-        this.register('_XNNNodeConv', 'Layer');
-        this.register('XNNFullyConnected', 'Layer');
         this.register('_XNNCat', 'Tensor');
+        this.register('_XNNNodeConv', 'Layer');
+        this.register('XNNArgMaxPooling2d', 'Pool');
+        this.register('XNNAvgPooling2d', 'Pool');
+        this.register('XNNCeiling', 'Activation');
+        this.register('XNNConcatenate2', 'Tensor');
+        this.register('XNNConcatenate3', 'Tensor');
+        this.register('XNNConcatenate4', 'Tensor');
+        this.register('XNNConcatenate5', 'Tensor');
+        this.register('XNNConv2d', 'Layer');
+        this.register('XNNConvTranspose2d', 'Layer');
+        this.register('XNNDepthwiseConv2d', 'Layer');
+        this.register('XNNELU', 'Activation');
+        this.register('XNNFullyConnected', 'Layer');
+        this.register('XNNGelu', 'Activation');
+        this.register('XNNGlobalAvgPooling2d', 'Pool');
+        this.register('XNNGlobalAvgPooling2d', 'Pool');
+        this.register('XNNHardswish', 'Activation');
+        this.register('XNNLeakyReLU', 'Activation');
+        this.register('XNNMaxPooling2d', 'Pool');
+        this.register('XNNPReLU', 'Activation');
+        this.register('XNNSigmoid', 'Activation');
+        this.register('XNNSoftmax', 'Activation');
+        this.register('XNNTanh', 'Activation');
+        this.register('XNNStaticTranspose', 'Transform');
     }
 
     register(name, category) {
@@ -572,7 +660,8 @@ xnnpack.TensorType = class {
             'invalid', 'float32', 'float16',
             'qint8', 'quint8', 'qint32',
             'qcint8', 'qcint32', 'qcint4',
-            'qdint8', 'qbint4'
+            'qdint8', 'qbint4', 'qpint8',
+            'int32', 'pfp32', 'bfloat16'
         ];
         if (tensor.datatype >= xnnpack.TensorType._types.length) {
             throw new xnnpack.Error(`Unknown tensor data type '${tensor.datatype}'.`);
@@ -588,8 +677,8 @@ xnnpack.TensorType = class {
 
 xnnpack.TensorShape = class {
 
-    constructor(dimensions) {
-        this.dimensions = dimensions || [];
+    constructor(dimensions = []) {
+        this.dimensions = dimensions;
     }
 
     toString() {
@@ -662,8 +751,10 @@ vulkan.Reader = class {
 
     constant(id) {
         const constant = this.graph.constants[id];
-        this.reader.seek(this.constants.offset + constant.offset.toNumber());
-        const data = this.reader.read(constant.length.toNumber());
+        const offset = constant.offset;
+        const length = constant.length;
+        this.reader.seek(this.constants.offset + offset.toNumber());
+        const data = this.reader.read(length.toNumber());
         this.reader.seek(0);
         return data;
     }
@@ -757,35 +848,48 @@ vulkan.Node = class {
 
 vulkan.Argument = class {
 
-    constructor(name, value, type, visible) {
+    constructor(name, value, type = null, visible = true) {
         this.name = name;
         this.value = value;
-        this.type = type || null;
-        this.visible = visible !== false;
+        this.type = type;
+        this.visible = visible;
     }
 };
 
 vulkan.Value = class Value {
 
-    constructor(name, type, initializer) {
+    constructor(name, type, initializer = null) {
         if (typeof name !== 'string') {
             throw new executorch.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
         }
         this.name = name;
         this.type = initializer && initializer.type ? initializer.type : type || null;
-        this.initializer = initializer || null;
+        this.initializer = initializer;
     }
 };
 
 vulkan.TensorType = class {
 
     constructor(tensor) {
-        const types = ['bool', 'uint8', 'int8', 'int32', 'float16', 'float32'];
+        const types = ['bool', 'uint8', 'int8', 'int32', 'float16', 'float32', 'float64', 'int64'];
         if (tensor.datatype >= types.length) {
             throw new vulkan.Error(`Unknown tensor data type '${tensor.datatype}'.`);
         }
         this.dataType = types[tensor.datatype];
         this.shape = new vulkan.TensorShape(Array.from(tensor.dims));
+        const vkgraph = executorch.schema.vkgraph;
+        if (tensor.memory_layout !== vkgraph.VkMemoryLayout.DEFAULT_LAYOUT) {
+            this.denotation = vkgraph.VkMemoryLayout[tensor.memory_layout];
+            if (!this.denotation) {
+                throw new vulkan.Error(`Unsupported memory layout '${tensor.memory_layout}'.`);
+            }
+        }
+        if (tensor.storage_type !== vkgraph.VkStorageType.DEFAULT_STORAGE) {
+            this.layout = vkgraph.VkStorageType[tensor.storage_type];
+            if (!this.layout) {
+                throw new vulkan.Error(`Unsupported storage type '${tensor.storage_type}'.`);
+            }
+        }
     }
 
     toString() {
@@ -795,8 +899,8 @@ vulkan.TensorType = class {
 
 vulkan.TensorShape = class {
 
-    constructor(dimensions) {
-        this.dimensions = dimensions || [];
+    constructor(dimensions = []) {
+        this.dimensions = dimensions;
     }
 
     toString() {
@@ -823,7 +927,7 @@ vulkan.Metadata = class {
     }
 
     register(signature) {
-        const torch = this.execution.register('torch');
+        const torch = this.execution.__import__('torch');
         const registry = torch._C.getRegistry();
         const schema = torch.FunctionSchema.parse(signature);
         const op = new torch._C.Operator(schema);
@@ -834,7 +938,8 @@ vulkan.Metadata = class {
         identifier = identifier.split(/\.([^.]*)$/);
         const name = identifier[0].replace('.', '::');
         const overload = identifier[1] === 'default' ? '' : identifier[1];
-        const schemas = this.execution.invoke('torch._C._jit_get_schemas_for_operator', [name]);
+        const torch = this.execution.__import__('torch');
+        const schemas = torch._C._jit_get_schemas_for_operator(name);
         const schema = schemas.find((schema) => schema.name === name && schema.overload_name === overload);
         return schema;
     }
@@ -868,21 +973,21 @@ coreml.Reader = class {
     async read() {
         const entries = this.entries(this.reader);
         const factory = await this.factory();
-        const protobuf = await import('./protobuf.js');
-        for (const [key, value] of entries) {
-            const path = key.split('/');
-            const identifier = path.pop();
-            const folder = path.length === 0 ? '' : `${path.join('/')}/`;
-            const locals = new Map(Array.from(entries).filter(([key]) => key.startsWith(folder)).map(([key, value]) => [key.substring(folder.length), value]));
-            const context = new coreml.Context(this, identifier, value, locals, protobuf);
+        const streams = new Map();
+        for (const [path, location] of entries) {
+            streams.set(path, this.stream(location.offset, location.size));
+        }
+        const context = this.target.context;
+        for (const [key] of streams) {
+            const content = context.context(key, streams.get(key), streams);
             /* eslint-disable no-await-in-loop */
-            const type = await factory.match(context);
+            const type = await factory.match(content);
             /* eslint-enable no-await-in-loop */
             if (type === 'coreml.manifest') {
                 /* eslint-disable no-await-in-loop */
-                const model = await factory.open(context);
+                const model = await factory.open(content);
                 /* eslint-enable no-await-in-loop */
-                [this.type] = model.graphs;
+                [this.type] = model.modules;
                 this.type.name = 'CoreMLBackend';
                 return;
             }
@@ -940,72 +1045,237 @@ coreml.Reader = class {
     }
 };
 
-coreml.Context = class {
+qnn.Reader = class {
 
-    constructor(reader, identifier, location, entries, protobuf) {
-        this._reader = reader;
-        this._location = location;
-        this._identifier = identifier;
-        this._entries = entries;
-        this._protobuf = protobuf;
-    }
-
-    get identifier() {
-        return this._identifier;
-    }
-
-    get stream() {
-        if (!this._stream) {
-            this._stream = this._reader.stream(this._location.offset, this._location.size);
-        }
-        return this._stream;
-    }
-
-    async tags(type) {
-        if (type === 'pb' && this.identifier.endsWith('.mlmodel')) {
-            return new Map([[1,0],[2,2]]);
-        }
-        return new Map();
-    }
-
-    async peek(type) {
-        if (type === 'json') {
-            const data = this.stream.peek();
-            const decoder = new TextDecoder('utf-8');
-            const text = decoder.decode(data);
-            return JSON.parse(text);
+    static open(data, target) {
+        if (data.length >= 20) {
+            const reader = base.BinaryReader.open(data);
+            const magic = reader.uint32();
+            if (magic === 0x5678ABCD) {
+                return new qnn.Reader(reader, target);
+            }
         }
         return null;
     }
 
-    async read(type) {
-        if (type === 'protobuf.binary') {
-            return this._protobuf.BinaryReader.open(this.stream);
+    constructor(reader, target) {
+        this.reader = reader;
+        this.target = target;
+        this.signature = reader.uint64();
+        this.size = reader.uint64();
+    }
+
+    async read() {
+        // https://github.com/pytorch/executorch/blob/main/backends/qualcomm/runtime/backends/QnnCustomProtocol.h
+        throw new executorch.Error('QNN backend not implemented.');
+    }
+};
+
+qnn.Graph = class {
+
+    constructor() {
+        this.name = 'QnnBackend';
+        this.inputs = [];
+        this.outputs = [];
+        this.nodes = [];
+    }
+};
+
+ethosu.Reader = class {
+
+    static open(data /* , target */) {
+        if (data.length >= 32) {
+            const reader = base.BinaryReader.open(data);
+            const magicBuffer = reader.read(16);
+            const magic = String.fromCharCode(...magicBuffer).replace(/\0/g, '');
+            if (magic === 'vela_bin_stream') {
+                return new ethosu.Reader(reader, data.length);
+            }
         }
         return null;
     }
 
-    async fetch(file) {
-        if (this._entries.has(file)) {
-            const location = this._entries.get(file);
-            const identifier = file.split('/').pop();
-            return new coreml.Context(this._reader, identifier, location, this._entries, this._protobuf);
+    constructor(reader, size) {
+        this.reader = reader;
+        this.size = size;
+    }
+
+    async read() {
+        this.reader.seek(0);
+        const blocks = new Map();
+        while (this.reader.position < this.size) {
+            const nameBuffer = this.reader.read(16);
+            const name = String.fromCharCode(...nameBuffer).replace(/\0/g, '');
+            const size = this.reader.uint32();
+            this.reader.skip(12);
+            const data = this.reader.read(size);
+            blocks.set(name, data);
+            const padding = (16 - (size % 16)) % 16;
+            this.reader.skip(padding);
+            if (name === 'vela_end_stream') {
+                break;
+            }
         }
-        return null;
+        const args = (data) => {
+            if (data && data.length >= 4) {
+                const reader = base.BinaryReader.open(data);
+                const count = reader.int32();
+                const arg = [];
+                for (let i = 0; i < count; i++) {
+                    const shape = [];
+                    for (let j = 0; j < 6; j++) {
+                        shape.push(reader.int32());
+                    }
+                    const elem_size = reader.int32();
+                    const offset = reader.int32();
+                    const region = reader.int32();
+                    arg.push({ shape, elem_size, offset, region });
+                }
+                return arg;
+            }
+            return [];
+        };
+        const inputs = args(blocks.get('inputs'));
+        const outputs = args(blocks.get('outputs'));
+        this.type = new ethosu.Graph(inputs, outputs);
     }
+};
 
-    async require(id) {
-        return this._reader.target.context.require(id);
+ethosu.Graph = class {
+
+    constructor(inputs, outputs) {
+        this.name = 'EthosUBackend';
+        this.inputs = [];
+        this.outputs = [];
+        this.nodes = [];
+        for (let i = 0; i < inputs.length; i++) {
+            const input = inputs[i];
+            const type = new ethosu.TensorType(input);
+            const value = new ethosu.Value(i.toString(), type, null);
+            const name = inputs.length === 1 ? 'input' : `input.${i}`;
+            const argument = new ethosu.Argument(name, [value]);
+            this.inputs.push(argument);
+        }
+        for (let i = 0; i < outputs.length; i++) {
+            const output = outputs[i];
+            const type = new ethosu.TensorType(output);
+            const value = new ethosu.Value((inputs.length + i).toString(), type, null);
+            const name = outputs.length === 1 ? 'output' : `output.${i}`;
+            const argument = new ethosu.Argument(name, [value]);
+            this.outputs.push(argument);
+        }
     }
+};
 
-    async metadata(name) {
-        return this._reader.target.context.metadata(name);
-    }
+ethosu.Argument = class {
 
-    set(type, value) {
-        this.type = type;
+    constructor(name, value, type = null, visible = true) {
+        this.name = name;
         this.value = value;
-        return type;
+        this.type = type;
+        this.visible = visible;
+    }
+};
+
+ethosu.Value = class Value {
+
+    constructor(name, type, initializer = null) {
+        if (typeof name !== 'string') {
+            throw new executorch.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
+        }
+        this.name = name;
+        this.type = initializer && initializer.type ? initializer.type : type || null;
+        this.initializer = initializer;
+    }
+};
+
+ethosu.TensorType = class {
+
+    constructor(io) {
+        switch (io.elem_size) {
+            case 1: this.dataType = 'int8'; break;
+            case 2: this.dataType = 'int16'; break;
+            case 4: this.dataType = 'int32'; break;
+            default: this.dataType = `?${io.elem_size}`; break;
+        }
+        const shape = io.shape.filter((dim, index) => dim !== 1 || index === io.shape.length - 1 || io.shape.slice(index).some((d) => d !== 1));
+        this.shape = new ethosu.TensorShape(shape.length > 0 ? shape : [1]);
+    }
+
+    toString() {
+        return this.dataType + this.shape.toString();
+    }
+};
+
+ethosu.TensorShape = class {
+
+    constructor(dimensions = []) {
+        this.dimensions = dimensions;
+    }
+
+    toString() {
+        if (this.dimensions && this.dimensions.length > 0) {
+            return `[${this.dimensions.map((dimension) => dimension.toString()).join(',')}]`;
+        }
+        return '';
+    }
+};
+
+ethosu.Error = class extends Error {
+
+    constructor(message) {
+        super(message);
+        this.name = 'Error loading Ethos-U model.';
+    }
+};
+
+openvino.Reader = class {
+
+    static open(data /* , target */) {
+        return new openvino.Reader(data);
+    }
+
+    constructor(data) {
+        this.data = data;
+    }
+
+    async read() {
+        throw new executorch.Error('OpenVINO backend not implemented.');
+    }
+};
+
+openvino.Graph = class {
+
+    constructor() {
+        this.name = 'OpenvinoBackend';
+        this.inputs = [];
+        this.outputs = [];
+        this.nodes = [];
+    }
+};
+
+rockchip.Reader = class {
+
+    static open(data /* , target */) {
+        return new rockchip.Reader(data);
+    }
+
+    constructor(data) {
+        this.data = data;
+    }
+
+    async read() {
+        throw new executorch.Error('Rockchip backend not implemented.');
+    }
+};
+
+rockchip.Graph = class {
+
+    constructor() {
+        this.name = 'RockchipBackend';
+        this.inputs = [];
+        this.outputs = [];
+        this.nodes = [];
     }
 };
 

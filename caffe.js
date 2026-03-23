@@ -5,7 +5,7 @@ caffe.ModelFactory = class {
 
     async match(context) {
         const identifier = context.identifier;
-        const extension = identifier.split('.').pop().toLowerCase();
+        const extension = identifier.lastIndexOf('.') > 0 ? identifier.split('.').pop().toLowerCase() : '';
         if (extension === 'caffemodel') {
             return context.set('caffe.pb');
         }
@@ -152,7 +152,7 @@ caffe.Model = class {
     constructor(metadata, net) {
         this.name = net.name;
         this.format = 'Caffe';
-        this.graphs = [];
+        this.modules = [];
         let version = -1;
         if (net.layers && net.layers.length > 0) {
             if (net.layers.every((layer) => Object.prototype.hasOwnProperty.call(layer, 'layer'))) {
@@ -179,7 +179,7 @@ caffe.Model = class {
         }
         for (const phase of phases) {
             const graph = new caffe.Graph(metadata, phase, net, version);
-            this.graphs.push(graph);
+            this.modules.push(graph);
         }
     }
 };
@@ -316,23 +316,23 @@ caffe.Graph = class {
 
 caffe.Argument = class {
 
-    constructor(name, value, type, visible) {
+    constructor(name, value, type = null, visible = true) {
         this.name = name;
         this.value = value;
-        this.type = type || null;
-        this.visible = visible !== false;
+        this.type = type;
+        this.visible = visible;
     }
 };
 
 caffe.Value = class {
 
-    constructor(name, type, initializer) {
+    constructor(name, type = null, initializer = null) {
         if (typeof name !== 'string') {
             throw new caffe.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
         }
         this.name = name;
-        this.type = type || null;
-        this.initializer = initializer || null;
+        this.type = type;
+        this.initializer = initializer;
     }
 };
 
@@ -359,7 +359,7 @@ caffe.Node = class {
                 break;
             }
             default: {
-                throw new new caffe.Error(`Unsupported Caffe version '${version}'.`);
+                throw new caffe.Error(`Unsupported Caffe version '${version}'.`);
             }
         }
         this.type = metadata.type(type) || { name: type };

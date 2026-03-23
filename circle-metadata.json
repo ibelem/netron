@@ -753,6 +753,13 @@
     ]
   },
   {
+    "name": "RunModel",
+    "attributes": [
+      { "name": "location", "type": "string", "default": null },
+      { "name": "signature", "type": "string", "default": null }
+    ]
+  },
+  {
     "name": "Shape",
     "attributes": [
       { "name": "out_type", "type": "TensorType", "default": "FLOAT32" }
@@ -855,6 +862,12 @@
     "name": "StablehloBroadcastInDim",
     "attributes": [
       { "name": "broadcast_dimensions", "type": "int64[]", "default": 0 }
+    ]
+  },
+  {
+    "name": "StablehloCase",
+    "attributes": [
+      { "name": "branch_subgraph_indices", "type": "int32[]", "default": 0 }
     ]
   },
   {

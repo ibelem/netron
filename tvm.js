@@ -5,7 +5,7 @@ tvm.ModelFactory = class {
 
     async match(context) {
         const identifier = context.identifier;
-        const extension = identifier.split('.').pop().toLowerCase();
+        const extension = identifier.lastIndexOf('.') > 0 ? identifier.split('.').pop().toLowerCase() : '';
         if (extension === 'json') {
             const obj = await context.peek('json');
             if (obj && Array.isArray(obj.nodes) && Array.isArray(obj.arg_nodes) && Array.isArray(obj.heads) &&
@@ -21,8 +21,8 @@ tvm.ModelFactory = class {
         return null;
     }
 
-    filter(context, type) {
-        return context.type !== 'tvm.json' || type !== 'tvm.params';
+    filter(context, match) {
+        return context.type !== 'tvm.json' || match.type !== 'tvm.params';
     }
 
     async open(context) {
@@ -65,7 +65,7 @@ tvm.Model = class {
 
     constructor(metadata, obj, params) {
         this.format = 'TVM';
-        this.graphs = [new tvm.Graph(metadata, obj, params)];
+        this.modules = [new tvm.Graph(metadata, obj, params)];
     }
 };
 
@@ -187,23 +187,23 @@ tvm.Graph = class {
 
 tvm.Argument = class {
 
-    constructor(name, value, type, visible) {
+    constructor(name, value, type = null, visible = true) {
         this.name = name;
         this.value = value;
-        this.type = type || null;
-        this.visible = visible !== false;
+        this.type = type;
+        this.visible = visible;
     }
 };
 
 tvm.Value = class {
 
-    constructor(name, type, initializer) {
+    constructor(name, type, initializer = null) {
         if (typeof name !== 'string') {
             throw new tvm.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
         }
         this.name = !name && initializer && initializer.name ? initializer.name : name;
         this.type = !type && initializer && initializer.type ? initializer.type : type;
-        this.initializer = initializer || null;
+        this.initializer = initializer;
     }
 };
 

@@ -84,7 +84,7 @@ flatbuffers.BinaryReader = class {
 
     uint32_(position, offset, defaultValue) {
         offset = this.__offset(position, offset);
-        return offset ? this.int32(position + offset) : defaultValue;
+        return offset ? this.uint32(position + offset) : defaultValue;
     }
 
     int64_(position, offset, defaultValue) {
@@ -157,7 +157,7 @@ flatbuffers.BinaryReader = class {
             offset = this.__vector(position + offset);
             const array = new Array(length);
             for (let i = 0; i < length; i++) {
-                array[i] = this.uint8(offset + i + 4) ? true : false;
+                array[i] = this.uint8(offset + i) ? true : false;
             }
             return array;
         }
@@ -238,12 +238,12 @@ flatbuffers.BinaryReader = class {
         return new flatbuffers.Error('Not implemented.');
     }
 
-    structs(position, offset, type) {
+    structs(position, offset, type, size) {
         offset = this.__offset(position, offset);
         const length = offset ? this.__vector_len(position + offset) : 0;
         const list = new Array(length);
         for (let i = 0; i < length; i++) {
-            list[i] = type.decode(this, this.__vector(position + offset) + i * 8);
+            list[i] = type.decode(this, this.__vector(position + offset) + i * size);
         }
         return list;
     }

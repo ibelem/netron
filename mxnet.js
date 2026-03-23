@@ -7,7 +7,7 @@ mxnet.ModelFactory = class {
 
     async match(context) {
         const identifier = context.identifier;
-        const extension = identifier.split('.').pop().toLowerCase();
+        const extension = identifier.lastIndexOf('.') > 0 ? identifier.split('.').pop().toLowerCase() : '';
         if (extension === 'json') {
             const obj = await context.peek('json');
             if (obj && Array.isArray(obj.nodes) && Array.isArray(obj.arg_nodes) && Array.isArray(obj.heads) && !obj.nodes.some((node) => node && node.op === 'tvm_op')) {
@@ -22,8 +22,8 @@ mxnet.ModelFactory = class {
         return null;
     }
 
-    filter(context, type) {
-        return context.type !== 'mxnet.json' || type !== 'mxnet.params';
+    filter(context, match) {
+        return context.type !== 'mxnet.json' || match.type !== 'mxnet.params';
     }
 
     async open(context) {
@@ -259,7 +259,7 @@ mxnet.Model = class {
         if (manifest.license) {
             this.metadata.push(new mxnet.Argument('license', manifest.license));
         }
-        this.graphs = [new mxnet.Graph(metadata, manifest, symbol, params)];
+        this.modules = [new mxnet.Graph(metadata, manifest, symbol, params)];
     }
 };
 
@@ -366,7 +366,7 @@ mxnet.Graph = class {
                                     if (arg_node.attrs && arg_node.attrs.__dtype__ && arg_node.attrs.__shape__) {
                                         try {
                                             dataType = parseInt(arg_node.attrs.__dtype__, 10);
-                                            shape = JSON.parse(`[${arg_node.attrs.__shape__.replace('(', '').replace(')', '').split(' ').join('').split(',').map(((dimension) => dimension || '"?"')).join(',')}]`);
+                                            shape = JSON.parse(`[${arg_node.attrs.__shape__.replace(/[()]/g, '').split(' ').join('').split(',').map(((v) => v || '"?"')).join(',')}]`);
                                         } catch {
                                             // continue regardless of error
                                         }
@@ -434,23 +434,23 @@ mxnet.Graph = class {
 
 mxnet.Argument = class {
 
-    constructor(name, value, type, visible) {
+    constructor(name, value, type = null, visible = true) {
         this.name = name;
         this.value = value;
-        this.type = type || null;
-        this.visible = visible !== false;
+        this.type = type;
+        this.visible = visible;
     }
 };
 
 mxnet.Value = class {
 
-    constructor(name, type, initializer) {
+    constructor(name, type, initializer = null) {
         if (typeof name !== 'string') {
             throw new mxnet.Error(`Invalid value identifier '${JSON.stringify(name)}'.`);
         }
         this.name = !name && initializer && initializer.name ? initializer.name : name;
         this.type = !type && initializer && initializer.type ? initializer.type : type;
-        this.initializer = initializer || null;
+        this.initializer = initializer;
     }
 };
 
@@ -528,18 +528,12 @@ mxnet.Node = class {
                         if (metadata.visible === false) {
                             visible = false;
                         } else if (metadata.default !== undefined) {
-                            let defaultValue = metadata.default;
+                            const defaultValue = metadata.default;
                             if (value === defaultValue) {
                                 visible = false;
                             } else if (Array.isArray(value) && Array.isArray(defaultValue)) {
-                                defaultValue = defaultValue.slice(0, defaultValue.length);
-                                if (defaultValue.length > 1 && defaultValue[defaultValue.length - 1] === null) {
-                                    defaultValue.pop();
-                                    while (defaultValue.length < value.length) {
-                                        defaultValue.push(defaultValue[defaultValue.length - 1]);
-                                    }
-                                }
-                                if (value.every((item, index) => item === defaultValue[index])) {
+                                const repeat = defaultValue.length > 1 && defaultValue[defaultValue.length - 1] === null;
+                                if (value.every((item, index) => item === (repeat && index >= defaultValue.length - 1 ? defaultValue[defaultValue.length - 2] : defaultValue[index]))) {
                                     visible = false;
                                 }
                             }

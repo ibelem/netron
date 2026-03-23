@@ -15,7 +15,7 @@ browser.Host = class {
         };
         this._meta = {};
         for (const element of Array.from(this._document.getElementsByTagName('meta'))) {
-            if (element.name !== undefined && element.content !== undefined) {
+            if (element.name !== undefined && element.name !== '' && element.content !== undefined) {
                 this._meta[element.name] = this._meta[element.name] || [];
                 this._meta[element.name].push(element.content);
             }
@@ -31,7 +31,7 @@ browser.Host = class {
             repository: this._element('logo-github').getAttribute('href'),
             menu: true
         };
-        if (!/^\d\.\d\.\d$/.test(this.version)) {
+        if (this.version && !/^\d+\.\d+\.\d+$/.test(this.version)) {
             throw new Error('Invalid version.');
         }
     }
@@ -53,12 +53,14 @@ browser.Host = class {
     }
 
     async view(view) {
+        const window = this.window;
+        const document = this.document;
         this._view = view;
         const age = async () => {
             const days = (new Date() - new Date(this._environment.date)) / (24 * 60 * 60 * 1000);
             if (days > 180) {
                 const link = this._element('logo-github').href;
-                this.document.body.classList.remove('spinner');
+                document.body.classList.remove('spinner');
                 for (;;) {
                     /* eslint-disable no-await-in-loop */
                     await this.message('Please update to the newest version.', null, 'Update');
@@ -84,15 +86,15 @@ browser.Host = class {
                 // continue regardless of error
             }
             if (consent) {
-                this.document.body.classList.remove('spinner');
+                document.body.classList.remove('spinner');
                 await this.message('This app uses cookies to report errors and anonymous usage information.', null, 'Accept');
             }
             this._setCookie('consent', Date.now().toString(), 30);
         };
         const telemetry = async () => {
             if (this._environment.packaged) {
-                this._window.addEventListener('error', (event) => {
-                    if (event instanceof ErrorEvent && event.error && event.error instanceof Error) {
+                window.addEventListener('error', (event) => {
+                    if (event instanceof window.ErrorEvent && event.error && event.error instanceof Error) {
                         this.exception(event.error, true);
                     } else {
                         const message = event && event.message ? event.message : JSON.stringify(event);
@@ -104,9 +106,9 @@ browser.Host = class {
                 const user = this._getCookie('_ga').replace(/^(GA1\.\d\.)*/, '');
                 const session = this._getCookie(`_ga${measurement_id}`);
                 await this._telemetry.start(`G-${measurement_id}`, user, session);
-                this._telemetry.set('page_location', this._document.location && this._document.location.href ? this._document.location.href : null);
-                this._telemetry.set('page_title', this._document.title ? this._document.title : null);
-                this._telemetry.set('page_referrer', this._document.referrer ? this._document.referrer : null);
+                this._telemetry.set('page_location', document.location && document.location.href ? document.location.href : null);
+                this._telemetry.set('page_title', document.title ? document.title : null);
+                this._telemetry.set('page_referrer', document.referrer ? document.referrer : null);
                 this._telemetry.send('page_view', {
                     app_name: this.type,
                     app_version: this.version,
@@ -124,7 +126,7 @@ browser.Host = class {
             const filter = (list) => {
                 return list.filter((capability) => {
                     const path = capability.split('.').reverse();
-                    let obj = this.window[path.pop()];
+                    let obj = window[path.pop()];
                     while (obj && path.length > 0) {
                         obj = obj[path.pop()];
                     }
@@ -155,9 +157,11 @@ browser.Host = class {
                 }
             }
         }
-        const search = this.window.location.search;
-        const params = new Map(search ? new URLSearchParams(this.window.location.search) : []);
-        const hash = this.window.location.hash ? this.window.location.hash.replace(/^#/, '') : '';
+        const window = this.window;
+        const document = this.document;
+        const search = window.location.search;
+        const params = new Map(search ? new window.URLSearchParams(window.location.search) : []);
+        const hash = window.location.hash ? window.location.hash.replace(/^#/, '') : '';
         const url = hash ? hash : params.get('url');
         if (url) {
             const identifier = params.get('identifier') || null;
@@ -183,7 +187,7 @@ browser.Host = class {
             openFileButton.addEventListener('click', () => {
                 this.execute('open');
             });
-            const mobileSafari = this.environment('platform') === 'darwin' && navigator.maxTouchPoints && navigator.maxTouchPoints > 1;
+            const mobileSafari = this.environment('platform') === 'darwin' && window.navigator.maxTouchPoints && window.navigator.maxTouchPoints > 1;
             if (!mobileSafari) {
                 const extensions = new base.Metadata().extensions.map((extension) => `.${extension}`);
                 openFileDialog.setAttribute('accept', extensions.join(', '));
@@ -198,13 +202,13 @@ browser.Host = class {
                 }
             });
         }
-        this.document.addEventListener('dragover', (e) => {
+        document.addEventListener('dragover', (e) => {
             e.preventDefault();
         });
-        this.document.addEventListener('drop', (e) => {
+        document.addEventListener('drop', (e) => {
             e.preventDefault();
         });
-        this.document.body.addEventListener('drop', (e) => {
+        document.body.addEventListener('drop', (e) => {
             e.preventDefault();
             if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                 const files = Array.from(e.dataTransfer.files);
@@ -226,7 +230,8 @@ browser.Host = class {
     }
 
     worker(id) {
-        return new this.window.Worker(`${id}.js`, { type: 'module' });
+        const window = this.window;
+        return new window.Worker(`${id}.js`, { type: 'module' });
     }
 
     async save(name, extension, defaultPath) {
@@ -234,12 +239,16 @@ browser.Host = class {
     }
 
     async export(file, blob) {
-        const element = this.document.createElement('a');
+        const window = this.window;
+        const document = this.document;
+        const element = document.createElement('a');
         element.download = file;
-        element.href = URL.createObjectURL(blob);
-        this.document.body.appendChild(element);
+        const url = window.URL.createObjectURL(blob);
+        element.href = url;
+        document.body.appendChild(element);
         element.click();
-        this.document.body.removeChild(element);
+        document.body.removeChild(element);
+        window.URL.revokeObjectURL(url);
     }
 
     async execute(name /*, value */) {
@@ -267,7 +276,7 @@ browser.Host = class {
     }
 
     async request(file, encoding, base) {
-        const url = base ? (`${base}/${file}`) : this._url(file);
+        const url = base ? `${base}/${file}` : this._url(file);
         if (base === null) {
             this._requests = this._requests || new Map();
             const key = `${url}:${encoding}`;
@@ -281,7 +290,8 @@ browser.Host = class {
     }
 
     openURL(url) {
-        this.window.location = url;
+        const window = this.window;
+        window.location = url;
     }
 
     exception(error, fatal) {
@@ -343,8 +353,14 @@ browser.Host = class {
     }
 
     async _request(url, headers, encoding, callback, timeout) {
+        const window = this.window;
+        if (!url.startsWith('data:')) {
+            const date = new Date().getTime();
+            const separator = (/\?/).test(url) ? '&' : '?';
+            url = `${url}${separator}cb=${date}`;
+        }
         return new Promise((resolve, reject) => {
-            const request = new XMLHttpRequest();
+            const request = new window.XMLHttpRequest();
             if (!encoding) {
                 request.responseType = 'arraybuffer';
             }
@@ -407,15 +423,13 @@ browser.Host = class {
         } else if (file.startsWith('/')) {
             file = file.substring(1);
         }
-        const location = this.window.location;
-        const pathname = location.pathname.endsWith('/') ?
-            location.pathname :
-            `${location.pathname.split('/').slice(0, -1).join('/')}/`;
+        const window = this.window;
+        const location = window.location;
+        const pathname = location.pathname.endsWith('/') ? location.pathname : `${location.pathname.split('/').slice(0, -1).join('/')}/`;
         return `${location.protocol}//${location.host}${pathname}${file}`;
     }
 
     async _openModel(url, identifier, name) {
-        url = url.startsWith('data:') ? url : `${url + ((/\?/).test(url) ? '&' : '?')}cb=${(new Date()).getTime()}`;
         this._view.show('welcome spinner');
         let context = null;
         try {
@@ -446,8 +460,10 @@ browser.Host = class {
     }
 
     async _getWebnnOps() {
-        const response = await fetch("https://ibelem.github.io/netron/json/webnn_status.json");
-        // const response = await fetch("https://ibelem.github.io/webnn_status.json");
+        const response = await fetch("https://webmachinelearning.github.io/assets/json/webnn_status.json");
+        if (!response.ok) {
+            return [];
+        }
         const data = await response.json();
         const status = data.impl_status;
         const webnn = [];
@@ -497,8 +513,7 @@ browser.Host = class {
             for (const o of s.fw_ort_op) {
                 if (o) alias.push(o);
             }
-            // let filter = new Set(alias);
-            // alias = [...filter];
+
             alias = new Map(alias.map(s => [s.toLowerCase(), s]));
             alias = [...alias.values()];
             alias = alias.filter((x) => x.toLowerCase() !== op.toLowerCase());
@@ -529,11 +544,7 @@ browser.Host = class {
     }
 
     _isOnnx(model) {
-        if(model.identifier.toLowerCase().indexOf('onnx') !== -1) {
-            return true;
-        } else {
-            return false;
-        }
+        return model.format && model.format.toLowerCase().indexOf('onnx') !== -1;
     } 
 
     _getOperationStats(operations) {
@@ -569,20 +580,14 @@ browser.Host = class {
     }
 
     async _showWebnnOpsMap(model) {
-        // _graphs[0] - ONNX
-        // graphs[0] - TFLite
-        let graphs;
-        if(this._isOnnx(model)) {
-            graphs = model._graphs[0];
-        } else {
-            graphs = model.graphs[0];
+        const escape = (text) => {
+            return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        };
+        const graph = model.modules && model.modules.length > 0 ? model.modules[0] : null;
+        if (!graph) {
+            return;
         }
-        let nodes;
-        if(this._isOnnx(model)) {
-            nodes = graphs._nodes;
-        } else {
-            nodes = graphs.nodes
-        }
+        const nodes = graph.nodes || [];
         let ops = [];
         nodes.map((x) => {
             ops.push(x.type.name);
@@ -621,7 +626,7 @@ browser.Host = class {
                         }
                         if (v.windowsml === 4) {
                             windowsml = `Yes, ${v.windowsml_chromium_version_added}`;
-                        } else if (v.coreml === 3) {
+                        } else if (v.windowsml === 3) {
                             windowsml = 'WIP';
                         }
                         if (v.dml === 4) {
@@ -668,7 +673,7 @@ browser.Host = class {
                 count = ops_data_json.count;
                 percentage = ops_data_json.percentage;
 
-                tr = `<tr><td>${index}</td><td>${i}</td><td>${count}</td><td>${percentage}</td><td>${tflite}</td><td>${windowsml}</td><td>${dml}</td><td>${coreml}</td><td class="alias" title="${alias}">${alias}</td></tr>`;
+                tr = `<tr><td>${index}</td><td>${escape(i)}</td><td>${count}</td><td>${escape(percentage)}</td><td>${escape(tflite)}</td><td>${escape(windowsml)}</td><td>${escape(dml)}</td><td>${escape(coreml)}</td><td class="alias" title="${escape(alias)}">${escape(alias)}</td></tr>`;
                 trs += tr;
                 index += 1;
             }
@@ -750,6 +755,7 @@ browser.Host = class {
     }
 
     async _openContext(context) {
+        const document = this.document;
         this._telemetry.set('session_engaged', 1);
         try {
             const attachment = await this._view.attach(context);
@@ -760,11 +766,11 @@ browser.Host = class {
             const model = await this._view.open(context);
             if (model) {
                 this._view.show(null);
-                this.document.title = context.name || context.identifier;
+                document.title = context.name || context.identifier;
                 await this._showWebnnOpsMap(model);
                 return '';
             }
-            this.document.title = '';
+            document.title = '';
             return 'context-open-failed';
         } catch (error) {
             await this._view.error(error, error.name);
@@ -773,16 +779,19 @@ browser.Host = class {
     }
 
     _setCookie(name, value, days) {
-        this.document.cookie = `${name}=; Max-Age=0`;
-        const location = this.window.location;
+        const window = this.window;
+        const document = this.document;
+        document.cookie = `${name}=; Max-Age=0`;
+        const location = window.location;
         const domain = location && location.hostname && location.hostname.indexOf('.') !== -1 ? `;domain=.${location.hostname.split('.').slice(-2).join('.')}` : '';
         const date = new Date();
         date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-        this.document.cookie = `${name}=${value}${domain};path=/;expires=${date.toUTCString()}`;
+        document.cookie = `${name}=${value}${domain};path=/;expires=${date.toUTCString()}`;
     }
 
     _getCookie(name) {
-        for (const cookie of this.document.cookie.split(';')) {
+        const document = this.document;
+        for (const cookie of document.cookie.split(';')) {
             const entry = cookie.split('=');
             if (entry[0].trim() === name) {
                 return entry[1].trim();
@@ -792,9 +801,10 @@ browser.Host = class {
     }
 
     get(name) {
+        const window = this.window;
         try {
-            if (typeof this.window.localStorage !== 'undefined') {
-                const content = this.window.localStorage.getItem(name);
+            if (typeof window.localStorage !== 'undefined') {
+                const content = window.localStorage.getItem(name);
                 return JSON.parse(content);
             }
         } catch {
@@ -804,9 +814,10 @@ browser.Host = class {
     }
 
     set(name, value) {
+        const window = this.window;
         try {
-            if (typeof this.window.localStorage !== 'undefined') {
-                this.window.localStorage.setItem(name, JSON.stringify(value));
+            if (typeof window.localStorage !== 'undefined') {
+                window.localStorage.setItem(name, JSON.stringify(value));
             }
         } catch {
             // continue regardless of error
@@ -814,9 +825,10 @@ browser.Host = class {
     }
 
     delete(name) {
+        const window = this.window;
         try {
-            if (typeof this.window.localStorage !== 'undefined') {
-                this.window.localStorage.removeItem(name);
+            if (typeof window.localStorage !== 'undefined') {
+                window.localStorage.removeItem(name);
             }
         } catch {
             // continue regardless of error
@@ -824,7 +836,8 @@ browser.Host = class {
     }
 
     _element(id) {
-        return this.document.getElementById(id);
+        const document = this.document;
+        return document.getElementById(id);
     }
 
     update() {
@@ -832,7 +845,8 @@ browser.Host = class {
 
     async message(message, alert, action) {
         return new Promise((resolve) => {
-            const type = this.document.body.getAttribute('class');
+            const document = this.document;
+            const type = document.body.getAttribute('class');
             this._element('message-text').innerText = message || '';
             const button = this._element('message-button');
             if (action) {
@@ -840,7 +854,7 @@ browser.Host = class {
                 button.innerText = action;
                 button.onclick = () => {
                     button.onclick = null;
-                    this.document.body.setAttribute('class', type);
+                    document.body.setAttribute('class', type);
                     resolve(0);
                 };
             } else {
@@ -848,10 +862,10 @@ browser.Host = class {
                 button.onclick = null;
             }
             if (alert) {
-                this.document.body.setAttribute('class', 'alert');
+                document.body.setAttribute('class', 'alert');
             } else {
-                this.document.body.classList.add('notification');
-                this.document.body.classList.remove('default');
+                document.body.classList.add('notification');
+                document.body.classList.remove('default');
             }
             if (action) {
                 button.focus();
@@ -888,7 +902,8 @@ browser.BrowserFileContext = class {
             throw new Error(`File not found '${file}'.`);
         }
         return new Promise((resolve, reject) => {
-            const reader = new FileReader();
+            const window = this._host.window;
+            const reader = new window.FileReader();
             const size = 0x10000000;
             let position = 0;
             const chunks = [];
@@ -1014,7 +1029,7 @@ browser.FileStream = class {
         length = length === undefined ? this._length - this._position : length;
         if (length < 0x10000000) {
             const position = this._fill(length);
-            return this._buffer.subarray(position, position + length);
+            return this._buffer.slice(position, position + length);
         }
         const position = this._start + this._position;
         this.skip(length);
@@ -1068,16 +1083,11 @@ browser.Context = class {
         this._host = host;
         this._name = name;
         this._stream = stream;
+        const parts = url.split('?')[0].split('/');
+        this._identifier = parts.pop();
+        this._base = parts.join('/');
         if (identifier) {
             this._identifier = identifier;
-            this._base = url;
-            if (this._base.endsWith('/')) {
-                this._base.substring(0, this._base.length - 1);
-            }
-        } else {
-            const parts = url.split('?')[0].split('/');
-            this._identifier = parts.pop();
-            this._base = parts.join('/');
         }
     }
 
@@ -1108,8 +1118,8 @@ browser.Context = class {
 };
 
 if (!('scrollBehavior' in window.document.documentElement.style)) {
-    const __scrollTo__ = Element.prototype.scrollTo;
-    Element.prototype.scrollTo = function(...args) {
+    const __scrollTo__ = window.Element.prototype.scrollTo;
+    window.Element.prototype.scrollTo = function(...args) {
         const [options] = args;
         if (options !== undefined) {
             if (options === null || typeof options !== 'object' || options.behavior === undefined || options.behavior === 'auto' || options.behavior === 'instant') {

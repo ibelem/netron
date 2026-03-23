@@ -5,7 +5,7 @@ tar.Archive = class {
 
     static open(data) {
         const stream = data instanceof Uint8Array ? new tar.BinaryReader(data) : data;
-        if (stream && stream.length > 512) {
+        if (stream && stream.length >= 512) {
             const buffer = stream.peek(512);
             const sum = buffer.map((value, index) => (index >= 148 && index < 156) ? 32 : value).reduce((a, b) => a + b, 0);
             const checksum = parseInt(Array.from(buffer.slice(148, 156)).map((c) => String.fromCharCode(c)).join('').split('\0').shift(), 8);
@@ -21,7 +21,7 @@ tar.Archive = class {
         const position = stream.position;
         while (stream.position < stream.length) {
             const entry = new tar.Entry(stream);
-            if (entry.type === '0' || entry.type === '1' || entry.type === '2') {
+            if (entry.type === '' || entry.type === '0' || entry.type === '1' || entry.type === '2') {
                 this._entries.set(entry.name, entry.stream);
             }
             if (stream.position + 512 > stream.length ||
@@ -55,7 +55,7 @@ tar.Entry = class {
         reader.string(8); // file mode
         reader.string(8); // owner
         reader.string(8); // group
-        const size = parseInt(reader.string(12).trim(), 8);
+        const size = reader.size();
         reader.string(12); // timestamp
         reader.string(8); // checksum
         this._type = reader.string(1);
@@ -66,7 +66,8 @@ tar.Entry = class {
             reader.string(32); // owner group name
             reader.string(8); // device major number
             reader.string(8); // device number number
-            this._name = reader.string(155) + this._name;
+            const prefix = reader.string(155);
+            this._name = prefix ? `${prefix}/${this._name}` : this._name;
         }
         this._stream = stream.stream(size);
         stream.read(((size % 512) === 0) ? 0 : (512 - (size % 512)));
@@ -112,10 +113,16 @@ tar.BinaryReader = class {
 
     seek(position) {
         this._position = position >= 0 ? position : this._length + position;
+        if (this._position > this._length || this._position < 0) {
+            throw new tar.Error('Invalid tar archive. Unexpected end of file.');
+        }
     }
 
     skip(offset) {
         this._position += offset;
+        if (this._position > this._length || this._position < 0) {
+            throw new tar.Error('Invalid tar archive. Unexpected end of file.');
+        }
     }
 
     peek(length) {
@@ -151,6 +158,23 @@ tar.BinaryReader = class {
             content += String.fromCharCode(c);
         }
         return content;
+    }
+
+    size() {
+        const buffer = this.read(12);
+        if (buffer[0] & 0x80) {
+            buffer[0] &= 0x7f;
+            let value = 0n;
+            for (const byte of buffer) {
+                value = (value << 8n) | BigInt(byte);
+                if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
+                    throw new tar.Error('Tar entry size exceeds safe integer.');
+                }
+            }
+            return value.toNumber();
+        }
+        const octal = String.fromCharCode(...buffer);
+        return parseInt(octal.trim() || '0', 8);
     }
 };
 
