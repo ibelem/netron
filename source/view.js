@@ -53,6 +53,18 @@ view.View = class {
             this._element('zoom-out-button').addEventListener('click', () => {
                 this.zoomOut();
             });
+            this._element('webnn-button').addEventListener('click', () => {
+                this.toggleWebnn();
+            });
+            this._element('webnn-closebutton').addEventListener('click', () => {
+                this.toggleWebnn();
+            });
+            this._element('model-webnn-button').addEventListener('click', () => {
+                const base = 'https://ibelem.github.io/model2webnn/';
+                const params = new URLSearchParams(window.location.search);
+                const url = params.get('url');
+                window.location.href = url ? `${base}?url=${encodeURIComponent(url)}` : base;
+            });
             this._element('toolbar-path-back-button').addEventListener('click', async () => {
                 await this.popTarget();
             });
@@ -426,6 +438,14 @@ view.View = class {
 
     zoomOut() {
         this._target.zoom *= 0.9;
+    }
+
+    toggleWebnn() {
+        const webnn = this.host.document.querySelector('#webnn');
+        if (webnn) {
+            webnn.classList.toggle('showGrid');
+            webnn.classList.toggle('showNone');
+        }
     }
 
     resetZoom() {

@@ -168,7 +168,8 @@ browser.Host = class {
             const location = url
                 .replace(/^https:\/\/github\.com\/([\w-]*\/[\w-]*)\/blob\/([\w/\-_.]*)(\?raw=true)?$/, 'https://raw.githubusercontent.com/$1/$2')
                 .replace(/^https:\/\/github\.com\/([\w-]*\/[\w-]*)\/raw\/([\w/\-_.]*)$/, 'https://raw.githubusercontent.com/$1/$2')
-                .replace(/^https:\/\/huggingface.co\/(.*)\/blob\/(.*)$/, 'https://huggingface.co/$1/resolve/$2');
+                .replace(/^https:\/\/huggingface.co\/(.*)\/blob\/(.*)$/, 'https://huggingface.co/$1/resolve/$2')
+                .replace(/^https:\/\/hf-mirror.com\/(.*)\/blob\/(.*)$/, 'https://hf-mirror.com/$1/resolve/$2');
             if (this._view.accept(identifier || location) && location.indexOf('*') === -1) {
                 const status = await this._openModel(location, identifier);
                 if (status === '') {
@@ -292,6 +293,32 @@ browser.Host = class {
     openURL(url) {
         const window = this.window;
         window.location = url;
+    }
+
+    _getHuggingFaceMirrorUrl(url) {
+        try {
+            const parsed = new URL(url);
+            if (parsed.hostname === 'huggingface.co') {
+                parsed.hostname = 'hf-mirror.com';
+                return parsed.toString();
+            }
+        } catch {
+            // ignore
+        }
+        return null;
+    }
+
+    async _isReachableViaHead(url, timeout = 5000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeout);
+        try {
+            const response = await fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
+            return true;
+        } catch {
+            return false;
+        } finally {
+            clearTimeout(timer);
+        }
     }
 
     exception(error, fatal) {
@@ -431,6 +458,13 @@ browser.Host = class {
 
     async _openModel(url, identifier, name) {
         this._view.show('welcome spinner');
+        const mirrorUrl = this._getHuggingFaceMirrorUrl(url);
+        if (mirrorUrl) {
+            const reachable = await this._isReachableViaHead(url);
+            if (!reachable) {
+                url = mirrorUrl;
+            }
+        }
         let context = null;
         try {
             const progress = (value) => {
@@ -453,6 +487,263 @@ browser.Host = class {
             return null;
         }
         return await this._openContext(context);
+    }
+
+    _qs(element) {
+        return document.querySelector(element);
+    }
+
+    async _getWebnnOps() {
+        const response = await fetch("https://webmachinelearning.github.io/assets/json/webnn_status.json");
+        if (!response.ok) {
+            return [];
+        }
+        const data = await response.json();
+        const status = data.impl_status;
+        const webnn = [];
+        for (const s of status) {
+            const item = {
+                "spec": "",
+                "alias": [],
+                "tflite": 0,
+                "tflite_chromium_version_added": '',
+                "windowsml": 0,
+                "windowsml_chromium_version_added": '',
+                "dml": 0,
+                "dml_chromium_version_added": '',
+                "coreml": 0,
+                "coreml_chromium_version_added": ""
+            };
+            let op = s.op;
+            op = op.replace(/element-wise binary \/|element-wise unary \/|pooling \/|reduction \/ /g, '')
+                .trim();
+            item.spec = op;
+            let alias = [];
+            for (const o of s.tflite_op) {
+                if (o) alias.push(o);
+            }
+            item.tflite_chromium_version_added = s.tflite_chromium_version_added;
+            for (const o of s.windowsml_op) {
+                if (o) alias.push(o);
+            }
+            item.windowsml_chromium_version_added = s.windowsml_chromium_version_added;
+            for (let o of s.dml_op) {
+                if (typeof (o) === 'object') {
+                    o = o[0];
+                }
+                o = o.toLowerCase()
+                    .replace(/map to other op|supported by tensor strides|element_wise_|activation_|reduce_function_/g, '')
+                    .trim();
+                if (o) alias.push(o);
+            }
+            item.dml_chromium_version_added = s.dml_chromium_version_added;
+            for (const o of s.coreml_op) {
+                if (o) alias.push(o);
+            }
+            item.coreml_chromium_version_added = s.coreml_chromium_version_added;
+            for (const o of s.fw_tflite_op) {
+                if (o) alias.push(o);
+            }
+            for (const o of s.fw_ort_op) {
+                if (o) alias.push(o);
+            }
+
+            alias = new Map(alias.map(s => [s.toLowerCase(), s]));
+            alias = [...alias.values()];
+            alias = alias.filter((x) => x.toLowerCase() !== op.toLowerCase());
+            item.alias = alias;
+            if (s.tflite_progress === 4) {
+                item.tflite = 4;
+            } else if (s.tflite_progress === 3) {
+                item.tflite = 3;
+            }
+            if (s.windowsml_progress === 4) {
+                item.windowsml = 4;
+            } else if (s.windowsml_progress === 3) {
+                item.windowsml = 3;
+            }
+            if (s.dml_progress === 4) {
+                item.dml = 4;
+            } else if (s.dml_progress === 3) {
+                item.dml = 3;
+            }
+            if (s.coreml_progress === 4) {
+                item.coreml = 4;
+            } else if (s.coreml_progress === 3) {
+                item.coreml = 3;
+            }
+            webnn.push(item);
+        }
+        return webnn;
+    }
+
+    _isOnnx(model) {
+        return model.format && model.format.toLowerCase().indexOf('onnx') !== -1;
+    } 
+
+    _getOperationStats(operations) {
+        // Count occurrences of each operation
+        const counts = {};
+        operations.forEach(op => {
+            counts[op] = (counts[op] || 0) + 1;
+        });
+
+        // Calculate total
+        const total = operations.length;
+
+        // Format the results
+        const result = [];
+
+        // Add each operation with count and percentage
+        for (const [op, count] of Object.entries(counts)) {
+            result.push({
+                'op': op,
+                'count': count,
+                'percentage': ((count / total) * 100).toFixed(2) + '%'
+            });
+        }
+
+        // Add total row
+        result.push({
+            'op': 'Total',
+            'count': total,
+            'percentage': '100%'
+        });
+
+        return result;
+    }
+
+    async _showWebnnOpsMap(model) {
+        const escape = (text) => {
+            return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        };
+        const graph = model.modules && model.modules.length > 0 ? model.modules[0] : null;
+        if (!graph) {
+            return;
+        }
+        const nodes = graph.nodes || [];
+        let ops = [];
+        nodes.map((x) => {
+            ops.push(x.type.name);
+        }
+        );
+
+        const filter = new Set(ops);
+        let ops_data = this._getOperationStats(ops);
+        ops = [...filter].sort();
+        const webnn = this._qs('#webnn');
+        const map = this._qs('#map-table');
+        const webnnops = await this._getWebnnOps();
+        if (ops?.length) {
+            webnn.removeAttribute("class");
+            webnn.setAttribute("class", "showGrid");
+            let index = 1, tr = '', trs = '';
+            for (const i of ops) {
+                const o = i.toLowerCase();
+                let spec = '';
+                let alias = '';
+                let tflite = 'No';
+                let windowsml = 'No';
+                let dml = 'No';
+                let coreml = 'No';
+                let ops_data_json;
+                let count = 0;
+                let percentage = 0;
+                webnnops.map((v) => {
+                    if (v.spec.toLowerCase() === o) {
+                        spec = v.spec;
+                        alias = v.alias.toString().replaceAll(/,/g, ', ');
+                        if (v.tflite === 4) {
+                            tflite = `Yes, ${v.tflite_chromium_version_added}`;
+                        } else if (v.tflite === 3) {
+                            tflite = 'WIP';
+                        }
+                        if (v.windowsml === 4) {
+                            windowsml = `Yes, ${v.windowsml_chromium_version_added}`;
+                        } else if (v.windowsml === 3) {
+                            windowsml = 'WIP';
+                        }
+                        if (v.dml === 4) {
+                            dml = `Yes, ${v.dml_chromium_version_added}`;
+                        } else if (v.dml === 3) {
+                            dml = 'WIP';
+                        }
+                        if (v.coreml === 4) {
+                            coreml = `Yes, ${v.coreml_chromium_version_added}`;
+                        } else if (v.coreml === 3) {
+                            coreml = 'WIP';
+                        }
+                    } else {
+                        for (const a of v.alias) {
+                            if (a.toLowerCase() === o) {
+                                spec = v.spec;
+                                alias = v.alias.toString().replaceAll(/,/g, ', ');
+                                if (v.tflite === 4) {
+                                    tflite = `Yes, ${v.tflite_chromium_version_added}`;
+                                } else if (v.tflite === 3) {
+                                    tflite = 'WIP';
+                                }
+                                if (v.windowsml === 4) {
+                                    windowsml = `Yes, ${v.windowsml_chromium_version_added}`;
+                                } else if (v.windowsml === 3) {
+                                    windowsml = 'WIP';
+                                }
+                                if (v.dml === 4) {
+                                    dml = `Yes, ${v.dml_chromium_version_added}`;
+                                } else if (v.dml === 3) {
+                                    dml = 'WIP';
+                                }
+                                if (v.coreml === 4) {
+                                    coreml = `Yes, ${v.coreml_chromium_version_added}`;
+                                } else if (v.coreml === 3) {
+                                    coreml = 'WIP';
+                                }
+                            }
+                        }
+                    }
+                });
+
+                ops_data_json = ops_data.find(item => item.op.toLowerCase() === i.toLowerCase());
+                count = ops_data_json.count;
+                percentage = ops_data_json.percentage;
+
+                tr = `<tr><td>${index}</td><td>${escape(i)}</td><td>${count}</td><td>${escape(percentage)}</td><td>${escape(tflite)}</td><td>${escape(windowsml)}</td><td>${escape(dml)}</td><td>${escape(coreml)}</td><td class="alias" title="${escape(alias)}">${escape(alias)}</td></tr>`;
+                trs += tr;
+                index += 1;
+            }
+
+            const ops_data_json = ops_data.find(item => item.op.toLowerCase() === 'total');
+            const count = ops_data_json.count;
+
+            trs += `<tr><td></td><td></td><td>${count}</td><td>100%</td><td></td><td></td><td></td><td></td><td></td></tr>`;
+
+            const table = `
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="2">Index</th>
+                        <th colspan="3">Model Operations</th>
+                        <th colspan="6">WebNN API Support Status in Chromium</th>
+                    </tr>
+                    <tr>
+                        <th>WebNN Spec</th>
+                        <th>Count</th>
+                        <th>Percentage</th>
+                        <th>TensorFlow Lite</th>
+                        <th>Windows ML</th>
+                        <th>DirectML</th>
+                        <th>Core ML</th>
+                        <th>Alias</th>
+                    </tr>
+                </thead>
+                <tbody id="support">${trs}</tbody>
+            </table>
+        `;
+            map.innerHTML = table;
+        } else {
+            webnn.removeAttribute("class");
+            webnn.setAttribute("class", "showNone");
+        }
     }
 
     async _open(file, files) {
@@ -510,6 +801,7 @@ browser.Host = class {
             if (model) {
                 this._view.show(null);
                 document.title = context.name || context.identifier;
+                await this._showWebnnOpsMap(model);
                 return '';
             }
             document.title = '';
