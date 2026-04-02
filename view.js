@@ -63,7 +63,7 @@ view.View = class {
                 const base = 'https://ibelem.github.io/model2webnn/';
                 const params = new URLSearchParams(window.location.search);
                 const url = params.get('url');
-                window.open(url ? `${base}?url=${encodeURIComponent(url)}` : base, '_blank');
+                window.location.href = url ? `${base}?url=${encodeURIComponent(url)}` : base;
             });
             this._element('toolbar-path-back-button').addEventListener('click', async () => {
                 await this.popTarget();
