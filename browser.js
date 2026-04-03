@@ -168,7 +168,8 @@ browser.Host = class {
             const location = url
                 .replace(/^https:\/\/github\.com\/([\w-]*\/[\w-]*)\/blob\/([\w/\-_.]*)(\?raw=true)?$/, 'https://raw.githubusercontent.com/$1/$2')
                 .replace(/^https:\/\/github\.com\/([\w-]*\/[\w-]*)\/raw\/([\w/\-_.]*)$/, 'https://raw.githubusercontent.com/$1/$2')
-                .replace(/^https:\/\/huggingface.co\/(.*)\/blob\/(.*)$/, 'https://huggingface.co/$1/resolve/$2');
+                .replace(/^https:\/\/huggingface.co\/(.*)\/blob\/(.*)$/, 'https://huggingface.co/$1/resolve/$2')
+                .replace(/^https:\/\/hf-mirror.com\/(.*)\/blob\/(.*)$/, 'https://hf-mirror.com/$1/resolve/$2');
             if (this._view.accept(identifier || location) && location.indexOf('*') === -1) {
                 const status = await this._openModel(location, identifier);
                 if (status === '') {
@@ -292,6 +293,32 @@ browser.Host = class {
     openURL(url) {
         const window = this.window;
         window.location = url;
+    }
+
+    _getHuggingFaceMirrorUrl(url) {
+        try {
+            const parsed = new URL(url);
+            if (parsed.hostname === 'huggingface.co') {
+                parsed.hostname = 'hf-mirror.com';
+                return parsed.toString();
+            }
+        } catch {
+            // ignore
+        }
+        return null;
+    }
+
+    async _isReachableViaHead(url, timeout = 5000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeout);
+        try {
+            const response = await fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
+            return true;
+        } catch {
+            return false;
+        } finally {
+            clearTimeout(timer);
+        }
     }
 
     exception(error, fatal) {
@@ -431,6 +458,13 @@ browser.Host = class {
 
     async _openModel(url, identifier, name) {
         this._view.show('welcome spinner');
+        const mirrorUrl = this._getHuggingFaceMirrorUrl(url);
+        if (mirrorUrl) {
+            const reachable = await this._isReachableViaHead(url);
+            if (!reachable) {
+                url = mirrorUrl;
+            }
+        }
         let context = null;
         try {
             const progress = (value) => {
