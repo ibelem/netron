@@ -70,6 +70,10 @@ executorch.Graph = class {
             return list;
         };
         values.map = (index, output) => {
+            if (output && values.has(index) && !Array.isArray(values.get(index).value)) {
+                const value = [new executorch.Value(index.toString(), null, null)];
+                values.set(index, { type: null, value });
+            }
             if (!values.has(index)) {
                 const executorch_flatbuffer = executorch.schema.executorch_flatbuffer;
                 const val = plan.values[index].val;
@@ -123,9 +127,54 @@ executorch.Graph = class {
             const argument = new executorch.Argument(name, value.value, value.type);
             this.outputs.push(argument);
         }
+        const executorch_flatbuffer = executorch.schema.executorch_flatbuffer;
         for (const instruction of chain.instructions) {
+            const instr_args = instruction.instr_args;
+            if (instr_args instanceof executorch_flatbuffer.JumpFalseCall ||
+                instr_args instanceof executorch_flatbuffer.MoveCall ||
+                instr_args instanceof executorch_flatbuffer.FreeCall) {
+                continue;
+            }
             const node = new executorch.Node(target, plan, chain, instruction, values);
             this.nodes.push(node);
+        }
+        // A view removed by memory planning is a tensor no instruction writes,
+        // it reads the tensor last written to the same memory with the same size.
+        const written = new Set(this.nodes.flatMap((node) => node.outputs.flatMap((argument) => argument.value)));
+        const inputs = new Set(this.inputs.flatMap((argument) => argument.value));
+        const memory = new Map();
+        const key = (value) => {
+            const val = value && /^\d+$/.test(value.name) ? plan.values[parseInt(value.name, 10)].val : null;
+            if (val instanceof executorch_flatbuffer.Tensor && val.allocation_info && val.data_buffer_idx === 0) {
+                const allocation = val.allocation_info;
+                const size = Array.from(val.sizes).reduce((a, b) => a * b, 1);
+                return `${allocation.memory_id}:${allocation.memory_offset_high}:${allocation.memory_offset_low}:${val.scalar_type}:${size}`;
+            }
+            return null;
+        };
+        const alias = (argument) => {
+            if (Array.isArray(argument.value)) {
+                argument.value = argument.value.map((value) => {
+                    const id = written.has(value) || inputs.has(value) ? null : key(value);
+                    return id && memory.has(id) ? memory.get(id) : value;
+                });
+            }
+        };
+        for (const node of this.nodes) {
+            for (const argument of node.inputs) {
+                alias(argument);
+            }
+            for (const argument of node.outputs) {
+                for (const value of argument.value) {
+                    const id = key(value);
+                    if (id) {
+                        memory.set(id, value);
+                    }
+                }
+            }
+        }
+        for (const argument of this.outputs) {
+            alias(argument);
         }
     }
 };
@@ -418,9 +467,8 @@ executorch.Reader = class {
                             default:
                                 throw new executorch.Error(`ExecuTorch delegate '${delegate.id}' not implemented.`);
                         }
-                        /* eslint-disable no-await-in-loop */
+                        // eslint-disable-next-line no-await-in-loop
                         await delegate.backend.read();
-                        /* eslint-enable no-await-in-loop */
                     }
                 }
             }
@@ -737,7 +785,6 @@ vulkan.Reader = class {
     async read() {
         this.reader.seek(this.flatbuffer.offset);
         const metadata = new vulkan.Metadata(this.target.execution);
-        metadata.register('conv_with_clamp(Tensor input, Tensor weight, Tensor? bias, SymInt[] stride, SymInt[] padding, SymInt[] dilation, bool transposed, SymInt[] output_padding, SymInt groups, Scalar? output_min, Scalar? output_max) -> Tensor)');
         const flatbuffers = await import('./flatbuffers.js');
         const data = this.reader.read(this.flatbuffer.size);
         const reader = flatbuffers.BinaryReader.open(data);
@@ -751,6 +798,9 @@ vulkan.Reader = class {
 
     constant(id) {
         const constant = this.graph.constants[id];
+        if (constant.named_key && constant.offset === 0xffffffffffffffffn) {
+            return this.target.segment(constant.named_key);
+        }
         const offset = constant.offset;
         const length = constant.length;
         this.reader.seek(this.constants.offset + offset.toNumber());
@@ -936,7 +986,10 @@ vulkan.Metadata = class {
 
     type(identifier) {
         identifier = identifier.split(/\.([^.]*)$/);
-        const name = identifier[0].replace('.', '::');
+        let name = identifier[0].replace('.', '::');
+        if (name.indexOf('::') === -1) {
+            name = `et_vk::${name}`;
+        }
         const overload = identifier[1] === 'default' ? '' : identifier[1];
         const torch = this.execution.__import__('torch');
         const schemas = torch._C._jit_get_schemas_for_operator(name);
@@ -980,13 +1033,11 @@ coreml.Reader = class {
         const context = this.target.context;
         for (const [key] of streams) {
             const content = context.context(key, streams.get(key), streams);
-            /* eslint-disable no-await-in-loop */
+            // eslint-disable-next-line no-await-in-loop
             const type = await factory.match(content);
-            /* eslint-enable no-await-in-loop */
             if (type === 'coreml.manifest') {
-                /* eslint-disable no-await-in-loop */
+                // eslint-disable-next-line no-await-in-loop
                 const model = await factory.open(content);
-                /* eslint-enable no-await-in-loop */
                 [this.type] = model.modules;
                 this.type.name = 'CoreMLBackend';
                 return;
@@ -1067,7 +1118,7 @@ qnn.Reader = class {
 
     async read() {
         // https://github.com/pytorch/executorch/blob/main/backends/qualcomm/runtime/backends/QnnCustomProtocol.h
-        throw new executorch.Error('QNN backend not implemented.');
+        throw new executorch.Error('Undocumented QNN backend not implemented.');
     }
 };
 

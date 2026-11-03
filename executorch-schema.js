@@ -237,12 +237,23 @@ executorch_flatbuffer.KernelCall = class KernelCall {
     }
 };
 
+executorch_flatbuffer.DelegateScratch = class DelegateScratch {
+
+    static decode(reader, position) {
+        const $ = new executorch_flatbuffer.DelegateScratch();
+        $.allocation = reader.table(position, 4, executorch_flatbuffer.AllocationDetails);
+        $.size = reader.uint64_(position, 6, 0n);
+        return $;
+    }
+};
+
 executorch_flatbuffer.DelegateCall = class DelegateCall {
 
     static decode(reader, position) {
         const $ = new executorch_flatbuffer.DelegateCall();
         $.delegate_index = reader.int32_(position, 4, 0);
         $.args = reader.array(position, 6, Int32Array);
+        $.scratch = reader.tables(position, 8, executorch_flatbuffer.DelegateScratch);
         return $;
     }
 };
@@ -381,6 +392,18 @@ executorch_flatbuffer.ExecutionPlan = class ExecutionPlan {
         $.operators = reader.tables(position, 16, executorch_flatbuffer.Operator);
         $.delegates = reader.tables(position, 18, executorch_flatbuffer.BackendDelegate);
         $.non_const_buffer_sizes = reader.int64s_(position, 20);
+        $.non_const_buffer_device = reader.tables(position, 22, executorch_flatbuffer.NonConstBufferDevice);
+        return $;
+    }
+};
+
+executorch_flatbuffer.NonConstBufferDevice = class NonConstBufferDevice {
+
+    static decode(reader, position) {
+        const $ = new executorch_flatbuffer.NonConstBufferDevice();
+        $.buffer_idx = reader.int32_(position, 4, 0);
+        $.device_type = reader.int8_(position, 6, 0);
+        $.device_index = reader.int8_(position, 8, 0);
         return $;
     }
 };
@@ -618,6 +641,8 @@ fb_xnnpack.XNodeUnion = class {
             case 45: return fb_xnnpack.XNNSin.decode(reader, position);
             case 46: return fb_xnnpack.XNNCopy.decode(reader, position);
             case 47: return fb_xnnpack.XNNCos.decode(reader, position);
+            case 48: return fb_xnnpack.XNNApproxGelu.decode(reader, position);
+            case 49: return fb_xnnpack.XNNDepthToSpace2d.decode(reader, position);
             default: return undefined;
         }
     }
@@ -826,6 +851,18 @@ fb_xnnpack.XNNStaticReshape = class XNNStaticReshape {
         $.input_id = reader.uint32_(position, 8, 0);
         $.output_id = reader.uint32_(position, 10, 0);
         $.flags = reader.uint32_(position, 12, 0);
+        return $;
+    }
+};
+
+fb_xnnpack.XNNDepthToSpace2d = class XNNDepthToSpace2d {
+
+    static decode(reader, position) {
+        const $ = new fb_xnnpack.XNNDepthToSpace2d();
+        $.block_size = reader.uint32_(position, 4, 0);
+        $.input_id = reader.uint32_(position, 6, 0);
+        $.output_id = reader.uint32_(position, 8, 0);
+        $.flags = reader.uint32_(position, 10, 0);
         return $;
     }
 };
@@ -1253,6 +1290,15 @@ fb_xnnpack.XNNCos = class XNNCos {
 
     static decode(reader, position) {
         const $ = new fb_xnnpack.XNNCos();
+        fb_xnnpack._XNNNode1x1.decode(reader, position, $);
+        return $;
+    }
+};
+
+fb_xnnpack.XNNApproxGelu = class XNNApproxGelu {
+
+    static decode(reader, position) {
+        const $ = new fb_xnnpack.XNNApproxGelu();
         fb_xnnpack._XNNNode1x1.decode(reader, position, $);
         return $;
     }

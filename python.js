@@ -36,7 +36,10 @@ python.Execution = class {
                 this.set(key, value);
             }
             __getitem__(key) {
-                return this.get(key);
+                if (!super.has(key)) {
+                    throw new python.Error(`KeyError: ${key}`);
+                }
+                return super.get(key);
             }
             __delitem__(key) {
                 this.delete(key);
@@ -165,6 +168,8 @@ python.Execution = class {
         this.register('sklearn.externals.joblib.numpy_pickle');
         const torch = this.register('torch');
         this.torch = torch;
+        const executorch = this.register('executorch');
+        this.executorch = executorch;
         const torchvision = this.register('torchvision');
         const torchao = this.register('torchao');
         const sympy = this.register('sympy');
@@ -177,10 +182,11 @@ python.Execution = class {
         this.register('torch.ops.torchaudio');
         this.register('torch.ops._caffe2');
         this.register('torchvision');
-        this.register('ultralytics');
+        this.register('ultralytics').__materialize__ = (name) => this.registerType(name, class extends torch.nn.modules.module.Module {});
         this.register('__torch__');
         const sys = this.register('sys');
         sys.modules = this._modules;
+        this.register('ubjson');
         this.register('xgboost');
         this.registerType('ast.AST', class {});
         this.registerType('ast.mod', class extends ast.AST {});
@@ -4527,20 +4533,256 @@ python.Execution = class {
         types.FunctionType = builtins.function;
         types.TypeType = builtins.type;
         types.CodeType = builtins.code;
+        this.registerFunction('ubjson.loadb', (data) => {
+            const buffer = data instanceof Uint8Array ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength) : new Uint8Array(data);
+            const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+            const utf8 = new TextDecoder('utf-8');
+            let p = 0;
+            const integer = () => {
+                const m = buffer[p++];
+                switch (m) {
+                    case 0x69: return view.getInt8(p++);
+                    case 0x55: return view.getUint8(p++);
+                    case 0x49: {
+                        const v = view.getInt16(p);
+                        p += 2;
+                        return v;
+                    }
+                    case 0x6C: {
+                        const v = view.getInt32(p);
+                        p += 4;
+                        return v;
+                    }
+                    case 0x4C: {
+                        const v = view.getBigInt64(p);
+                        p += 8;
+                        return Number(v);
+                    }
+                    default: throw new python.Error(`UBJSON integer '0x${m.toString(16)}'.`);
+                }
+            };
+            const str = () => {
+                const n = integer();
+                const s = utf8.decode(buffer.subarray(p, p + n));
+                p += n;
+                return s;
+            };
+            const typed = (t, n) => {
+                const a = new Array(n);
+                switch (t) {
+                    case 0x69:
+                        for (let i = 0; i < n; i++) {
+                            a[i] = view.getInt8(p);
+                            p += 1;
+                        }
+                        return a;
+                    case 0x55:
+                        for (let i = 0; i < n; i++) {
+                            a[i] = view.getUint8(p);
+                            p += 1;
+                        }
+                        return a;
+                    case 0x49:
+                        for (let i = 0; i < n; i++) {
+                            a[i] = view.getInt16(p);
+                            p += 2;
+                        }
+                        return a;
+                    case 0x6C:
+                        for (let i = 0; i < n; i++) {
+                            a[i] = view.getInt32(p);
+                            p += 4;
+                        }
+                        return a;
+                    case 0x4C:
+                        for (let i = 0; i < n; i++) {
+                            a[i] = Number(view.getBigInt64(p));
+                            p += 8;
+                        }
+                        return a;
+                    case 0x64:
+                        for (let i = 0; i < n; i++) {
+                            a[i] = view.getFloat32(p);
+                            p += 4;
+                        }
+                        return a;
+                    case 0x44:
+                        for (let i = 0; i < n; i++) {
+                            a[i] = view.getFloat64(p);
+                            p += 8;
+                        }
+                        return a;
+                    case 0x54: return new Array(n).fill(true);
+                    case 0x46: return new Array(n).fill(false);
+                    case 0x5A: return new Array(n).fill(null);
+                    case 0x53:
+                        for (let i = 0; i < n; i++) {
+                            a[i] = str();
+                        }
+                        return a;
+                    default: throw new python.Error(`UBJSON typed array '0x${t.toString(16)}'.`);
+                }
+            };
+            const value = () => {
+                const m = buffer[p++];
+                switch (m) {
+                    case 0x5A: return null;
+                    case 0x54: return true;
+                    case 0x46: return false;
+                    case 0x69: return view.getInt8(p++);
+                    case 0x55: return view.getUint8(p++);
+                    case 0x49: {
+                        const v = view.getInt16(p);
+                        p += 2;
+                        return v;
+                    }
+                    case 0x6C: {
+                        const v = view.getInt32(p);
+                        p += 4;
+                        return v;
+                    }
+                    case 0x4C: {
+                        const v = view.getBigInt64(p);
+                        p += 8;
+                        return Number(v);
+                    }
+                    case 0x64: {
+                        const v = view.getFloat32(p);
+                        p += 4;
+                        return v;
+                    }
+                    case 0x44: {
+                        const v = view.getFloat64(p);
+                        p += 8;
+                        return v;
+                    }
+                    case 0x53: return str();
+                    case 0x7B: {
+                        const o = {};
+                        if (buffer[p] === 0x7D) {
+                            p++;
+                            return o;
+                        }
+                        let n = -1;
+                        if (buffer[p] === 0x23) {
+                            p++;
+                            n = integer();
+                        }
+                        if (n >= 0) {
+                            for (let i = 0; i < n; i++) {
+                                const k = str();
+                                o[k] = value();
+                            }
+                        } else {
+                            while (buffer[p] !== 0x7D) {
+                                const k = str();
+                                o[k] = value();
+                            }
+                            p++;
+                        }
+                        return o;
+                    }
+                    case 0x5B: {
+                        if (buffer[p] === 0x5D) {
+                            p++;
+                            return [];
+                        }
+                        if (buffer[p] === 0x24) {
+                            p++;
+                            const t = buffer[p++];
+                            if (buffer[p++] !== 0x23) {
+                                throw new python.Error('UBJSON typed array missing count.');
+                            }
+                            return typed(t, integer());
+                        }
+                        let n = -1;
+                        if (buffer[p] === 0x23) {
+                            p++;
+                            n = integer();
+                        }
+                        if (n >= 0) {
+                            const a = new Array(n);
+                            for (let i = 0; i < n; i++) {
+                                a[i] = value();
+                            }
+                            return a;
+                        }
+                        const a = [];
+                        while (buffer[p] !== 0x5D) {
+                            a.push(value());
+                        }
+                        p++;
+                        return a;
+                    }
+                    default: throw new python.Error(`UBJSON marker '0x${m.toString(16)}'.`);
+                }
+            };
+            return value();
+        });
         this.registerType('xgboost.compat.XGBoostLabelEncoder', class {});
         this.registerType('xgboost.core.Booster', class {
-            load_model(fname) {
-                if (fname instanceof Uint8Array) {
-                    // XGBoosterLoadModel()
+            load_model(obj) {
+                if (obj instanceof Uint8Array) {
+                    this.XGBoosterLoadModelFromBuffer(obj);
                 } else {
-                    // XGBoosterUnserializeFromBuffer(handle) {
+                    this.XGBoosterLoadModel(obj);
                 }
+            }
+            XGBoosterLoadModel(obj) {
+                this.version = obj.version;
+                const learner = obj.learner;
+                const mparam = learner.learner_model_param || {};
+                this.base_score = mparam.base_score;
+                this.num_feature = parseInt(mparam.num_feature || '0', 10);
+                this.num_class = parseInt(mparam.num_class || '0', 10);
+                this.num_target = parseInt(mparam.num_target || '1', 10);
+                this.objective = learner.objective ? learner.objective.name : '';
+                this.feature_names = learner.feature_names || [];
+                this.feature_types = learner.feature_types || [];
+                this.attributes = learner.attributes || {};
+                const gb = learner.gradient_booster;
+                if (gb) {
+                    this.booster_type = gb.name;
+                    if (gb.name === 'gbtree' || gb.name === 'dart') {
+                        const gbtree = gb.name === 'dart' && gb.gbtree ? gb.gbtree : gb;
+                        const model = gbtree.model;
+                        const param = model.gbtree_model_param || {};
+                        this.num_trees = parseInt(param.num_trees || '0', 10);
+                        this.num_parallel_tree = parseInt(param.num_parallel_tree || '1', 10);
+                        this.trees = model.trees || [];
+                        this.tree_info = model.tree_info || [];
+                        if (gb.weight_drop) {
+                            this.weight_drop = gb.weight_drop;
+                        }
+                    } else if (gb.name === 'gblinear') {
+                        const model = gb.model;
+                        this.weights = model.weights || [];
+                        this.boosted_rounds = model.boosted_rounds || 0;
+                    }
+                }
+            }
+            XGBoosterLoadModelFromBuffer(buffer) {
+                if (buffer.length > 2 && buffer[0] === 0x7B && buffer[1] !== 0x22) {
+                    const obj = execution.invoke('ubjson.loadb', [buffer]);
+                    this.XGBoosterLoadModel(obj);
+                    return;
+                }
+                throw new python.Error('Unsupported XGBoost binary format.');
+            }
+            XGBoosterUnserializeFromBuffer(buffer) {
+                if (buffer.length > 2 && buffer[0] === 0x7B && buffer[1] !== 0x22) {
+                    const obj = execution.invoke('ubjson.loadb', [buffer]);
+                    this.XGBoosterLoadModel(obj.Model);
+                    return;
+                }
+                throw new python.Error('Unsupported XGBoost binary format.');
             }
             __setstate__(state) {
                 const handle = state.get('handle');
                 if (handle) {
-                    this.handle = handle;
-                    // XGBoosterLoadModelFromBuffer()
+                    if (handle.length > 2 && handle[0] === 0x7B && handle[1] !== 0x22) {
+                        this.XGBoosterUnserializeFromBuffer(handle);
+                    }
                 }
             }
         });
@@ -5666,11 +5908,21 @@ python.Execution = class {
                 super(lhs, rhs, '==');
             }
         });
+        this.registerType('sympy.core.relational.Unequality', class extends sympy.core.relational.Relational {
+            constructor(lhs, rhs) {
+                super(lhs, rhs, '!=');
+            }
+        });
         this.registerType('sympy.functions.elementary.miscellaneous.MinMaxBase', class extends sympy.core.expr.Expr {
         });
         this.registerType('sympy.functions.elementary.miscellaneous.Max', class extends sympy.functions.elementary.miscellaneous.MinMaxBase {
             __str__() {
                 return `Max(${this._args.map((a) => a.__str__()).join(', ')})`;
+            }
+        });
+        this.registerType('sympy.functions.elementary.miscellaneous.Min', class extends sympy.functions.elementary.miscellaneous.MinMaxBase {
+            __str__() {
+                return `Min(${this._args.map((a) => a.__str__()).join(', ')})`;
             }
         });
         this.registerType('sympy.functions.elementary.exponential.exp', class extends sympy.core.expr.Expr {});
@@ -5685,6 +5937,21 @@ python.Execution = class {
             if (a instanceof sympy.core.expr.Expr) {
                 return a;
             }
+            if (typeof a === 'bigint') {
+                return new sympy.core.numbers.Integer(Number(a));
+            }
+            if (typeof a === 'number') {
+                if (Number.isInteger(a)) {
+                    return new sympy.core.numbers.Integer(a);
+                }
+                return new sympy.core.numbers.Float(a);
+            }
+            if (typeof a === 'boolean') {
+                return a ? new sympy.logic.boolalg.BooleanTrue() : new sympy.logic.boolalg.BooleanFalse();
+            }
+            if (typeof a !== 'string') {
+                throw new python.Error(`Cannot sympify object of type '${typeof a}'.`);
+            }
             const p = ast.parse(a);
             const sympify = (node) => {
                 if (node instanceof ast.Call) {
@@ -5694,12 +5961,14 @@ python.Execution = class {
                         case 'Add': return new sympy.core.add.Add(...node.args.map((arg) => sympify(arg)));
                         case 'Pow': return new sympy.core.power.Pow(...node.args.map((arg) => sympify(arg)));
                         case 'Max': return new sympy.functions.elementary.miscellaneous.Max(...node.args.map((arg) => sympify(arg)));
+                        case 'Min': return new sympy.functions.elementary.miscellaneous.Min(...node.args.map((arg) => sympify(arg)));
                         case 'Integer': return sympify(node.args[0]);
                         case 'GreaterThan': return new sympy.core.relational.GreaterThan(sympify(node.args[0]), sympify(node.args[1]));
                         case 'StrictGreaterThan': return new sympy.core.relational.StrictGreaterThan(sympify(node.args[0]), sympify(node.args[1]));
                         case 'LessThan': return new sympy.core.relational.LessThan(sympify(node.args[0]), sympify(node.args[1]));
                         case 'StrictLessThan': return new sympy.core.relational.StrictLessThan(sympify(node.args[0]), sympify(node.args[1]));
                         case 'Equality': return new sympy.core.relational.Equality(sympify(node.args[0]), sympify(node.args[1]));
+                        case 'Unequality': return new sympy.core.relational.Unequality(sympify(node.args[0]), sympify(node.args[1]));
                         case 'FloorDiv': return new torch.utils._sympy.functions.FloorDiv(sympify(node.args[0]), sympify(node.args[1]));
                         default: throw new python.Error(`Unsupported SymPy function '${node.func.id}'.`);
                     }
@@ -5723,6 +5992,9 @@ python.Execution = class {
                     if (node.op instanceof ast.Pow) {
                         return new sympy.core.power.Pow(sympify(node.left), sympify(node.right));
                     }
+                    if (node.op instanceof ast.Add) {
+                        return new sympy.core.add.Add(sympify(node.left), sympify(node.right));
+                    }
                     throw new python.Error(`Unsupported SymPy BinOp op '${node.op.__class__.__name__}'.`);
                 }
                 if (node instanceof ast.Compare) {
@@ -5743,6 +6015,9 @@ python.Execution = class {
                     }
                     if (op instanceof ast.Eq) {
                         return new sympy.core.relational.Equality(left, right);
+                    }
+                    if (op instanceof ast.NotEq) {
+                        return new sympy.core.relational.Unequality(left, right);
                     }
                     throw new python.Error(`Unsupported comparison operator '${op.__class__.__name__}'.`);
                 }
@@ -6894,7 +7169,7 @@ python.Execution = class {
         this.registerFunction('torch._C.tupleConstruct', (stack, num_inputs) => {
             torch._C.TORCH_CHECK(num_inputs <= stack.length);
             const elems = stack.splice(stack.length - num_inputs, num_inputs);
-            const tuple = torch._C.Tuple.create(elems.reverse());
+            const tuple = torch._C.Tuple.create(elems);
             stack.push(new torch._C.IValue(tuple));
         });
         this.registerFunction('torch._C.runNodeIfInputsAreConstant', (n, ignore_custom_classes, db) => {
@@ -9009,333 +9284,6 @@ python.Execution = class {
         this.registerFunction('torchvision.models.vision_transformer.vit_h_14', () => {});
         this.registerFunction('torchvision.ops.boxes.box_iou');
         this.registerFunction('torchvision.ops.focal_loss.sigmoid_focal_loss');
-        this.registerType('ultralytics.models.utils.loss.DETRLoss', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.models.utils.loss.RTDETRDetectionLoss', class {});
-        this.registerType('ultralytics.models.utils.ops.HungarianMatcher', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.Addmodules.Dysample.Dy_Sample', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.Addmodules.jiade.MSCAAttention', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.Addmodules.MSCB.Bottleneck', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.Addmodules.MSCB.C3k', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.Addmodules.MSCB.C3k2_MSCB1', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.Addmodules.MSCB.Conv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.Addmodules.MSCB.MSCB', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.Addmodules.MSCB.MSDC', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.Addmodules.ShuffleNetV2.InvertedResidual', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.Addmodules.ShuffleNetV2.ShuffleNetV2', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.attention.MSCA.MSCAAttention', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.core11.SPPELAN.Conv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.core11.SPPELAN.SP', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.core11.SPPELAN.SPPELAN', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.DSConv.Bottleneck_DySnakeConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.DSConv.C2f_DySnakeConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.DSConv.DSConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.DSConv.DySnakeConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.EfficientNetv2.DropPath', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.EfficientNetv2.FusedMBConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.EfficientNetv2.MBConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.EfficientNetv2.SqueezeExcite_efficientv2', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.EfficientNetv2.stem', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.attention.CascadedGroupAttention', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.attention.Conv2d_BN', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.attention.EMA', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.attention.LocalWindowAttention', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.attention.SimAM', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.block.Bottleneck_DySnakeConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.block.C2f_DWR_DRB', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.block.C3k2_DySnakeConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.block.CBFuse', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.block.CBLinear', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.block.C2f_PKIModule', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.block.Conv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.block.Cut', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.block.DRFD2', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.block.DWR_DRB', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.block.DilatedReparamBlock', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.block.DySample', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.block.FGM', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.block.GSBottleneckC', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.block.GSConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.block.PKIModule2', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.block.Silence', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.block.VoVGSCSPC', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.dynamic_snake_conv.DSConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.dynamic_snake_conv.DySnakeConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.gcconv.Block1x1', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.gcconv.Block3x3', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.gcconv.GCConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.head.DetectAux', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.head.Detect_Efficient', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.jirui_seg.FuseModule', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.mm.router.MultiModalRouter', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.jirui_seg.JiRuiSegHR', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.activation.AGLU', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.A2C2f', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.AAttn', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.ABlock', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.AConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.ADown', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.AdaHGComputation', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.AdaHGConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.AdaHyperedgeGen', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.A2_DCNv4_Block', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.A2_DCNv4_SR2G', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.Attention', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.BasicBlock', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.BNContrastiveHead', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.Blocks', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.BlockSplitAttention', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.Bottleneck', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.BottleneckCSP', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.Bottleneck_PConv_Impl', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.Bottleneck_Rep', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.Bottleneck_ScConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C1', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C2', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C2f', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C2f_G', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C2fAttn', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C2fCIB', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C2fPSA', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C2f_CA_PConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C2f_ScConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C2PSA', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C3', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C3AH', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C3f', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C3Ghost', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C3k', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C3k2', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C3k2_v2', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C3TR', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C3x', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.C2tf', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.CBFuse', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.CBLinear', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.CIB', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.Channels', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.ContrastiveHead', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.Conv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.ConvNextBlock', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.ConvNormLayer', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.Conv_BN_HSwish', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.CoordAtt', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.DepthSepConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.DFL', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.DiffISP', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.DSBottleneck', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.DSC3k', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.DSC3k2', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.DownsampleConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.ECA', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.ELAN1', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.FullPAD_Tunnel', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.FuseModule', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.GhostBottleneck', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.HGBlock', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.HGStem', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.HyperACE', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.ImagePoolingAttn', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.LSKblock', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.MaxDiffFuse', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.MaxSigmoidAttnBlock', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.MobileNetV3_InvertedResidual', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.MobileNetV3_BLOCK', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.ODConv2d_3rd', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.ODConv_3rd', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.PConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.Proto', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.Proto26', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.PSA', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.PSABlock', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.RealNVP', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.RepMLP_blockv4', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.RepNMLPv4', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.RepBottleneck', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.RepC3', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.RepCSP', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.RepNCSPELAN4', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.RepVGGDW', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.Residual', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.ResNetBlock', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.ResNetLayer', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.SaELayer', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.SAVPE', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.SCDown', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.SEBlock', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.SeBlock', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.SPP', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.SPPELAN', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.SPPF', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.SR2G_Block', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.SwiGLUFFN', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.block.TorchVision', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.CBAM', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.CRU', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.ChannelAttention', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.Concat', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.Conv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.Conv2', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.ConvTranspose', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.DCN', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.DConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.DG_MKP', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.DWConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.DWConvTranspose2d', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.DSConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.Focus', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.GhostConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.GroupBatchnorm2d', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.Index', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.LightConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.CoordAtt', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.h_sigmoid', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.h_swish', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.RepConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.SRU', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.ScConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.SpatialAttention', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.conv.mn_conv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.DAttention.DAttentionBaseline', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.DAttention.LayerNormProxy', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.DSConv.Bottleneck_DySnakeConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.DSConv.C2f_DSConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.DSConv.DSConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.DSConv.DySnakeConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.dysample.DySample', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.Classify', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.DD_Detect', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.Detect', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.DyReLU_B', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.LRPCHead', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.MultiTask', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.OBB', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.OBB26', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.Pose', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.Pose26', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.RealNVP', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.Residual', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.RTDETRDecoder', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.SAVPE', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.Segment', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.Segment26', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.SwiGLUFFN', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.WorldDetect', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.YOLOEDetect', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.YOLOESegment', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.YOLOESegment26', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.head.v10Detect', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.model_ajl.BottleneckCA', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.model_ajl.C2fCA', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.model_ajl.CA_Block', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.moe.EfficientSpatialRouter', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.moe.OptimizedMOEImproved', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.moe.SimpleExpert', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.moe.experts.SimpleExpert', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.moe.loss.MoELoss', class {});
-        this.registerType('ultralytics.nn.modules.moe.modules.OptimizedMOEImproved', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.moe.routers.EfficientSpatialRouter', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.my_modules.FDConv_initialversion.FDConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.my_modules.GGCA.GGCA_Std', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.my_modules.my_modules.ADown', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.my_modules.my_modules.Bottleneck_PFDConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.my_modules.my_modules.C3k2_PFDConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.my_modules.my_modules.C3k_PFDConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.my_modules.my_modules.Partial_FDConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.new.RepBlock', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.new.RFConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.new.SPDConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.new.StandardConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.transformer.AIFI', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.transformer.DeformableTransformerDecoder', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.transformer.DeformableTransformerDecoderLayer', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.transformer.LayerNorm2d', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.transformer.MLP', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.transformer.MLPBlock', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.transformer.MSDeformAttn', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.transformer.TransformerBlock', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.transformer.TransformerEncoderLayer', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.transformer.TransformerLayer', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.Bottleneck', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.C2f', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.Concat', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.Conv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.DFL', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.Detect', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.Pose', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.Proto', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.SPPF', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.Segment', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.CA.CoordAtt', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.CA.h_sigmoid', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.CA.h_swish', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.CoordConv.AddCoords', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.CoordConv.CoordConv', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.ECA.ECA', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.GCSA.GCSA', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.MSC.C2f_MSC', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.MSC.EnhancedDWR', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.StarNet.Block', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.StarNet.ConvBN', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.modules.StarNet.StarNet_s', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.Down_WT.Down_wt', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.prune_module.C2f_v2', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.extra_modules.prune_module.C3k2_v2', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.PatchExpand.PatchExpand', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.tasks.BaseModel', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.tasks.ClassificationModel', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.tasks.DetectionModel', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.tasks.Ensemble', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.tasks.FeatureModel', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.tasks.MultiModel', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.tasks.MultiTaskModel', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.tasks.OBBModel', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.tasks.PoseModel', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.tasks.RTDETRDetectionModel', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.tasks.SegmentationModel', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.tasks.SegmentPoseModel', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.tasks.SemanticSegmentationModel', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.tasks.WorldModel', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.tasks.YOLOEModel', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.tasks.YOLOESegModel', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.nn.tasks.YOLOv10DetectionModel', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.utils.IterableSimpleNamespace', class {});
-        this.registerType('ultralytics.utils.loss.BCEDiceLoss', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.utils.loss.BboxLoss', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.utils.loss.DFLoss', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.utils.loss.E2EDetectLoss', class {});
-        this.registerType('ultralytics.utils.loss.E2ELoss', class {});
-        this.registerType('ultralytics.utils.loss.FocalLoss', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.utils.loss.KeypointLoss', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.utils.loss.MultiChannelDiceLoss', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.utils.loss.PoseLoss26', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.utils.loss.RLELoss', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.utils.loss.RatioLoss', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.utils.loss.RotatedBboxLoss', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.utils.loss.SlideLoss', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.utils.loss.TVPDetectLoss', class {});
-        this.registerType('ultralytics.utils.loss.TVPSegmentLoss', class {});
-        this.registerType('ultralytics.utils.loss.VarifocalLoss', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.utils.loss.v8ClassificationLoss', class {});
-        this.registerType('ultralytics.utils.loss.v8DetectionLoss', class {});
-        this.registerType('ultralytics.utils.loss.v8OBBLoss', class {});
-        this.registerType('ultralytics.utils.loss.v8PoseLoss', class {});
-        this.registerType('ultralytics.utils.loss.v8SegmentationLoss', class {});
-        this.registerType('ultralytics.utils.loss.v8SegmentPoseLoss', class {});
-        this.registerType('ultralytics.utils.loss.v10DetectLoss', class {});
-        this.registerType('ultralytics.utils.tal.RotatedTaskAlignedAssigner', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.utils.tal.TaskAlignedAssigner', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.utils.torch_utils.EarlyStopping', class {});
-        this.registerType('ultralytics.utils.torch_utils.ModelEMA', class {});
-        this.registerType('ultralytics.yolo.data.augment.CenterCrop', class {});
-        this.registerType('ultralytics.yolo.data.augment.ToTensor', class {});
-        this.registerType('ultralytics.yolo.utils.IterableSimpleNamespace', class {});
-        this.registerType('ultralytics.yolo.utils.loss.BboxLoss', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.yolo.utils.loss.KeypointLoss', class extends torch.nn.modules.module.Module {});
-        this.registerType('ultralytics.yolo.utils.loss.v8ClassificationLoss', class {});
-        this.registerType('ultralytics.yolo.utils.loss.v8DetectionLoss', class {});
-        this.registerType('ultralytics.yolo.utils.loss.v8PoseLoss', class {});
-        this.registerType('ultralytics.yolo.utils.loss.v8SegmentationLoss', class {});
-        this.registerType('ultralytics.yolo.utils.tal.TaskAlignedAssigner', class extends torch.nn.modules.module.Module {});
         this.registerFunction('builtins.annotate', (type, value) => {
             if (type === builtins.int) {
                 return Number.isInteger(value) ? value : NaN;
@@ -9446,6 +9394,17 @@ python.Execution = class {
         });
         this.registerFunction('torch._utils._rebuild_meta_tensor_no_storage', (dtype, size, stride, requires_grad) => {
             return torch.empty_strided(size, stride, dtype, null, 'meta', false, requires_grad);
+        });
+        this.registerFunction('torch._utils._rebuild_nested_tensor', (buffer, sizes, strides, storage_offsets) => {
+            return torch._nested_view_from_buffer(buffer, sizes, strides, storage_offsets);
+        });
+        this.registerFunction('torch._nested_view_from_buffer', (buffer) => {
+            const tensor = buffer.clone();
+            tensor.__nested__ = true;
+            return tensor;
+        });
+        this.registerFunction('torch.nested._internal.nested_tensor._rebuild_njt', (constructor_kwargs) => {
+            return new torch.nested._internal.nested_tensor.NestedTensor(constructor_kwargs.get('values'), constructor_kwargs.get('offsets'), constructor_kwargs.get('lengths'));
         });
         this.registerFunction('torch._utils._rebuild_tensor', (storage, storage_offset, size, stride) => {
             if (Array.isArray(storage) && storage.length === 5 && storage[0] === 'storage') {
@@ -13044,6 +13003,9 @@ python.Execution = class {
                 return this._values.get(name)[0];
             }
             ival_(name, value) {
+                if (!(value instanceof torch._C.IValue)) {
+                    throw new python.Error('ival_ expects IValue.');
+                }
                 this._values.set(name, [value, 'ival']);
                 return this;
             }
@@ -13292,6 +13254,9 @@ python.Execution = class {
                 if (value instanceof torch.Value) {
                     throw new python.Error('Value cannot be a value.');
                 }
+                if (value instanceof torch._C.IValue) {
+                    throw new python.Error('IValue must be unwrapped before assignment.');
+                }
                 this._value = value;
             }
             get value() { // remove
@@ -13437,11 +13402,20 @@ python.Execution = class {
             isGenerator() {
                 return this.tag === 'Generator';
             }
+            toGenerator() {
+                return this.value;
+            }
             isStream() {
                 return this.tag === 'Stream';
             }
+            toStream() {
+                return this.value;
+            }
             isGenericDict() {
                 return this.tag === 'GenericDict';
+            }
+            toGenericDict() {
+                return this.value;
             }
             isEnum() {
                 return this.tag === 'Enum';
@@ -15474,7 +15448,7 @@ python.Execution = class {
                     n.s_('value', val.toDevice().__str__());
                     n.output().setType(torch.DeviceObjType.get());
                 } else if (val.isGenerator()) {
-                    n.ival_('value', val.toGenerator());
+                    n.ival_('value', val);
                     n.output().setType(torch._C_._GeneratorType.get());
                 } else if (val.isStream()) {
                     n.ival_('value', val);
@@ -15518,7 +15492,6 @@ python.Execution = class {
             const n = g.create('prim::Constant');
             let type = null;
             if (val === null) {
-                n.ival_('value', val);
                 type = torch.NoneType.get();
             } else if (typeof val === 'string') {
                 n.s_('value', val);
@@ -15539,10 +15512,12 @@ python.Execution = class {
                 n.t_('value', val);
                 type = torch.TensorType.get();
             } else if (val instanceof torch.ScriptObject) {
-                n.ival_('value', val);
+                n.ival_('value', new torch._C.IValue(val));
                 type = val.type();
             } else if (Array.isArray(val) && val.every((item) => Number.isInteger(item))) {
-                n.ival_('value', val);
+                const items = val.map((item) => new torch._C.IValue(item, 'Int'));
+                const list = new torch._C.List(torch.IntType.get(), items);
+                n.ival_('value', new torch._C.IValue(list));
                 type = torch.ListType.create(torch.IntType.get());
             } else {
                 throw new python.Error(`Unsupported value type '${typeof val}'.`);
@@ -15567,18 +15542,21 @@ python.Execution = class {
             if (type.isSubtypeOf(torch.TensorType.get())) {
                 return new torch._C.IValue(node.t('value'), 'Tensor');
             } else if (type.isSubtypeOf(torch.BoolType.get())) {
-                return new torch._C.IValue(Boolean(node.i('value'), 'Bool'));
+                return new torch._C.IValue(Boolean(node.i('value')), 'Bool');
             } else if (type.isSubtypeOf(torch.NumberType.get()) && node.kindOf('value') === 'i') {
                 return new torch._C.IValue(node.i('value'), 'Int');
             } else if (type.isSubtypeOf(torch.NumberType.get()) && node.kindOf('value') === 'f') {
                 return new torch._C.IValue(node.f('value'), 'Double');
-            } else if (type.isSubtypeOf(torch.ComplexType.get()) && node.kindOf('value') === 'c') {
+            } else if (type.isSubtypeOf(torch.NumberType.get()) && node.kindOf('value') === 'c') {
                 return new torch._C.IValue(node.c('value'), 'Complex');
             } else if (type instanceof torch.ListType && node.kindOf('value') === 'ival') {
-                let list = node.ival('value');
-                list = list.isList ? list : new torch._C.IValue(list); // remove
+                const list = node.ival('value');
                 torch._C.TORCH_INTERNAL_ASSERT(list.isList());
                 return list;
+            } else if (type instanceof torch.ListType && node.kindOf('value') === 'ss') {
+                const items = node.ss('value').map((s) => new torch._C.IValue(s, 'String'));
+                const list = new torch._C.List(torch.StringType.get(), items);
+                return new torch._C.IValue(list);
             } else if (type instanceof torch.DictType && node.kindOf('value') === 'ival') {
                 const dict = node.ival('value');
                 torch._C.TORCH_INTERNAL_ASSERT(dict.isGenericDict());
@@ -15608,7 +15586,7 @@ python.Execution = class {
                 return enum_val;
             } else if (type instanceof torch.ClassType && !type.is_module()) {
                 const class_val = node.ival('value');
-                return  new torch._C.IValue(class_val, 'Object');
+                return class_val;
             }
             throw new python.Error('Unsupported constant literal.');
         });
@@ -19659,7 +19637,8 @@ python.Execution = class {
             constructor(obj) {
                 super(obj);
                 if (this.type === 'as_tensor') {
-                    this.as_tensor = new torch._export.serde.schema.TensorArgument({ name: this.as_tensor });
+                    const value = typeof this.as_tensor === 'string' ? { name: this.as_tensor } : this.as_tensor;
+                    this.as_tensor = new torch._export.serde.schema.TensorArgument(value);
                 } else if (this.type === 'as_none') {
                     this.as_none = null;
                 } else {
@@ -19783,7 +19762,7 @@ python.Execution = class {
                     const serialized_constants = torch.export.pt2_archive._package._load_constants(f, model_name);
                     const serialized_example_inputs = f.get(`data/sample_inputs/${model_name}.pt`, 'zip');
                     const artifact = new torch._export.serde.serialize.SerializedArtifact(serialized_exported_program, serialized_state_dict, serialized_constants, serialized_example_inputs);
-                    const exported_program = torch._export.serde.serialize.deserialize(artifact, expected_opset_version);
+                    const exported_program = executorch.exir.serde.serialize.deserialize(artifact, expected_opset_version);
                     exported_programs.set(model_name, exported_program);
                 }
             }
@@ -19848,6 +19827,20 @@ python.Execution = class {
             const artifact = torch.load(serialized);
             return artifact;
         });
+        torch._export.serde.serialize._CURRENT_DESERIALIZER = null;
+        this.registerFunction('torch._export.serde.serialize._reconstruct_fake_tensor', (serialized_tensor_meta, is_parameter) => {
+            const decoder = new TextDecoder('utf-8');
+            const json_tensor_meta = JSON.parse(decoder.decode(serialized_tensor_meta));
+            const tensor_meta = torch._export.serde.serialize._dict_to_dataclass(torch._export.serde.schema.TensorMeta, json_tensor_meta);
+            if (!torch._export.serde.serialize._CURRENT_DESERIALIZER) {
+                throw new python.Error('Need access to current deserializer state.');
+            }
+            let fake_tensor = torch._export.serde.serialize._CURRENT_DESERIALIZER.deserialize_tensor_meta(tensor_meta);
+            if (is_parameter) {
+                fake_tensor = new torch.nn.parameter.Parameter(fake_tensor);
+            }
+            return fake_tensor;
+        });
         this.registerType('torch._export.serde.serialize.GraphModuleDeserializer', class {
             constructor() {
                 this.serialized_name_to_node = new builtins.dict();
@@ -19883,13 +19876,13 @@ python.Execution = class {
             }
             deserialize_graph_output(output) {
                 if (output.type === 'as_tensor') {
-                    return this.serialized_name_to_node.get(output.as_tensor.name);
+                    return this.serialized_name_to_node.__getitem__(output.as_tensor.name);
                 } else if (output.type === 'as_sym_int') {
-                    return this.serialized_name_to_node.get(output.as_sym_int.as_name);
+                    return this.serialized_name_to_node.__getitem__(output.as_sym_int.as_name);
                 } else if (output.type === 'as_sym_bool') {
-                    return this.serialized_name_to_node.get(output.as_sym_bool.as_name);
+                    return this.serialized_name_to_node.__getitem__(output.as_sym_bool.as_name);
                 } else if (output.type === 'as_sym_float') {
-                    return this.serialized_name_to_node.get(output.as_sym_float.as_name);
+                    return this.serialized_name_to_node.__getitem__(output.as_sym_float.as_name);
                 } else if (output.type === 'as_int') {
                     return output.as_int;
                 } else if (output.type === 'as_float') {
@@ -20005,8 +19998,47 @@ python.Execution = class {
                     this.deserialize_outputs(serialized_node, fx_node);
                 } else if (typeof target === 'string') {
                     // Handle unresolved operators
-                    execution.emit('resolve', target);
-                    if (target.match(/^torch\.ops\.(aten|prim|quantized)\./)) {
+                    const arg_type = (arg) => {
+                        switch (arg && arg.type) {
+                            case 'as_tensor': return 'Tensor';
+                            case 'as_tensors': return 'Tensor[]';
+                            case 'as_optional_tensors': return 'Tensor?[]';
+                            case 'as_nested_tensors': return 'Tensor[][]';
+                            case 'as_int': return 'int';
+                            case 'as_ints': return 'int[]';
+                            case 'as_int_lists': return 'int[][]';
+                            case 'as_float': return 'float';
+                            case 'as_floats': return 'float[]';
+                            case 'as_float_lists': return 'float[][]';
+                            case 'as_bool': return 'bool';
+                            case 'as_bools': return 'bool[]';
+                            case 'as_string': return 'str';
+                            case 'as_strings': return 'str[]';
+                            case 'as_sym_int': return 'SymInt';
+                            case 'as_sym_ints': return 'SymInt[]';
+                            case 'as_sym_float': return 'SymFloat';
+                            case 'as_sym_floats': return 'SymFloat[]';
+                            case 'as_sym_bool': return 'SymBool';
+                            case 'as_sym_bools': return 'SymBool[]';
+                            case 'as_scalar_type': return 'ScalarType';
+                            case 'as_memory_format': return 'MemoryFormat';
+                            case 'as_layout': return 'Layout';
+                            case 'as_device': return 'Device';
+                            case 'as_operator': return 'str';
+                            default: return '?';
+                        }
+                    };
+                    const schema = (serialized_node, op) => {
+                        const params = serialized_node.inputs.map((input) => `${arg_type(input.arg)} ${input.name}`).join(', ');
+                        const outputs = serialized_node.outputs.map(arg_type);
+                        const returns = outputs.length === 1 ? outputs[0] : `(${outputs.join(', ')})`;
+                        return `${op}(${params}) -> ${returns}`;
+                    };
+                    const match = target.match(/^torch\.ops\.([^.]+)\.(.+)$/);
+                    const namespace = match ? match[1] : null;
+                    const op = match ? `${match[1]}::${match[2]}` : target;
+                    execution.emit('resolve', schema(serialized_node, op));
+                    if (namespace === 'aten' || namespace === 'prim' || namespace === 'quantized') {
                         throw new python.Error(`Unsupported node target type '${target}'.`);
                     }
                     const [args, kwargs] = this.deserialize_hoo_inputs(serialized_node.inputs);
@@ -20122,59 +20154,67 @@ python.Execution = class {
                     sig.output_specs.map((o) => this.deserialize_output_spec(o)));
             }
             deserialize(serialized_graph_module, serialized_state_dict, constants, example_inputs, symbol_name_to_range) {
-                this.shape_env = new torch.fx.experimental.symbolic_shapes.ShapeEnv(/* assume_static_by_default = True */);
-                this.fake_tensor_mode = new torch._subclasses.fake_tensor.FakeTensorMode(false, true, this.shape_env);
-                this.sympy_functions = new Map([
-                    ['FloorDiv', torch.utils._sympy.functions.FloorDiv],
-                    ['ModularIndexing', torch.utils._sympy.functions.ModularIndexing],
-                    ['Where', torch.utils._sympy.functions.Where],
-                    ['PythonMod', torch.utils._sympy.functions.PythonMod],
-                    ['Mod', torch.utils._sympy.functions.Mod],
-                    ['CleanDiv', torch.utils._sympy.functions.CleanDiv],
-                    ['CeilToInt', torch.utils._sympy.functions.CeilToInt],
-                    ['FloorToInt', torch.utils._sympy.functions.FloorToInt],
-                    ['CeilDiv', torch.utils._sympy.functions.CeilDiv],
-                    ['LShift', torch.utils._sympy.functions.LShift],
-                    ['RShift', torch.utils._sympy.functions.RShift],
-                    ['PowByNatural', torch.utils._sympy.functions.PowByNatural],
-                    ['FloatPow', torch.utils._sympy.functions.FloatPow],
-                    ['FloatTrueDiv', torch.utils._sympy.functions.FloatTrueDiv],
-                    ['IntTrueDiv', torch.utils._sympy.functions.IntTrueDiv],
-                    ['IsNonOverlappingAndDenseIndicator', torch.utils._sympy.functions.IsNonOverlappingAndDenseIndicator],
-                    ['TruncToFloat', torch.utils._sympy.functions.TruncToFloat],
-                    ['TruncToInt', torch.utils._sympy.functions.TruncToInt],
-                    ['RoundToInt', torch.utils._sympy.functions.RoundToInt],
-                    ['RoundDecimal', torch.utils._sympy.functions.RoundDecimal],
-                    ['ToFloat', torch.utils._sympy.functions.ToFloat],
-                    ['Identity', torch.utils._sympy.functions.Identity],
-                ]);
-                this.symbol_name_to_symbol = new Map();
-                this.constants = torch._export.serde.serialize.deserialize_torch_artifact(constants);
-                this.signature = this.deserialize_signature(serialized_graph_module.signature);
-                this.symbol_name_to_range = symbol_name_to_range || new Map();
-                /*
-                    if symbol_name_to_range:
-                    for k, vr in symbol_name_to_range.items():
-                        lower = int(vr.lower)
-                        if vr.upper >= 2:  # max is >= 2, not sym bool range
-                            lower = max(2, lower)
-                        this.symbol_name_to_range[k] = symbolic_shapes.ValueRanges(_int_to_sympy_int(lower), vr.upper)
-                    */
-                this.example_inputs = null;
-                if (example_inputs) {
-                    this.example_inputs = torch._export.serde.serialize.deserialize_torch_artifact(example_inputs);
+                if (torch._export.serde.serialize._CURRENT_DESERIALIZER) {
+                    throw new python.Error('_CURRENT_DESERIALIZER is already set.');
                 }
-                this.deserialize_graph(serialized_graph_module.graph);
-                const module_call_graph = null; // this.deserialize_module_call_graph(serialized_graph_module.module_call_graph)
-                return {
-                    graph_module: torch._export.exported_program._create_graph_module_for_export(this.module, this.graph),
-                    signature: this.signature,
-                    module_call_graph,
-                    names_to_symbols: this.symbol_name_to_symbol,
-                    state_dict: torch._export.serde.serialize.deserialize_torch_artifact(serialized_state_dict),
-                    constants: this.constants,
-                    example_inputs: this.example_inputs,
-                };
+                torch._export.serde.serialize._CURRENT_DESERIALIZER = this;
+                try {
+                    this.shape_env = new torch.fx.experimental.symbolic_shapes.ShapeEnv(/* assume_static_by_default = True */);
+                    this.fake_tensor_mode = new torch._subclasses.fake_tensor.FakeTensorMode(false, true, this.shape_env);
+                    this.sympy_functions = new Map([
+                        ['FloorDiv', torch.utils._sympy.functions.FloorDiv],
+                        ['ModularIndexing', torch.utils._sympy.functions.ModularIndexing],
+                        ['Where', torch.utils._sympy.functions.Where],
+                        ['PythonMod', torch.utils._sympy.functions.PythonMod],
+                        ['Mod', torch.utils._sympy.functions.Mod],
+                        ['CleanDiv', torch.utils._sympy.functions.CleanDiv],
+                        ['CeilToInt', torch.utils._sympy.functions.CeilToInt],
+                        ['FloorToInt', torch.utils._sympy.functions.FloorToInt],
+                        ['CeilDiv', torch.utils._sympy.functions.CeilDiv],
+                        ['LShift', torch.utils._sympy.functions.LShift],
+                        ['RShift', torch.utils._sympy.functions.RShift],
+                        ['PowByNatural', torch.utils._sympy.functions.PowByNatural],
+                        ['FloatPow', torch.utils._sympy.functions.FloatPow],
+                        ['FloatTrueDiv', torch.utils._sympy.functions.FloatTrueDiv],
+                        ['IntTrueDiv', torch.utils._sympy.functions.IntTrueDiv],
+                        ['IsNonOverlappingAndDenseIndicator', torch.utils._sympy.functions.IsNonOverlappingAndDenseIndicator],
+                        ['TruncToFloat', torch.utils._sympy.functions.TruncToFloat],
+                        ['TruncToInt', torch.utils._sympy.functions.TruncToInt],
+                        ['RoundToInt', torch.utils._sympy.functions.RoundToInt],
+                        ['RoundDecimal', torch.utils._sympy.functions.RoundDecimal],
+                        ['ToFloat', torch.utils._sympy.functions.ToFloat],
+                        ['Identity', torch.utils._sympy.functions.Identity],
+                    ]);
+                    this.symbol_name_to_symbol = new Map();
+                    this.constants = torch._export.serde.serialize.deserialize_torch_artifact(constants);
+                    this.signature = this.deserialize_signature(serialized_graph_module.signature);
+                    this.symbol_name_to_range = symbol_name_to_range || new Map();
+                    /*
+                        if symbol_name_to_range:
+                        for k, vr in symbol_name_to_range.items():
+                            lower = int(vr.lower)
+                            if vr.upper >= 2:  # max is >= 2, not sym bool range
+                                lower = max(2, lower)
+                            this.symbol_name_to_range[k] = symbolic_shapes.ValueRanges(_int_to_sympy_int(lower), vr.upper)
+                        */
+                    this.example_inputs = null;
+                    if (example_inputs) {
+                        this.example_inputs = torch._export.serde.serialize.deserialize_torch_artifact(example_inputs);
+                    }
+                    this.deserialize_graph(serialized_graph_module.graph);
+                    const module_call_graph = null; // this.deserialize_module_call_graph(serialized_graph_module.module_call_graph)
+                    return {
+                        graph_module: torch._export.exported_program._create_graph_module_for_export(this.module, this.graph),
+                        signature: this.signature,
+                        module_call_graph,
+                        names_to_symbols: this.symbol_name_to_symbol,
+                        state_dict: torch._export.serde.serialize.deserialize_torch_artifact(serialized_state_dict),
+                        constants: this.constants,
+                        example_inputs: this.example_inputs,
+                    };
+                } finally {
+                    torch._export.serde.serialize._CURRENT_DESERIALIZER = null;
+                }
             }
             sync_fx_node(name, fx_node) {
                 if (this.serialized_name_to_node.has(name)) {
@@ -20273,7 +20313,13 @@ python.Execution = class {
                         return result;
                     } else if (typ_ === 'as_ints' || typ_ === 'as_floats' || typ_ === 'as_bools' || typ_ ===  'as_strings') {
                         return Array.from(value);
-                    } else if (typ_ === 'as_sym_ints' || typ_ === 'as_sym_bools') {
+                    } else if (typ_ === 'as_int_lists') {
+                        return value.map((dims) => Array.from(dims));
+                    } else if (typ_ === 'as_float_lists') {
+                        return value.map((floats) => Array.from(floats));
+                    } else if (typ_ === 'as_nested_tensors') {
+                        return value.map((inner_list) => inner_list.map((arg) => this.serialized_name_to_node.get(arg.name)));
+                    } else if (typ_ === 'as_sym_ints' || typ_ === 'as_sym_bools' || typ_ === 'as_sym_floats') {
                         return value.map((arg) => this.deserialize_sym_argument(arg));
                     } else if (typ_ === 'as_optional_tensors') {
                         const deserialize_optional_tensor_args = (a) => {
@@ -20588,6 +20634,153 @@ python.Execution = class {
                 const returns = schema.returns;
                 return returns.length === 1 && returns[0].real_type instanceof torch.TensorType;
             }
+        });
+        this.registerType('executorch.exir.dialects.edge._ops.EdgeOpOverload', class {
+            constructor(op, schema) {
+                this._op = op;
+                this._schema = schema || op._schema;
+                this.__name__ = `${op._schema.name.split('::')[1]}.${op._overloadname}`;
+            }
+            name() {
+                return `executorch.exir.dialects.edge.ops.${this._op.name()}`;
+            }
+        });
+        this.registerType('executorch.exir.dialects.backend._ops.BackendOpOverload', class {
+            constructor(op, schema) {
+                this._op = op;
+                this._schema = schema || op._schema;
+                this.__name__ = `${op._schema.name.split('::')[1]}.${op._overloadname}`;
+            }
+            name() {
+                return `executorch.exir.dialects.backend.ops.${this._op.name()}`;
+            }
+        });
+        this.registerType('executorch.exir.dialects.edge._ops.EdgeOpOverloadPacket', class {
+            constructor(qualified_op_name, op_name, parent_overload_packet) {
+                this._parent_overload_packet = parent_overload_packet;
+                this._qualified_op_name = qualified_op_name;
+                this.__name__ = qualified_op_name.replace('::', '.');
+            }
+            __getattr__(key) {
+                const parent_overload = builtins.getattr(this._parent_overload_packet, key);
+                if (!parent_overload) {
+                    throw new python.Error(`The underlying op of '${this}' has no overload name '${key}'.`);
+                }
+                const overload = new executorch.exir.dialects.edge._ops.EdgeOpOverload(parent_overload);
+                this[key] = overload;
+                return overload;
+            }
+        });
+        this.registerType('executorch.exir.dialects.backend._ops.BackendOpOverloadPacket', class {
+            constructor(qualified_op_name, op_name, parent_overload_packet) {
+                this._parent_overload_packet = parent_overload_packet;
+                this._qualified_op_name = qualified_op_name;
+                this.__name__ = qualified_op_name.replace('::', '.');
+            }
+            __getattr__(key) {
+                const parent_overload = builtins.getattr(this._parent_overload_packet, key);
+                if (!parent_overload) {
+                    throw new python.Error(`The underlying op of '${this}' has no overload name '${key}'.`);
+                }
+                const overload = new executorch.exir.dialects.backend._ops.BackendOpOverload(parent_overload);
+                this[key] = overload;
+                return overload;
+            }
+        });
+        this.registerType('executorch.exir.dialects._ops._OpNamespace', class {
+            constructor(dialect, name) {
+                this._dialect = dialect;
+                this._name = name;
+                this._op_namespace = torch.ops[name];
+            }
+            __getattr__(op_name) {
+                const parent_packet = builtins.getattr(this._op_namespace, op_name);
+                const qualified_op_name = `${this._name}::${op_name}`;
+                const PacketCls = this._dialect === 'edge' ?
+                    executorch.exir.dialects.edge._ops.EdgeOpOverloadPacket :
+                    executorch.exir.dialects.backend._ops.BackendOpOverloadPacket;
+                const opoverloadpacket = new PacketCls(qualified_op_name, op_name, parent_packet);
+                this[op_name] = opoverloadpacket;
+                return opoverloadpacket;
+            }
+        });
+        this.registerType('executorch.exir.dialects._ops._DialectNamespace', class {
+            constructor(dialect_name) {
+                this._dialect_name = dialect_name;
+            }
+            __getattr__(name) {
+                const namespace = new executorch.exir.dialects._ops._OpNamespace(this._dialect_name, name);
+                this[name] = namespace;
+                return namespace;
+            }
+        });
+        this.registerType('executorch.exir.dialects._ops._Ops', class {
+            __getattr__(name) {
+                const dialect = new executorch.exir.dialects._ops._DialectNamespace(name);
+                this[name] = dialect;
+                return dialect;
+            }
+        });
+        executorch.exir.dialects._ops.ops = new executorch.exir.dialects._ops._Ops();
+        this.registerType('executorch.exir.serde.serialize.GraphModuleDeserializer', class extends torch._export.serde.serialize.GraphModuleDeserializer {
+            deserialize_operator(serialized_target) {
+                const find_operator = (module, target) => {
+                    const names = target.split('.').slice(5);
+                    let node = module;
+                    for (const name of names) {
+                        node = builtins.getattr(node, name);
+                        if (!node) {
+                            return target;
+                        }
+                    }
+                    return node;
+                };
+                const ops = executorch.exir.dialects._ops.ops;
+                if (serialized_target.startsWith('executorch.exir.dialects.edge.ops')) {
+                    return find_operator(builtins.getattr(ops, 'edge'), serialized_target);
+                }
+                if (serialized_target.startsWith('executorch.exir.dialects.backend.ops')) {
+                    return find_operator(builtins.getattr(ops, 'backend'), serialized_target);
+                }
+                return super.deserialize_operator(serialized_target);
+            }
+            deserialize_node(serialized_node, target) {
+                if (builtins.isinstance(target, executorch.exir.dialects.edge._ops.EdgeOpOverload)) {
+                    const name = this._is_single_tensor_return(target._op) ? serialized_node.outputs[0].as_tensor.name : null;
+                    const [args, kwargs] = this.deserialize_inputs(target._op, serialized_node);
+                    const fx_node = this.graph.create_node('call_function', target, args, kwargs, name);
+                    this.deserialize_outputs(serialized_node, fx_node);
+                    fx_node.meta.update(this.deserialize_metadata(serialized_node.metadata));
+                    return;
+                }
+                super.deserialize_node(serialized_node, target);
+            }
+            deserialize_outputs(serialized_node, fx_node) {
+                if (builtins.isinstance(fx_node.target, executorch.exir.dialects.edge._ops.EdgeOpOverload)) {
+                    const edge_op = fx_node.target;
+                    fx_node.target = edge_op._op;
+                    super.deserialize_outputs(serialized_node, fx_node);
+                    fx_node.target = edge_op;
+                    return;
+                }
+                super.deserialize_outputs(serialized_node, fx_node);
+            }
+        });
+        this.registerType('executorch.exir.serde.serialize.ExportedProgramDeserializer', class extends torch._export.serde.serialize.ExportedProgramDeserializer {
+            deserialize(exported_program, state_dict, constants, example_inputs) {
+                const symbol_name_to_range = new Map(Object.entries(exported_program.range_constraints));
+                const deserializer = new executorch.exir.serde.serialize.GraphModuleDeserializer();
+                const res = deserializer.deserialize(
+                    exported_program.graph_module, state_dict, constants, example_inputs, symbol_name_to_range);
+                return new torch.export.exported_program.ExportedProgram(
+                    res.graph_module, res.graph_module.graph, res.signature,
+                    res.state_dict, null, res.module_call_graph, res.example_inputs,
+                    null, res.constants);
+            }
+        });
+        this.registerFunction('executorch.exir.serde.serialize.deserialize', (artifact, expected_opset_version) => {
+            const serialized_exported_program = torch._export.serde.serialize._dict_to_dataclass(torch._export.serde.schema.ExportedProgram, artifact.exported_program);
+            return new executorch.exir.serde.serialize.ExportedProgramDeserializer(expected_opset_version).deserialize(serialized_exported_program, artifact.state_dict, artifact.constants, artifact.example_inputs);
         });
         this.registerType('torch._export.verifier.Verifier', class {});
         this.registerType('torch._dynamo.convert_frame.CatchErrorsWrapper', class {});
@@ -21152,6 +21345,16 @@ python.Execution = class {
                 return t;
             }
         });
+        this.registerType('torch.nested._internal.nested_tensor.NestedTensor', class extends torch.Tensor {
+            constructor(values, offsets, lengths) {
+                super(values._storage, values._shape, values._dtype, values._layout, values._device, values.requires_grad);
+                this._storage_offset = values._storage_offset;
+                this._stride = values._stride;
+                this._offsets = offsets;
+                this._lengths = lengths;
+                this.__nested__ = true;
+            }
+        });
         this.registerType('torch.nn.parameter.Parameter', class extends torch.Tensor {
             constructor(data, requires_grad) {
                 super();
@@ -21659,6 +21862,9 @@ python.Execution = class {
             const module = this._registry.get(name) || new this.builtins.module(name);
             module.__package__ = name;
             this._modules.set(name, module);
+            if (parent && this._registry.has(parent)) {
+                this._registry.set(name, module);
+            }
             const path = name.split('.').join('/');
             module.__path__ = [path];
             const file = `${path}.py`;
@@ -21750,6 +21956,18 @@ python.Execution = class {
         const moduleName = index === -1 ? '' : name.substring(0, index);
         const module = this.import(moduleName);
         let type = module ? module[memberName] : null;
+        if (!type) {
+            const index = name.indexOf('.');
+            const rootName = index === -1 ? '' : name.substring(0, index);
+            if (rootName) {
+                const root = this.import(rootName);
+                if (root && root.__materialize__) {
+                    root.__materialize__(name);
+                    const module = this.import(moduleName);
+                    type = module ? module[memberName] : null;
+                }
+            }
+        }
         if (!type) {
             if (!this._unresolved.has(name)) {
                 const moduleName = name.split('.').shift();

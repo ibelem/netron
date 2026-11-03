@@ -62,9 +62,8 @@ browser.Host = class {
                 const link = this._element('logo-github').href;
                 document.body.classList.remove('spinner');
                 for (;;) {
-                    /* eslint-disable no-await-in-loop */
+                    // eslint-disable-next-line no-await-in-loop
                     await this.message('Please update to the newest version.', null, 'Update');
-                    /* eslint-enable no-await-in-loop */
                     this.openURL(link);
                 }
             }
@@ -76,7 +75,7 @@ browser.Host = class {
             }
             let consent = true;
             try {
-                const text = await this._request('https://ipinfo.io/json', { 'Content-Type': 'application/json' }, 'utf-8', null, 2000);
+                const text = await this._fetch('https://ipinfo.io/json', { 'Content-Type': 'application/json' }, 'utf-8', null, 2000);
                 const json = JSON.parse(text);
                 const countries = ['AT', 'BE', 'BG', 'HR', 'CZ', 'CY', 'DK', 'EE', 'FI', 'FR', 'DE', 'EL', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'NO', 'PL', 'PT', 'SK', 'ES', 'SE', 'GB', 'UK', 'GR', 'EU', 'RO'];
                 if (json && json.country && countries.indexOf(json.country) === -1) {
@@ -276,18 +275,22 @@ browser.Host = class {
         }
     }
 
-    async request(file, encoding, base) {
+    async fetch(file, encoding, base) {
         const url = base ? `${base}/${file}` : this._url(file);
-        if (base === null) {
-            this._requests = this._requests || new Map();
-            const key = `${url}:${encoding}`;
-            if (!this._requests.has(key)) {
-                const promise = this._request(url, null, encoding);
-                this._requests.set(key, promise);
-            }
-            return this._requests.get(key);
+        return this._fetch(url, null, encoding);
+    }
+
+    async asset(file) {
+        this._assets = this._assets || new Map();
+        if (!this._assets.has(file)) {
+            const url = this._url(file);
+            const separator = (/\?/).test(url) ? '&' : '?';
+            const tag = this.version && this.version !== '0.0.0' ? `version=${this.version}` : `cb=${new Date().getTime()}`;
+            const request = this._request(`${url}${separator}${tag}`, null, 'utf-8');
+            request.catch(() => this._assets.delete(file));
+            this._assets.set(file, request);
         }
-        return this._request(url, null, encoding);
+        return this._assets.get(file);
     }
 
     openURL(url) {
@@ -297,7 +300,7 @@ browser.Host = class {
 
     _getHuggingFaceMirrorUrl(url) {
         try {
-            const parsed = new URL(url);
+            const parsed = new window.URL(url);
             if (parsed.hostname === 'huggingface.co') {
                 parsed.hostname = 'hf-mirror.com';
                 return parsed.toString();
@@ -309,15 +312,15 @@ browser.Host = class {
     }
 
     async _isReachableViaHead(url, timeout = 5000) {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), timeout);
+        const controller = new window.AbortController();
+        const timer = window.setTimeout(() => controller.abort(), timeout);
         try {
-            const response = await fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
+            await window.fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
             return true;
         } catch {
             return false;
         } finally {
-            clearTimeout(timer);
+            window.clearTimeout(timer);
         }
     }
 
@@ -379,13 +382,16 @@ browser.Host = class {
         }
     }
 
+    async _fetch(url, headers, encoding, callback, timeout) {
+        if (!url.startsWith('data:')) {
+            const separator = (/\?/).test(url) ? '&' : '?';
+            url = `${url}${separator}cb=${new Date().getTime()}`;
+        }
+        return this._request(url, headers, encoding, callback, timeout);
+    }
+
     async _request(url, headers, encoding, callback, timeout) {
         const window = this.window;
-        if (!url.startsWith('data:')) {
-            const date = new Date().getTime();
-            const separator = (/\?/).test(url) ? '&' : '?';
-            url = `${url}${separator}cb=${date}`;
-        }
         return new Promise((resolve, reject) => {
             const request = new window.XMLHttpRequest();
             if (!encoding) {
@@ -470,13 +476,13 @@ browser.Host = class {
             const progress = (value) => {
                 this._view.progress(value);
             };
-            let stream = await this._request(url, null, null, progress);
+            let stream = await this._fetch(url, null, null, progress);
             if (url.startsWith('https://raw.githubusercontent.com/') && stream.length < 150) {
                 const buffer = stream.peek();
                 const content = Array.from(buffer).map((c) => String.fromCodePoint(c)).join('');
                 if (content.split('\n')[0] === 'version https://git-lfs.github.com/spec/v1') {
                     url = url.replace('https://raw.githubusercontent.com/', 'https://media.githubusercontent.com/media/');
-                    stream = await this._request(url, null, null, progress);
+                    stream = await this._fetch(url, null, null, progress);
                 }
             }
             context = new browser.Context(this, url, identifier, name, stream);
@@ -490,11 +496,11 @@ browser.Host = class {
     }
 
     _qs(element) {
-        return document.querySelector(element);
+        return window.document.querySelector(element);
     }
 
     async _getWebnnOps() {
-        const response = await fetch("https://webmachinelearning.github.io/assets/json/webnn_status.json");
+        const response = await window.fetch("https://webmachinelearning.github.io/assets/json/webnn_status.json");
         if (!response.ok) {
             return [];
         }
@@ -520,11 +526,15 @@ browser.Host = class {
             item.spec = op;
             let alias = [];
             for (const o of s.tflite_op) {
-                if (o) alias.push(o);
+                if (o) {
+                    alias.push(o);
+                }
             }
             item.tflite_chromium_version_added = s.tflite_chromium_version_added;
             for (const o of s.windowsml_op) {
-                if (o) alias.push(o);
+                if (o) {
+                    alias.push(o);
+                }
             }
             item.windowsml_chromium_version_added = s.windowsml_chromium_version_added;
             for (let o of s.dml_op) {
@@ -534,21 +544,29 @@ browser.Host = class {
                 o = o.toLowerCase()
                     .replace(/map to other op|supported by tensor strides|element_wise_|activation_|reduce_function_/g, '')
                     .trim();
-                if (o) alias.push(o);
+                if (o) {
+                    alias.push(o);
+                }
             }
             item.dml_chromium_version_added = s.dml_chromium_version_added;
             for (const o of s.coreml_op) {
-                if (o) alias.push(o);
+                if (o) {
+                    alias.push(o);
+                }
             }
             item.coreml_chromium_version_added = s.coreml_chromium_version_added;
             for (const o of s.fw_tflite_op) {
-                if (o) alias.push(o);
+                if (o) {
+                    alias.push(o);
+                }
             }
             for (const o of s.fw_ort_op) {
-                if (o) alias.push(o);
+                if (o) {
+                    alias.push(o);
+                }
             }
 
-            alias = new Map(alias.map(s => [s.toLowerCase(), s]));
+            alias = new Map(alias.map((s) => [s.toLowerCase(), s]));
             alias = [...alias.values()];
             alias = alias.filter((x) => x.toLowerCase() !== op.toLowerCase());
             item.alias = alias;
@@ -579,12 +597,12 @@ browser.Host = class {
 
     _isOnnx(model) {
         return model.format && model.format.toLowerCase().indexOf('onnx') !== -1;
-    } 
+    }
 
     _getOperationStats(operations) {
         // Count occurrences of each operation
         const counts = {};
-        operations.forEach(op => {
+        operations.forEach((op) => {
             counts[op] = (counts[op] || 0) + 1;
         });
 
@@ -597,9 +615,9 @@ browser.Host = class {
         // Add each operation with count and percentage
         for (const [op, count] of Object.entries(counts)) {
             result.push({
-                'op': op,
-                'count': count,
-                'percentage': ((count / total) * 100).toFixed(2) + '%'
+                op,
+                count,
+                'percentage': `${((count / total) * 100).toFixed(2)}%`
             });
         }
 
@@ -623,13 +641,12 @@ browser.Host = class {
         }
         const nodes = graph.nodes || [];
         let ops = [];
-        nodes.map((x) => {
+        nodes.forEach((x) => {
             ops.push(x.type.name);
-        }
-        );
+        });
 
         const filter = new Set(ops);
-        let ops_data = this._getOperationStats(ops);
+        const ops_data = this._getOperationStats(ops);
         ops = [...filter].sort();
         const webnn = this._qs('#webnn');
         const map = this._qs('#map-table');
@@ -640,18 +657,15 @@ browser.Host = class {
             let index = 1, tr = '', trs = '';
             for (const i of ops) {
                 const o = i.toLowerCase();
-                let spec = '';
                 let alias = '';
                 let tflite = 'No';
                 let windowsml = 'No';
                 let dml = 'No';
                 let coreml = 'No';
-                let ops_data_json;
                 let count = 0;
                 let percentage = 0;
-                webnnops.map((v) => {
+                webnnops.forEach((v) => {
                     if (v.spec.toLowerCase() === o) {
-                        spec = v.spec;
                         alias = v.alias.toString().replaceAll(/,/g, ', ');
                         if (v.tflite === 4) {
                             tflite = `Yes, ${v.tflite_chromium_version_added}`;
@@ -676,7 +690,6 @@ browser.Host = class {
                     } else {
                         for (const a of v.alias) {
                             if (a.toLowerCase() === o) {
-                                spec = v.spec;
                                 alias = v.alias.toString().replaceAll(/,/g, ', ');
                                 if (v.tflite === 4) {
                                     tflite = `Yes, ${v.tflite_chromium_version_added}`;
@@ -703,7 +716,7 @@ browser.Host = class {
                     }
                 });
 
-                ops_data_json = ops_data.find(item => item.op.toLowerCase() === i.toLowerCase());
+                const ops_data_json = ops_data.find((item) => item.op.toLowerCase() === i.toLowerCase());
                 count = ops_data_json.count;
                 percentage = ops_data_json.percentage;
 
@@ -712,7 +725,7 @@ browser.Host = class {
                 index += 1;
             }
 
-            const ops_data_json = ops_data.find(item => item.op.toLowerCase() === 'total');
+            const ops_data_json = ops_data.find((item) => item.op.toLowerCase() === 'total');
             const count = ops_data_json.count;
 
             trs += `<tr><td></td><td></td><td>${count}</td><td>100%</td><td></td><td></td><td></td><td></td><td></td></tr>`;
@@ -761,7 +774,7 @@ browser.Host = class {
         this._view.show('welcome spinner');
         const url = `https://api.github.com/gists/${gist}`;
         try {
-            const text = await this._request(url, { 'Content-Type': 'application/json' }, 'utf-8');
+            const text = await this._fetch(url, { 'Content-Type': 'application/json' }, 'utf-8');
             const json = JSON.parse(text);
             let message = json.message;
             let file = null;
@@ -927,9 +940,13 @@ browser.BrowserFileContext = class {
         return this._stream;
     }
 
-    async request(file, encoding, basename) {
+    async asset(file) {
+        return this._host.asset(file);
+    }
+
+    async fetch(file, encoding, basename) {
         if (basename !== undefined) {
-            return this._host.request(file, encoding, basename);
+            return this._host.fetch(file, encoding, basename);
         }
         const blob = this._blobs[file];
         if (!blob) {
@@ -1000,7 +1017,7 @@ browser.BrowserFileContext = class {
     }
 
     async open() {
-        this._stream = await this.request(this._file.name, null);
+        this._stream = await this.fetch(this._file.name, null);
     }
 };
 
@@ -1137,9 +1154,13 @@ browser.Context = class {
         return this._stream;
     }
 
-    async request(file, encoding, base) {
+    async asset(file) {
+        return this._host.asset(file);
+    }
+
+    async fetch(file, encoding, base) {
         base = base === undefined ? this._base : base;
-        return this._host.request(file, encoding, base);
+        return this._host.fetch(file, encoding, base);
     }
 
     async require(id) {

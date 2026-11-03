@@ -185,9 +185,8 @@ tf.ModelFactory = class {
         }
         if (extension === 'json') {
             for (const type of ['json', 'json.gz']) {
-                /* eslint-disable no-await-in-loop */
+                // eslint-disable-next-line no-await-in-loop
                 const obj = await context.peek(type);
-                /* eslint-enable no-await-in-loop */
                 if (obj && obj.modelTopology && (obj.format === 'graph-model' || Array.isArray(obj.modelTopology.node))) {
                     return context.set(`tf.${type}`);
                 }
@@ -1213,7 +1212,8 @@ tf.Tensor = class {
                     case DataType.DT_FLOAT8_E4M3FN:
                     case DataType.DT_FLOAT8_E4M3FNUZ:
                     case DataType.DT_FLOAT8_E4M3B11FNUZ:
-                    case DataType.DT_FLOAT8_E5M2FNUZ: {
+                    case DataType.DT_FLOAT8_E5M2FNUZ:
+                    case DataType.DT_FLOAT8_E8M0FNU: {
                         this._values = tensor.float8_val || null;
                         this.encoding = '<';
                         break;
@@ -1380,7 +1380,7 @@ tf.TensorBundle = class {
                 break;
             }
             case 2: {
-                entries.forEach((buffer, name) => {
+                for (const [name, buffer] of entries) {
                     if (name !== '') {
                         const reader = protobuf.BinaryReader.open(buffer);
                         const entry = tf.proto.tensorflow.BundleEntryProto.decode(reader);
@@ -1396,7 +1396,7 @@ tf.TensorBundle = class {
                         }
                         this.tensors.push(new tf.Tensor(tensor, name, null));
                     }
-                });
+                }
                 break;
             }
             default: {
@@ -2195,6 +2195,7 @@ tf.Utility = class {
             dataTypes.set(DataType.DT_FLOAT8_E4M3FNUZ, 'float8e4m3fnuz');
             dataTypes.set(DataType.DT_FLOAT8_E4M3B11FNUZ, 'float8e4m3b11fnuz');
             dataTypes.set(DataType.DT_FLOAT8_E5M2FNUZ, 'float8e5m2fnuz');
+            dataTypes.set(DataType.DT_FLOAT8_E8M0FNU, 'float8e8m0fnu');
             tf.Utility._dataTypes = dataTypes;
         }
         return tf.Utility._dataTypes.has(type) ? tf.Utility._dataTypes.get(type) : '?';
